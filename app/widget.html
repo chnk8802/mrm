@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="preload" href="https://js.zohocdn.com/ichat/js/2fc051ba_wmsbridge.js" as="script" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+
+  <style>
+    /* Custom styles for the datepicker */
+    .form-control {
+      width: 375px;
+    }
+
+    .datepicker {
+      width: 375px;
+      height: 375PX;
+      padding: 8px;
+    }
+
+    /* Adjust the datepicker dropdown */
+    .datepicker-dropdown {
+      top: 0;
+      left: 0;
+    }
+
+    /* Style the calendar table */
+    .datepicker table {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Style the days of the week */
+    .datepicker th,
+    .datepicker td {
+      text-align: center;
+    }
+
+    .datepicker-days,
+    .datepicker-months,
+    .datepicker-years,
+    .datepicker-decades,
+    .datepicker-centruties {
+      height: 100%;
+    }
+
+    .prev,
+    .next {
+      font-size: 2rem;
+      width: 50px;
+      height: 50px;
+    }
+
+    /* Custom active item colors in the datepicker */
+    .table-condensed>tbody>tr>td.active,
+    .table-condensed>tbody>tr>td>span.focused.active {
+      background: #72088b !important;
+      color: #fff !important;
+    }
+
+    input:focus {
+      box-shadow: 0 0 0 0.2rem rgba(113, 8, 139, 0.2) !important;
+    }
+
+    input,
+    input:hover {
+      border-color: #ced4da !important;
+    }
+
+    .btn {
+      background-color: #72088b;
+      border: none;
+      color: #fff;
+      box-shadow: none !important;
+    }
+
+    .btn:hover {
+      background-color: #440552;
+      border: none;
+    }
+
+    .btn:active {
+      background-color: #440552 !important;
+      border: none !important;
+    }
+
+    #dropdownMenuButton {
+      min-width: 150px;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:active {
+      background-color: #d27df2;
+    }
+
+    #technicianName {
+      background-color: #72088b !important;
+      color: #fff;
+      border-top-left-radius: 0.5rem;
+      border-top-right-radius: 0.5rem;
+    }
+
+    /* Custom styles for the striped table */
+    .table-custom tbody tr:nth-child(odd) {
+      background-color: #f8e5fe !important;
+    }
+
+    .table-custom tbody tr:nth-child(even) {
+      background-color: #fff !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="demo"></div>
+  <div id="demo2"></div>
+  <div class="d-flex justify-content-center" id="alertContainer"></div>
+
+  <div class="container mb-5">
+
+    <div class="d-flex justify-content-center">
+      <h1 class="my-4">Technician Work Report</h1>
+    </div>
+    <form class="d-flex justify-content-center mx-5" id="searchForm">
+
+      <div class="form-group m-0">
+        <div class="dropdown">
+          <button class="btn dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">All Technician</button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="technicianDropdown"></div>
+        </div>
+      </div>
+
+      <div class="form-group  m-0">
+        <input type="text" class="form-control mx-5" id="datepicker" name="datepicker" placeholder="dd-M-yyyy"
+          autocomplete="off">
+      </div>
+
+      <button type="submit" class="btn">Search</button>
+    </form>
+  </div>
+
+  <div class="container-fluid d-flex justify-content-center">
+    <div class="m-5 w-100" id="table-box">
+    </div>
+  </div>
+  <script src="https://js.zohostatic.com/creator/widgets/version/1.0/widgetsdk-min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+  <script src="./assets/getData.js"></script>
+  <script>
+
+    $(document).ready(function () {
+
+      $('#datepicker').datepicker({
+        format: 'dd-M-yyyy',
+        autoclose: true,
+        immediateUpdates: true,
+        todayBtn: true,
+        todayHighlight: true
+      }).datepicker("setDate", "0");
+
+      $('#searchForm').on('submit', function (e) {
+
+        e.preventDefault();
+
+        let selectedDate = $('#datepicker').val();
+        const dateRangeFrom = '"' + selectedDate + ' ' + '00:00:00' + '"';
+        const dateRangeTo = '"' + selectedDate + ' ' + '23:59:59' + '"';
+
+        let selectedTechnician = $('#dropdownMenuButton').text();
+
+        const selectedOption = $('#technicianDropdown').find(`span:contains('${selectedTechnician}')`);
+        let selectedTechnicianID = selectedOption.attr('id') || null;
+        let criteria = "Technician == " + selectedTechnicianID + ' && ' + "Date_of_Payment == " + '"' + selectedDate + '"' + ' && Payment_Status == ' + '"' + 'Paid' + '"';
+
+        const tableHeadings = ['Job No.', 'Customer', 'Model', 'Problem', 'Spare Part', 'Shop (Spare Parts)', 'Spare Part Cost (₹)', 'Amount Asked (₹)', 'Amount Receivabe (₹)', 'Payment Status'];
+        if (selectedTechnician !== "" && selectedDate !== "") {
+
+          if (selectedTechnician == "All Technician") {
+            // selectedTechnician = "";
+            criteria = "Date_of_Payment == " + '"' + selectedDate + '"' + ' && Payment_Status == ' + '"' + 'Paid' + '"';
+            tableHeadings.push("Techinician");
+          };
+
+          let itemConfig = {
+            appName: "chaudhary-mobile",
+            reportName: "All_Items",
+            criteria: criteria
+          };
+          ZOHO.CREATOR.API.getAllRecords(itemConfig)
+            .then(function (response) {
+
+              let totalSparePartCost = 0;
+              let totalAmount = 0;
+              let totalAmountReceivable = 0;
+              const itemData = response.data;
+              let dataObject = {};
+
+              itemData.forEach((item) => {
+                let jobNumber = item.Job_Number;
+                if (!dataObject[jobNumber]) {
+                  dataObject[jobNumber] = {
+                    'Job No.': jobNumber,
+                    'Customer': item.Customer.display_value,
+                    'Model': item.Model,
+                    'Problem': item.Problem,
+                    'Spare Parts Details': [],
+                    'Amount Asked (₹)': item.Amount,
+                    'Amount Receivabe (₹)': (item.Amount - item.Cost_of_spare_parts).toFixed(2),
+                    'Payment Status': item.Payment_Status
+                  };
+                }
+              });
+
+              // Fetch spare part data
+              let sparePartsConfig = {
+                appName: "chaudhary-mobile",
+                reportName: "All_Spare_Parts",
+                criteria: ""
+              };
+
+              ZOHO.CREATOR.API.getAllRecords(sparePartsConfig)
+                .then((sparePartResponse) => {
+
+                  const sparePartData = sparePartResponse.data;
+
+                  sparePartData.forEach((sPart) => {
+                    const jobNumber = sPart.Job_No.display_value;
+
+                    if (dataObject[jobNumber]) {
+                      // Update the 'Spare Parts Details' array in dataObject
+                      dataObject[jobNumber]['Spare Parts Details'] = sPart.Spare_Part_Details.map((sparePartDetail) => {
+                        const [shop, part, cost] = sparePartDetail.display_value.split('~');
+                        return {
+                          'Spare Part': part.trim(),
+                          'Shop (Spare Parts)': shop.trim(),
+                          'Spare Part Cost (₹)': cost.trim()
+                        };
+                      });
+                      /*
+                      // Calculate total spare part cost for the job number
+                      const totalSparePartCost = sPart.Spare_Part_Details.reduce((total, sparePartDetail) => {
+                        const [, , cost] = sparePartDetail.display_value.split('~');
+                        return total + parseFloat(cost);
+                      }, 0);
+    
+                      // Add the 'Total Spare Part Cost (₹)' field to dataObject
+                      dataObject[jobNumber]['Total Spare Part Cost (₹)'] = totalSparePartCost.toFixed(2);*/
+                    }
+                  });
+
+                  /*Populate data in table*/
+                  // Function to render the dataObject in a table
+                  function renderTable(dataObject) {
+                    const tableBox = $('#table-box');
+                    tableBox.empty(); // Clear previous content
+                    let techNameHeading = $('<h2>', {
+                      'class': 'text-center m-0 py-2',
+                      'id': 'technicianName',
+                      'text': selectedTechnician
+                    })
+                    tableBox.prepend(techNameHeading);
+                    // Create the table
+                    const table = $('<table>', {
+                      'class': 'table table-bordered table-striped table-custom'
+                    });
+
+                    // Create the table head
+                    const tableHeadings = ['Job No.', 'Customer', 'Model', 'Problem', 'Spare Part', 'Shop (Spare Parts)', 'Spare Part Cost (₹)', 'Amount Asked (₹)', 'Amount Receivable (₹)', 'Payment Status'];
+                    const tableHead = $('<thead>');
+                    const tableHeaderRow = $('<tr>');
+
+                    tableHeadings.forEach((colData) => {
+                      const tableHeaderColumns = $('<th>', {
+                        'text': colData,
+                        'id': colData.toLowerCase().replace(/\s/g, '_')
+                      });
+
+                      tableHeaderRow.append(tableHeaderColumns);
+                    });
+
+                    tableHead.append(tableHeaderRow);
+                    table.append(tableHead);
+
+                    // Create the table body
+                    const tableBody = $('<tbody>');
+
+                    // Iterate through each job in dataObject
+                    Object.values(dataObject).forEach((item) => {
+                      console.log(item['Spare Parts Details'].length);
+                      // Create a row for the job details in the table
+                      const tableDataRow = $('<tr>', {
+                        'id': `r-${item['Job No.']}`,
+                      });
+
+                      // Iterate through each column in the item
+                      tableHeadings.forEach((colKey) => {
+                        console.log(colKey);
+                        const tableDataColumns = $('<td>', {
+                          'text': item[colKey] || '',
+                        });
+                        tableDataRow.append(tableDataColumns);
+                      });
+
+                      tableBody.append(tableDataRow);
+                      // Iterate through each spare part detail and add a row for each under the job details
+                      item['Spare Parts Details'].forEach((sparePartDetail) => {
+                        const sparePartRow = $('<tr>');
+
+                        // Add empty cells for the non-spare part columns
+                        for (let i = 0; i < 4; i++) {
+                          sparePartRow.append($('<td>', {
+                            'text': ''
+                          }));
+                        }
+
+                        // Add spare part details to the spare part row
+                        for (const key in sparePartDetail) {
+                          const sparePartColumn = $('<td>', {
+                            'text': sparePartDetail[key],
+                          });
+                          sparePartRow.append(sparePartColumn);
+                        }
+                        // Add empty cells for the non-spare part columns
+                        for (let i = 0; i < 3; i++) {
+                          sparePartRow.append($('<td>', {
+                            'text': ''
+                          }));
+                        }
+
+                        tableBody.append(sparePartRow);
+                      });
+                    });
+
+                    table.append(tableBody);
+                    tableBox.append(table);
+                  }
+
+                  // Call the renderTable function with your dataObject
+                  renderTable(dataObject);
+                  /*Populate data in table*/
+                })
+                .catch((error) => {
+                  console.log(`Error: ${error.message}`);
+                })
+            })
+            .catch(function (error) {
+              // Show error message if no data is found
+              console.log(error)
+              const errorMessage = JSON.parse(error.responseText).message;
+              const alertElement = $('<div>', {
+                'class': 'alert alert-danger mt-2 text-center position-absolute w-50 ',
+                'role': 'alert',
+                'text': errorMessage + " " + "💔"
+              });
+              $('#alertContainer').html(alertElement);
+
+              setTimeout(function () {
+                alertElement.remove();
+              }, 3000);
+              // Show error message if no data is found
+            });
+        } else {
+
+          // Show error message if no date is selected
+          const alertElement = $('<div>', {
+            'class': 'alert alert-danger mt-2 text-center position-absolute w-50 ',
+            'role': 'alert',
+            'text': "Please select a technician and a date"
+          });
+          $('#alertContainer').html(alertElement);
+
+          setTimeout(function () {
+            alertElement.remove();
+          }, 3000);
+          // Show error message if no date is selected
+        }
+      });
+
+    });
+
+    // Get all Technicians Data For Dropdown--------------->>  
+    let dropdown = $('#technicianDropdown');
+
+    ZOHO.CREATOR.init()
+      .then(function () {
+        let config = {
+          appName: "chaudhary-mobile",
+          reportName: "All_Technicians",
+          criteria: ""
+        };
+
+        ZOHO.CREATOR.API.getAllRecords(config)
+          .then(function (response) {
+
+            response.data.forEach(element => {
+              const technician = element;
+              const technicianName = element.Technician.display_value;
+              let dropdownOptions = $('<span>', {
+                'class': 'dropdown-item',
+                'text': technicianName,
+                'id': element.ID
+              });
+
+              dropdownOptions.on('click', function (e) {
+                e.preventDefault();
+                $('#dropdownMenuButton').text(technicianName);
+              });
+              dropdown.append(dropdownOptions);
+            });
+
+          }).catch(function (error) {
+            const alertElement = $('<div>', {
+              'class': 'alert alert-danger mt-2 text-center position-absolute w-50 ',
+              'role': 'alert',
+              'text': "Something went wrong 💔"
+            });
+            $('#alertContainer').html(alertElement);
+          });
+      });
+    // Get all Technicians Data--------------->>
+  </script>
+</body>
+
+</html>
