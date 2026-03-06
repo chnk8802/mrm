@@ -1,0 +1,450 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Save, Building, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import customerService from '@/services/customerService';
+
+const CustomerEdit = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    customerType: 'individual',
+    name: '',
+    phone: '',
+    email: '',
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'USA'
+    },
+    notes: ''
+  });
+  
+  // Error state
+  const [errors, setErrors] = useState({});
+  
+  // Loading states
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch customer data on mount
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      try {
+        setLoading(true);
+        const response = await customerService.getCustomerById(id);
+        const customer = response.data;
+        
+        setFormData({
+          customerType: customer.customerType || 'individual',
+          name: customer.name || '',
+          phone: customer.phone || '',
+          email: customer.email || '',
+          address: {
+            street: customer.address?.street || '',
+            city: customer.address?.city || '',
+            state: customer.address?.state || '',
+            postalCode: customer.address?.postalCode || '',
+            country: customer.address?.country || 'USA'
+          },
+          notes: customer.notes || ''
+        });
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch customer');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCustomer();
+  }, [id]);
+
+  // Handle input change
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Handle nested address fields
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [addressField]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+    
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Customer type validation
+    if (!formData.customerType) {
+      newErrors.customerType = 'Customer type is required';
+    }
+    
+    // Name validation (required)
+    if (!formData.name.trim()) {
+      newErrors.name = 'Customer name is required';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    }
+    
+    // Phone validation (optional, but must be valid if provided)
+    if (formData.phone && !/^[0-9+\-\s()]*$/.test(formData.phone)) {
+      newErrors.phone = 'Invalid phone number format';
+    }
+    
+    // Email validation (optional, but must be valid if provided)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email address';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      setError(null);
+      
+      // Prepare data - remove empty address fields
+      const customerData = {
+        ...formData,
+        address: Object.fromEntries(
+          Object.entries(formData.address).filter(([_, v]) => v !== '')
+        )
+      };
+      
+      // Remove empty notes
+      if (!customerData.notes) {
+        delete customerData.notes;
+      }
+      
+      await customerService.updateCustomer(id, customerData);
+      
+      // Navigate to customer details on success
+      navigate(`/customers/${id}`);
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        // Handle Zod validation errors
+        const fieldErrors = {};
+        err.response.data.errors.forEach(error => {
+          const path = error.path.join('.');
+          fieldErrors[path] = error.message;
+        });
+        setErrors(fieldErrors);
+      } else {
+        setError(err.response?.data?.message || 'Failed to update customer');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-gray-500">Loading customer data...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => navigate(`/customers/${id}`)}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Edit Customer</h1>
+          <p className="text-gray-600 mt-1">Update customer information</p>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      {/* Form */}
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Customer Type Selection */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Customer Type</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                  formData.customerType === 'individual' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="customerType"
+                    value="individual"
+                    checked={formData.customerType === 'individual'}
+                    onChange={handleChange}
+                    className="w-4 h-4"
+                  />
+                  <User className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <div className="font-medium">Individual</div>
+                    <div className="text-sm text-gray-500">Personal customer</div>
+                  </div>
+                </label>
+                
+                <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                  formData.customerType === 'business' 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}>
+                  <input
+                    type="radio"
+                    name="customerType"
+                    value="business"
+                    checked={formData.customerType === 'business'}
+                    onChange={handleChange}
+                    className="w-4 h-4"
+                  />
+                  <Building className="w-5 h-5 text-gray-500" />
+                  <div>
+                    <div className="font-medium">Business</div>
+                    <div className="text-sm text-gray-500">Corporate/Business customer</div>
+                  </div>
+                </label>
+                
+                {errors.customerType && (
+                  <p className="text-sm text-red-600">{errors.customerType}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Basic Information */}
+          <Card className="shadow-sm lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg">Basic Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Name (Required) */}
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Customer Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter customer name"
+                  className={errors.name ? 'border-red-500' : ''}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-600">{errors.name}</p>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Enter phone number (optional)"
+                  className={errors.phone ? 'border-red-500' : ''}
+                />
+                {errors.phone && (
+                  <p className="text-sm text-red-600">{errors.phone}</p>
+                )}
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter email address (optional)"
+                  className={errors.email ? 'border-red-500' : ''}
+                />
+                {errors.email && (
+                  <p className="text-sm text-red-600">{errors.email}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Address */}
+          <Card className="shadow-sm lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="text-lg">Address</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Street */}
+                <div className="space-y-2">
+                  <Label htmlFor="address.street">Street Address</Label>
+                  <Input
+                    id="address.street"
+                    name="address.street"
+                    type="text"
+                    value={formData.address.street}
+                    onChange={handleChange}
+                    placeholder="Street address"
+                  />
+                </div>
+
+                {/* City */}
+                <div className="space-y-2">
+                  <Label htmlFor="address.city">City</Label>
+                  <Input
+                    id="address.city"
+                    name="address.city"
+                    type="text"
+                    value={formData.address.city}
+                    onChange={handleChange}
+                    placeholder="City"
+                  />
+                </div>
+
+                {/* State */}
+                <div className="space-y-2">
+                  <Label htmlFor="address.state">State/Province</Label>
+                  <Input
+                    id="address.state"
+                    name="address.state"
+                    type="text"
+                    value={formData.address.state}
+                    onChange={handleChange}
+                    placeholder="State"
+                  />
+                </div>
+
+                {/* Postal Code */}
+                <div className="space-y-2">
+                  <Label htmlFor="address.postalCode">Postal Code</Label>
+                  <Input
+                    id="address.postalCode"
+                    name="address.postalCode"
+                    type="text"
+                    value={formData.address.postalCode}
+                    onChange={handleChange}
+                    placeholder="Postal code"
+                  />
+                </div>
+
+                {/* Country */}
+                <div className="space-y-2">
+                  <Label htmlFor="address.country">Country</Label>
+                  <Input
+                    id="address.country"
+                    name="address.country"
+                    type="text"
+                    value={formData.address.country}
+                    onChange={handleChange}
+                    placeholder="Country"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notes */}
+          <Card className="shadow-sm lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="text-lg">Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <textarea
+                  id="notes"
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  placeholder="Add any additional notes about this customer..."
+                  rows={4}
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-end gap-3 mt-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => navigate(`/customers/${id}`)}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={submitting}
+            className="gap-2"
+          >
+            {submitting ? (
+              'Saving...'
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Changes
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CustomerEdit;

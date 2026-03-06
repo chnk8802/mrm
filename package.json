@@ -1,0 +1,20 @@
+{
+  "name": "mobile-repair-app",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  },
+  "packageManager": "npm@11.4.2",
+  "dependencies": {
+    "nstall": "^0.2.0"
+  }
+}
