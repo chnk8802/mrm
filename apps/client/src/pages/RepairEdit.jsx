@@ -68,12 +68,12 @@ const RepairEdit = () => {
         setLoading(true);
 
         // Fetch customers
-        const customersRes = await customerService.getCustomers({ limit: 1000 });
+        const customersRes = await customerService.getCustomers({ limit: 100 });
         setCustomers(customersRes.data || []);
 
         // Fetch technicians
         const usersRes = await axios.get('/api/users', {
-          params: { role: 'technician', limit: 1000 },
+          params: { role: 'technician', limit: 100 },
           withCredentials: true
         });
         setTechnicians(usersRes.data.data || []);
@@ -388,30 +388,78 @@ const RepairEdit = () => {
             <CardHeader>
               <CardTitle className="text-lg">Components</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {COMPONENT_OPTIONS.map((component) => (
-                  <label
-                    key={component}
-                    className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                      formData.components.includes(component)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.components.includes(component)}
-                      onChange={() => handleComponentChange(component)}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">{component}</span>
-                  </label>
-                ))}
+            <CardContent className="space-y-4">
+              {/* Multi-select Component Dropdown */}
+              <div className="space-y-2">
+                <Label htmlFor="component">Select Components</Label>
+                <select
+                  id="component"
+                  name="component"
+                  value=""
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value && !formData.components.includes(value)) {
+                      if (value === 'Other') {
+                        setFormData(prev => ({
+                          ...prev,
+                          components: [...prev.components.filter(c => c !== 'Other'), 'Other'],
+                          otherComponent: ''
+                        }));
+                        setShowOtherComponent(true);
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          components: [...prev.components.filter(c => c !== 'Other'), value]
+                        }));
+                        setShowOtherComponent(false);
+                      }
+                    }
+                    e.target.value = '';
+                  }}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select components...</option>
+                  {COMPONENT_OPTIONS.filter(c => !formData.components.includes(c)).map((component) => (
+                    <option key={component} value={component}>
+                      {component}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {showOtherComponent && (
-                <div className="mt-4">
+              {/* Selected Components Display */}
+              {formData.components.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Selected Components</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.components.map((component) => (
+                      <span
+                        key={component}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                      >
+                        {component}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newComponents = formData.components.filter(c => c !== component);
+                            setFormData(prev => ({ ...prev, components: newComponents }));
+                            if (component === 'Other') {
+                              setShowOtherComponent(false);
+                            }
+                          }}
+                          className="ml-1 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Other Component Input */}
+              {(showOtherComponent || formData.components.includes('Other')) && (
+                <div className="space-y-2">
                   <Label htmlFor="otherComponent">Specify Other Component</Label>
                   <Input
                     id="otherComponent"
@@ -419,7 +467,7 @@ const RepairEdit = () => {
                     type="text"
                     value={formData.otherComponent}
                     onChange={handleChange}
-                    className="mt-1 max-w-md"
+                    className="max-w-md"
                   />
                 </div>
               )}

@@ -14,11 +14,16 @@ import {
   Clock,
   AlertCircle,
   XCircle,
-  DollarSign
+  DollarSign,
+  Package,
+  Plus,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import repairService from '@/services/repairService';
+import sparePartService from '@/services/sparePartService';
+import SparePartSelector from '@/components/SparePartSelector';
 
 const RepairDetails = () => {
   const navigate = useNavigate();
@@ -26,6 +31,9 @@ const RepairDetails = () => {
 
   // Repair data state
   const [repair, setRepair] = useState(null);
+  const [sparePartsUsage, setSparePartsUsage] = useState([]);
+  const [showAddSparePart, setShowAddSparePart] = useState(false);
+  const [addingSparePart, setAddingSparePart] = useState(false);
 
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -39,6 +47,14 @@ const RepairDetails = () => {
         setLoading(true);
         const response = await repairService.getRepairById(id);
         setRepair(response.data);
+
+        // Fetch spare parts used in this repair
+        try {
+          const sparePartsResponse = await sparePartService.getSparePartsByRepair(id);
+          setSparePartsUsage(sparePartsResponse.data || []);
+        } catch (spErr) {
+          console.error('Failed to fetch spare parts:', spErr);
+        }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch repair');
       } finally {
@@ -63,6 +79,33 @@ const RepairDetails = () => {
       alert(err.response?.data?.message || 'Failed to delete repair');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // Handle add spare parts to repair
+  const handleAddSpareParts = async (parts) => {
+    setAddingSparePart(true);
+    try {
+      for (const part of parts) {
+        await sparePartService.addSparePartsToRepair(
+          id,
+          part.sparePartId,
+          part.quantity,
+          part.unitCost,
+          part.supplierId
+        );
+      }
+      // Refresh spare parts list
+      const sparePartsResponse = await sparePartService.getSparePartsByRepair(id);
+      setSparePartsUsage(sparePartsResponse.data || []);
+      // Refresh repair to get updated costPrice
+      const repairResponse = await repairService.getRepairById(id);
+      setRepair(repairResponse.data);
+      setShowAddSparePart(false);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add spare parts');
+    } finally {
+      setAddingSparePart(false);
     }
   };
 
@@ -308,7 +351,7 @@ const RepairDetails = () => {
         {repair.components && repair.components.length > 0 && (
           <Card className="shadow-sm lg:col-span-3">
             <CardHeader>
-              <CardTitle className="text-lg">Components</CardTitle>
+              <CardTitle className="text-lg">Components (Original Parts)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -325,6 +368,91 @@ const RepairDetails = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Spare Parts Installed */}
+        <Card className="shadow-sm lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Spare Parts Installed (Replacement Parts)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Add Spare Parts Button */}
+            {!showAddSparePart && (
+              <Button
+                variant="outline"
+                className="w-full mb-4"
+                onClick={() => setShowAddSparePart(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Spare Parts
+              </Button>
+            )}
+
+            {/* Spare Part Selector */}
+            {showAddSparePart && (
+              <div className="mb-4 p-4 border rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium">Select Spare Parts</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAddSparePart(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <SparePartSelector
+                  onAdd={handleAddSpareParts}
+                  repairId={id}
+                />
+                {addingSparePart && (
+                  <div className="text-center py-2 text-muted-foreground">
+                    Adding spare parts...
+                  </div>
+                )}
+              </div>
+            )}
+
+            {sparePartsUsage.length > 0 ? (
+              <div className="space-y-3">
+                {sparePartsUsage.map((usage) => (
+                  <div key={usage._id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <div>
+                      <div className="font-medium">
+                        {usage.sparePart?.name || 'Unknown Part'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Part #: {usage.sparePart?.partNumber || 'N/A'} | Qty: {usage.quantity}
+                      </div>
+                      {usage.supplier?.name && (
+                        <div className="text-sm text-muted-foreground">
+                          Supplier: {usage.supplier.name}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">
+                        ${usage.totalCost?.toFixed(2) || '0.00'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="pt-3 border-t flex justify-between items-center">
+                  <div className="font-medium">Total Parts Cost:</div>
+                  <div className="text-xl font-bold text-green-600">
+                    ${sparePartsUsage.reduce((sum, u) => sum + (u.totalCost || 0), 0).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                No spare parts installed for this repair
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Record Information */}
         <Card className="shadow-sm lg:col-span-3">

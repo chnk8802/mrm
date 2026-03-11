@@ -19,3 +19,19 @@ export {
     resetPasswordSchema
 }
 from './src/user.schema.js';
+export {
+    sparePartSchema,
+    sparePartUpdateSchema,
+    sparePartIdSchema,
+    sparePartQuerySchema,
+    sparePartUsageSchema,
+    sparePartUsageUpdateSchema
+}
+from './src/sparePart.schema.js';
+export {
+    supplierSchema,
+    supplierUpdateSchema,
+    supplierIdSchema,
+    supplierQuerySchema
+}
+from './src/supplier.schema.js';

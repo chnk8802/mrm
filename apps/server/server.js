@@ -8,6 +8,8 @@ import authRoutes from './routes/authRoutes.js';
 import repairRoutes from './routes/repairRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import sparePartRoutes from './routes/sparePartRoutes.js';
+import supplierRoutes from './routes/supplierRoutes.js';
 
 connectDB();
 
@@ -32,6 +34,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/repairs', repairRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/spare-parts', sparePartRoutes);
+app.use('/api/suppliers', supplierRoutes);
 
 app.get('/', (req, res) => res.send('Mobile Repair API Running...'));
 

@@ -9,7 +9,9 @@ import {
   Users,
   UserCog,
   X,
-  Wrench
+  Wrench,
+  Package,
+  Truck
 } from 'lucide-react';
 
 const Sidebar = ({ isMobile = false, onClose = null }) => {
@@ -18,6 +20,8 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
     { icon: Users, label: 'Customers', path: '/customers' },
     { icon: UserCog, label: 'Users', path: '/users' },
     { icon: Wrench, label: 'Repairs', path: '/repairs' },
+    { icon: Package, label: 'Spare Parts', path: '/spare-parts' },
+    { icon: Truck, label: 'Suppliers', path: '/suppliers' },
     { icon: Settings, label: 'Settings', path: '/settings' },
     { icon: HelpCircle, label: 'Help', path: '/help' },
   ];

@@ -17,6 +17,14 @@ import RepairList from './pages/RepairList';
 import RepairCreate from './pages/RepairCreate';
 import RepairEdit from './pages/RepairEdit';
 import RepairDetails from './pages/RepairDetails';
+import SparePartList from './pages/SparePartList';
+import SparePartCreate from './pages/SparePartCreate';
+import SparePartEdit from './pages/SparePartEdit';
+import SparePartDetails from './pages/SparePartDetails';
+import SupplierList from './pages/SupplierList';
+import SupplierCreate from './pages/SupplierCreate';
+import SupplierEdit from './pages/SupplierEdit';
+import SupplierDetails from './pages/SupplierDetails';
 import Layout from './components/Layout';
 
 function App() {
@@ -212,6 +220,96 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <RepairEdit />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/spare-parts"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SparePartList />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/spare-parts/create"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SparePartCreate />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/spare-parts/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SparePartDetails />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/spare-parts/:id/edit"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SparePartEdit />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SupplierList />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers/create"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SupplierCreate />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers/new"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SupplierCreate />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SupplierDetails />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers/:id/edit"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SupplierEdit />
                 </Layout>
               </ProtectedRoute>
             }
