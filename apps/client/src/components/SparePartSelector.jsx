@@ -47,7 +47,11 @@ const SparePartSelector = ({ onAdd, repairId }) => {
     useEffect(() => {
         const fetchRecentParts = async () => {
             try {
-                const response = await sparePartService.getSpareParts({ limit: 10, sortBy: 'updatedAt', sortOrder: 'desc' });
+                const response = await sparePartService.getSpareParts({ 
+                    limit: 10, 
+                    sortBy: 'updatedAt', 
+                    sortOrder: 'desc'
+                });
                 setRecentParts(response.data || []);
                 setSpareParts(response.data || []);
             } catch (err) {
@@ -176,7 +180,8 @@ const SparePartSelector = ({ onAdd, repairId }) => {
                                 <button
                                     key={part._id}
                                     onClick={() => handleSelectPart(part)}
-                                    className="w-full p-3 text-left hover:bg-muted flex justify-between items-center"
+                                    disabled={part.isInUse}
+                                    className={`w-full p-3 text-left flex justify-between items-center ${part.isInUse ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'hover:bg-muted'}`}
                                 >
                                     <div>
                                         <div className="font-medium">{part.name}</div>
@@ -184,6 +189,9 @@ const SparePartSelector = ({ onAdd, repairId }) => {
                                             {CATEGORY_LABELS[part.category] || part.category} | Part #: {part.partNumber}
                                         </div>
                                     </div>
+                                    {part.isInUse && (
+                                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">In Use</span>
+                                    )}
                                 </button>
                             ))
                         )}

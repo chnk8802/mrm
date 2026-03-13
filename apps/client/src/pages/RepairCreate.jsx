@@ -183,8 +183,8 @@ const RepairCreate = () => {
 
       await repairService.createRepair(repairData);
 
-      // Navigate to repair details on success
-      navigate(`/repairs/${response.data.data._id}`);
+      // Navigate to repair list on success
+      navigate('/repairs');
     } catch (err) {
       if (err.response?.data?.errors) {
         // Handle Zod validation errors

@@ -37,7 +37,8 @@ export const sparePartQuerySchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().optional(),
     category: categorySchema.optional(),
-    isActive: z.coerce.boolean().optional()
+    isActive: z.coerce.boolean().optional(),
+    isInUse: z.coerce.boolean().optional()
 });
 
 // Spare Part Usage schemas

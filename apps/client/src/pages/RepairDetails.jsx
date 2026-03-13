@@ -34,6 +34,7 @@ const RepairDetails = () => {
   const [sparePartsUsage, setSparePartsUsage] = useState([]);
   const [showAddSparePart, setShowAddSparePart] = useState(false);
   const [addingSparePart, setAddingSparePart] = useState(false);
+  const [removingSparePart, setRemovingSparePart] = useState(null);
 
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -106,6 +107,28 @@ const RepairDetails = () => {
       alert(err.response?.data?.message || 'Failed to add spare parts');
     } finally {
       setAddingSparePart(false);
+    }
+  };
+
+  // Handle remove spare part from repair
+  const handleRemoveSparePart = async (usageId) => {
+    if (!window.confirm('Are you sure you want to remove this spare part from the repair?')) {
+      return;
+    }
+
+    setRemovingSparePart(usageId);
+    try {
+      await sparePartService.removeSparePartFromRepair(usageId);
+      // Refresh spare parts list
+      const sparePartsResponse = await sparePartService.getSparePartsByRepair(id);
+      setSparePartsUsage(sparePartsResponse.data || []);
+      // Refresh repair to get updated costPrice
+      const repairResponse = await repairService.getRepairById(id);
+      setRepair(repairResponse.data);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove spare part');
+    } finally {
+      setRemovingSparePart(null);
     }
   };
 
@@ -338,8 +361,8 @@ const RepairDetails = () => {
             </div>
             {repair.repairPrice && repair.costPrice && (
               <div>
-                <div className="text-sm text-gray-500">Profit</div>
-                <div className="text-xl font-medium text-blue-600">
+                <div className="text-sm text-gray-500">Net Profit/Loss</div>
+                <div className={`text-xl font-medium ${repair.repairPrice - repair.costPrice >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                   {formatCurrency(repair.repairPrice - repair.costPrice)}
                 </div>
               </div>
@@ -436,6 +459,20 @@ const RepairDetails = () => {
                       <div className="font-medium">
                         ${usage.totalCost?.toFixed(2) || '0.00'}
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                        onClick={() => handleRemoveSparePart(usage._id)}
+                        disabled={removingSparePart === usage._id}
+                        title="Remove spare part"
+                      >
+                        {removingSparePart === usage._id ? (
+                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
                 ))}

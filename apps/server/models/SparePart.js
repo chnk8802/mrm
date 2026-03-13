@@ -38,6 +38,11 @@ const sparePartSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    isInUse: {
+        type: Boolean,
+        default: false,
+        description: 'Whether this spare part is currently being used in a repair order'
     }
 }, {
     timestamps: true

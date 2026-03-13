@@ -59,7 +59,8 @@ export const getSpareParts = async(req, res) => {
                 sortOrder = 'desc',
                 search,
                 category,
-                isActive
+                isActive,
+                isInUse
         } = queryParams;
 
         // Build query
@@ -82,6 +83,11 @@ export const getSpareParts = async(req, res) => {
         // Filter by active status
         if (isActive !== undefined) {
             query.isActive = isActive;
+        }
+
+        // Filter by in-use status
+        if (isInUse !== undefined) {
+            query.isInUse = isInUse;
         }
 
         // Sort configuration
@@ -374,6 +380,18 @@ export const addSparePartsToRepair = async(req, res) => {
             });
         }
 
+        // Check if this spare part is already used in this repair
+        const existingUsage = await SparePartUsage.findOne({
+            repair: repairId,
+            sparePart: sparePartId
+        });
+        if (existingUsage) {
+            return res.status(400).json({
+                success: false,
+                message: 'This spare part is already used in this repair order. Please edit the existing entry instead.'
+            });
+        }
+
         // Create usage record
         const sparePartUsage = new SparePartUsage({
             repair: repairId,
@@ -383,11 +401,21 @@ export const addSparePartsToRepair = async(req, res) => {
             unitCost,
             warrantyStartDate,
             warrantyEndDate,
-            installedBy: req.user,
+            installedBy: req.user.id,
             notes
         });
 
         await sparePartUsage.save();
+
+        // Mark spare part as in use
+        sparePart.isInUse = true;
+        await sparePart.save();
+
+        // Update repair's costPrice with total spare parts cost
+        const allSparePartsUsage = await SparePartUsage.find({ repair: repairId });
+        const totalSparePartsCost = allSparePartsUsage.reduce((sum, usage) => sum + (usage.totalCost || 0), 0);
+        repair.costPrice = totalSparePartsCost;
+        await repair.save();
 
         // Populate the response
         await sparePartUsage.populate('repair', 'repairNumber device brand model');
@@ -468,6 +496,12 @@ export const updateSparePartUsage = async(req, res) => {
 
         await sparePartUsage.save();
 
+        // Update repair's costPrice with total spare parts cost
+        const Repair = (await import('../models/Repair.js')).default;
+        const allSparePartsUsage = await SparePartUsage.find({ repair: sparePartUsage.repair });
+        const totalSparePartsCost = allSparePartsUsage.reduce((sum, usage) => sum + (usage.totalCost || 0), 0);
+        await Repair.findByIdAndUpdate(sparePartUsage.repair, { costPrice: totalSparePartsCost });
+
         // Populate response
         await sparePartUsage.populate('repair', 'repairNumber device');
         await sparePartUsage.populate('sparePart', 'name partNumber');
@@ -502,7 +536,24 @@ export const removeSparePartFromRepair = async(req, res) => {
             });
         }
 
+        const repairId = sparePartUsage.repair;
+        const sparePartId = sparePartUsage.sparePart;
+
         await sparePartUsage.deleteOne();
+
+        // Check if this spare part is still used in any other repair
+        const remainingUsage = await SparePartUsage.find({ sparePart: sparePartId });
+        const sparePartDoc = await SparePart.findById(sparePartId);
+        if (sparePartDoc) {
+            sparePartDoc.isInUse = remainingUsage.length > 0;
+            await sparePartDoc.save();
+        }
+
+        // Update repair's costPrice with remaining spare parts cost
+        const Repair = (await import('../models/Repair.js')).default;
+        const allSparePartsUsage = await SparePartUsage.find({ repair: repairId });
+        const totalSparePartsCost = allSparePartsUsage.reduce((sum, usage) => sum + (usage.totalCost || 0), 0);
+        await Repair.findByIdAndUpdate(repairId, { costPrice: totalSparePartsCost });
 
         res.json({
             success: true,
