@@ -1,33 +1,30 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import 'dotenv/config';
+
+import app from './app.js';
+
+/*------Config------*/
 import connectDB from './config/db.js';
 import config from './config/env.js';
+
+// ROUTES
+/*------Auth Routes------*/
 import authRoutes from './routes/authRoutes.js';
-import repairRoutes from './routes/repairRoutes.js';
-import customerRoutes from './routes/customerRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+
+/*------Repair order------*/
+import repairRoutes from './routes/repairRoutes.js';
+
+/*------Customer------*/
+import customerRoutes from './routes/customerRoutes.js';
+
+/*------Spare Part Routes------*/
 import sparePartRoutes from './routes/sparePartRoutes.js';
+
+/*------Supplier Routes------*/
 import supplierRoutes from './routes/supplierRoutes.js';
 
 connectDB();
 
-const app = express();
-
-// Middleware
-app.use(helmet());
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        // In production, you would want to restrict this
-        callback(null, true);
-    },
-    credentials: true
-}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);

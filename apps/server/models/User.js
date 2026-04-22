@@ -19,8 +19,8 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['technician', 'staff', "admin"],
-        default: 'admin'
+        enum: ['superadmin', 'admin', 'manager', 'staff', 'guest'],
+        default: 'superadmin'
     },
     phone: {
         type: String,
@@ -32,7 +32,7 @@ const userSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        default: ''
+        default: "https://i.pravatar.cc"
     },
     isActive: {
         type: Boolean,

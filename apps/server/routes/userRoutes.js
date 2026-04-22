@@ -9,6 +9,7 @@ import {
     getUserStats
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import authorize from '../middleware/authorize.js';
 
 const router = express.Router();
 
@@ -16,21 +17,19 @@ const router = express.Router();
 router.use(protect);
 
 // Statistics route
-router.route('/stats')
-    .get(getUserStats);
+router.get('/stats', authorize('admin'), getUserStats);
 
 // CRUD routes
 router.route('/')
-    .get(getUsers)
-    .post(createUser);
+    .get(authorize('admin'), getUsers)
+    .post(authorize('superadmin'), createUser);
 
 router.route('/:id')
-    .get(getUserById)
-    .put(updateUser)
-    .delete(deleteUser);
+    .get(authorize('staff'), getUserById)
+    .put(authorize('admin'), updateUser)
+    .delete(authorize('superadmin'), deleteUser);
 
 // Reset password route
-router.route('/:id/reset-password')
-    .put(resetPassword);
+router.put('/:id/reset-password', authorize('admin'), resetPassword);
 
 export default router;

@@ -7,7 +7,7 @@ import generateToken from '../utils/generateToken.js';
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, address, role = 'admin' } = req.body;
+    const { name, email, password, phone, address, role = 'superadmin' } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -165,10 +165,8 @@ export const updateProfile = async (req, res) => {
 
     if (user) {
       user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
       user.phone = req.body.phone || user.phone;
       user.address = req.body.address || user.address;
-      user.avatar = req.body.avatar || user.avatar;
 
       if (req.body.password) {
         const salt = await bcrypt.genSalt(10);
@@ -187,7 +185,7 @@ export const updateProfile = async (req, res) => {
           address: updatedUser.address,
           role: updatedUser.role,
           avatar: updatedUser.avatar,
-          token: generateToken(updatedUser._id)
+          ...(req.body.password && { token: generateToken(updatedUser._id) })
         }
       });
     } else {
