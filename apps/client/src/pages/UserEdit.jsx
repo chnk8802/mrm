@@ -219,7 +219,7 @@ const UserEdit = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {['staff', 'technician'].map((role) => (
+                {['superadmin', 'admin', 'manager', 'staff', 'guest'].map((role) => (
                   <label 
                     key={role}
                     className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${

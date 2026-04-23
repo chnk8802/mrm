@@ -3,6 +3,8 @@ import { Bell, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { getInitials } from '@/utils/getInitials';
 
 const Topbar = () => {
   const navigate = useNavigate();
@@ -44,15 +46,6 @@ const Topbar = () => {
     fetchUserProfile();
   }, []);
 
-  const getInitials = (name) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <div className="bg-white border-b border-gray-200 h-16 px-4 md:px-6 flex items-center justify-between sticky top-0 z-50">
       {/* Left Side - Logo/Org Switcher */}
@@ -60,7 +53,7 @@ const Topbar = () => {
         <div className="w-10 h-10 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold">
           {selectedOrg.logo}
         </div>
-        
+
         <div className="relative">
           <Button
             variant="ghost"
@@ -70,7 +63,7 @@ const Topbar = () => {
             <span className="font-semibold text-gray-900">{selectedOrg.name}</span>
             <ChevronDown className="w-4 h-4 text-gray-500" />
           </Button>
-          
+
           {isOrgDropdownOpen && (
             <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
               {organizations.map((org) => (
@@ -80,9 +73,8 @@ const Topbar = () => {
                     setSelectedOrg(org);
                     setIsOrgDropdownOpen(false);
                   }}
-                  className={`flex items-center gap-3 px-4 py-3 w-full text-left transition-colors ${
-                    selectedOrg.id === org.id ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 w-full text-left transition-colors ${selectedOrg.id === org.id ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100'
+                    }`}
                 >
                   <div className="w-8 h-8 bg-primary text-primary-foreground rounded-lg flex items-center justify-center font-bold text-sm">
                     {org.logo}
@@ -119,9 +111,8 @@ const Topbar = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`px-4 py-3 border-b border-gray-100 last:border-b-0 ${
-                    !notification.read ? 'bg-blue-50' : ''
-                  }`}
+                  className={`px-4 py-3 border-b border-gray-100 last:border-b-0 ${!notification.read ? 'bg-blue-50' : ''
+                    }`}
                 >
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="font-medium text-sm">{notification.title}</h4>
@@ -144,9 +135,13 @@ const Topbar = () => {
             className="flex items-center gap-2"
             onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
           >
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center font-medium">
-              {loading ? '?' : getInitials(userData?.name || 'User')}
-            </div>
+            <Avatar className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center font-medium">
+              <AvatarImage
+                src={userData?.avatar}
+                alt={userData?.name}
+              />
+              <AvatarFallback>{getInitials(userData?.name)}</AvatarFallback>
+            </Avatar>
             <span className="hidden md:inline font-medium">
               {loading ? 'Loading...' : userData?.name || 'User'}
             </span>
@@ -155,7 +150,7 @@ const Topbar = () => {
 
           {isProfileDropdownOpen && (
             <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-              <button 
+              <button
                 onClick={() => {
                   setIsProfileDropdownOpen(false);
                   navigate('/profile');

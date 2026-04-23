@@ -15,8 +15,8 @@ export const userSchema = z.object({
         .max(200, 'Address cannot exceed 200 characters'),
     password: z.string()
         .min(6, 'Password must be at least 6 characters'),
-    role: z.enum(['staff', 'technician', 'admin'])
-        .default('admin'),
+    role: z.enum(['superadmin', 'manager', 'staff', 'admin'])
+        .default('superadmin'),
     avatar: z.string().optional()
 });
 
@@ -37,8 +37,15 @@ export const userQuerySchema = z.object({
     sortBy: z.enum(['name', 'email', 'phone', 'role', 'createdAt', 'updatedAt']).default('createdAt'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().optional(),
-    role: z.enum(['staff', 'technician', 'admin']).optional(),
-    isActive: z.coerce.boolean().optional()
+    role: z.enum(['superadmin', 'manager', 'staff', 'admin']).optional(),
+    isActive: z
+        .string()
+        .optional()
+        .transform((val) => {
+            if (val === 'true') return true;
+            if (val === 'false') return false;
+            return undefined;
+        })
 });
 
 export const resetPasswordSchema = z.object({

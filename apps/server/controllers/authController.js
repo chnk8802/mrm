@@ -79,7 +79,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({email, isActive: true});
 
     // Check if user exists
     if (!user) {
@@ -135,7 +135,7 @@ export const loginUser = async (req, res) => {
 // @access  Private
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findOne({_id: req.user.id, isActive: true}).select('-password -__v');
 
     if (user) {
       res.json({
@@ -161,7 +161,7 @@ export const getProfile = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findOne({_id: req.user.id, isActive: true});
 
     if (user) {
       user.name = req.body.name || user.name;

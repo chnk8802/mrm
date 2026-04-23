@@ -11,7 +11,7 @@ import {
 // @desc    Create a new user
 // @route   POST /api/users
 // @access  Private (Admin only - can be extended with RBAC)
-export const createUser = async(req, res) => {
+export const createUser = async (req, res) => {
     try {
         // Validate request body
         const validatedData = userSchema.parse(req.body);
@@ -25,14 +25,14 @@ export const createUser = async(req, res) => {
             });
         }
 
-        // Admin can only create staff and technicians, not other admins
-        // If role is admin, check if admin already exists
-        if (validatedData.role === 'admin') {
-            const adminExists = await User.findOne({ role: 'admin', isActive: true });
-            if (adminExists) {
+        // superadmin can only create admin, manager and staff not other roles
+        // If role is superadmin, check if superadmin already exists
+        if (validatedData.role === 'superadmin') {
+            const superAdminExists = await User.findOne({ role: 'superadmin', isActive: true });
+            if (superAdminExists) {
                 return res.status(400).json({
                     success: false,
-                    message: 'An admin already exists. Only one admin is allowed.'
+                    message: 'An superadmin already exists. Only one superadmin is allowed.'
                 });
             }
         }
@@ -75,19 +75,19 @@ export const createUser = async(req, res) => {
 // @desc    Get all users with pagination, sorting, and filtering
 // @route   GET /api/users
 // @access  Private (Admin only)
-export const getUsers = async(req, res) => {
+export const getUsers = async (req, res) => {
     try {
         // Validate query parameters
         const queryParams = userQuerySchema.parse(req.query);
 
         const {
             page = 1,
-                limit = 10,
-                sortBy = 'createdAt',
-                sortOrder = 'desc',
-                search,
-                role,
-                isActive
+            limit = 10,
+            sortBy = 'createdAt',
+            sortOrder = 'desc',
+            search,
+            role,
+            isActive
         } = queryParams;
 
         // Build query
@@ -106,7 +106,7 @@ export const getUsers = async(req, res) => {
         if (role) {
             query.role = role;
         }
-
+        console.log('queryParams:', queryParams);
         // Filter by active status
         if (isActive !== undefined) {
             query.isActive = isActive;
@@ -119,7 +119,7 @@ export const getUsers = async(req, res) => {
         // Execute query with pagination
         const skip = (page - 1) * limit;
         const users = await User.find(query)
-            .select('-password')
+            .select('-password -__v')
             .sort(sortOptions)
             .skip(skip)
             .limit(limit);
@@ -158,11 +158,11 @@ export const getUsers = async(req, res) => {
 // @desc    Get single user by ID
 // @route   GET /api/users/:id
 // @access  Private (Admin only)
-export const getUserById = async(req, res) => {
+export const getUserById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const user = await User.findById(id).select('-password');
+        const user = await User.findById(id).select('-password -__v');
 
         if (!user) {
             return res.status(404).json({
@@ -187,20 +187,45 @@ export const getUserById = async(req, res) => {
 // @desc    Update a user
 // @route   PUT /api/users/:id
 // @access  Private (Admin only)
-export const updateUser = async(req, res) => {
+export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
 
         // Validate request body
         const validatedData = userUpdateSchema.parse(req.body);
 
-        // Prevent changing role to admin if admin already exists
-        if (validatedData.role === 'admin') {
-            const adminExists = await User.findOne({ role: 'admin', isActive: true, _id: { $ne: id } });
-            if (adminExists) {
+        const existingUser = await User.findById(id);
+
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'user not found'
+            });
+        }
+
+        if (
+            existingUser.role === 'superadmin' &&
+            validatedData.role &&
+            validatedData.role !== 'superadmin'
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: 'Role for superadmin cannot be changed'
+            });
+        }
+
+        // Prevent changing role to superadmin if superadmin already exists
+        if (validatedData.role === 'superadmin') {
+            const superAdminExists = await User.findOne({
+                role: 'superadmin',
+                isActive: true,
+                _id: { $ne: id }
+            });
+
+            if (superAdminExists) {
                 return res.status(400).json({
                     success: false,
-                    message: 'An admin already exists. Only one admin is allowed.'
+                    message: 'A superadmin already exists. Only one superadmin is allowed.'
                 });
             }
         }
@@ -252,31 +277,40 @@ export const updateUser = async(req, res) => {
     }
 };
 
-// @desc    Delete a user (soft delete)
+// @desc    Delete/ a user (soft delete)
 // @route   DELETE /api/users/:id
 // @access  Private (Admin only)
-export const deleteUser = async(req, res) => {
+export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Prevent admin from deleting themselves
-        if (id === req.user.id) {
+        // Prevent self Delete
+        if (id.toString() === req.user.id.toString()) {
             return res.status(400).json({
                 success: false,
                 message: 'You cannot delete your own account'
             });
         }
 
-        const user = await User.findByIdAndUpdate(
-            id, { isActive: false }, { new: true }
-        ).select('-password');
+        const user = await User.findById(id);
 
-        if (!user) {
+        if (!user || !user.isActive) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found'
+                message: 'User not found or already deleted'
             });
         }
+
+        if (user.role === 'superadmin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Superadmin cannot be deleted'
+            });
+        }
+
+        // Soft delete
+        user.isActive = false;
+        await user.save();
 
         res.json({
             success: true,
@@ -291,10 +325,94 @@ export const deleteUser = async(req, res) => {
     }
 };
 
+// @desc    Deactivate a user (soft delete)
+// @route   PATCH /api/users/:id/deactivate
+// @access  Private (Admin only)
+export const deactivateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Prevent self deactivate
+        if (id.toString() === req.user.id.toString()) {
+            return res.status(400).json({
+                success: false,
+                message: 'You cannot deactivate your own account'
+            });
+        }
+
+        const user = await User.findById(id);
+
+        if (!user || !user.isActive) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found or already inactive'
+            });
+        }
+
+        // Prevent deactivating superadmin
+        if (user.role === 'superadmin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Superadmin cannot be deactivated'
+            });
+        }
+
+        // Soft delete (deactivate)
+        user.isActive = false;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'User deactivated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deactivating user:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to deactivate user'
+        });
+    }
+};
+
+// @desc    Activate a user (restore soft-deleted user)
+// @route   PATCH /api/users/:id/activate
+// @access  Private (Admin only)
+export const activateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id);
+
+        if (!user || user.isActive) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found or already active'
+            });
+        }
+
+        // Activate user
+        user.isActive = true;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'User activated successfully'
+        });
+
+    } catch (error) {
+        console.error('Error activating user:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to activate user'
+        });
+    }
+};
+
 // @desc    Reset user password
 // @route   PUT /api/users/:id/reset-password
 // @access  Private (Admin only)
-export const resetPassword = async(req, res) => {
+export const resetPassword = async (req, res) => {
     try {
         const { id } = req.params;
         const { newPassword } = req.body;
@@ -302,7 +420,7 @@ export const resetPassword = async(req, res) => {
         // Validate password
         const validatedData = resetPasswordSchema.parse({ newPassword });
 
-        const user = await User.findById(id);
+        const user = await User.findOne({ _id: id, isActive: true });
 
         if (!user) {
             return res.status(404).json({
@@ -341,12 +459,14 @@ export const resetPassword = async(req, res) => {
 // @desc    Get user count statistics
 // @route   GET /api/users/stats
 // @access  Private (Admin only)
-export const getUserStats = async(req, res) => {
+export const getUserStats = async (req, res) => {
     try {
         const total = await User.countDocuments();
         const active = await User.countDocuments({ isActive: true });
+        const superadmin = await User.countDocuments({ role: 'superadmin' });
+        const admin = await User.countDocuments({ role: 'admin' });
+        const manager = await User.countDocuments({ role: 'manager' });
         const staff = await User.countDocuments({ role: 'staff' });
-        const technician = await User.countDocuments({ role: 'technician' });
 
         res.json({
             success: true,
@@ -354,8 +474,10 @@ export const getUserStats = async(req, res) => {
                 total,
                 active,
                 inactive: total - active,
-                staff,
-                technician
+                superadmin,
+                admin,
+                manager,
+                staff
             }
         });
     } catch (error) {

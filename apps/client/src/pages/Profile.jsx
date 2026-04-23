@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import axios from 'axios';
+import { getInitials } from '@/utils/getInitials';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
@@ -44,15 +46,6 @@ const Profile = () => {
     );
   }
 
-  const getInitials = (name) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -72,9 +65,13 @@ const Profile = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl text-gray-700">
-                {getInitials(userData.name)}
-              </div>
+              <Avatar className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl text-gray-700">
+                <AvatarImage
+                  src={userData.avatar}
+                  alt={userData.name}
+                />
+                <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
+              </Avatar>
               <div>
                 <h3 className="text-xl font-semibold">{userData.name}</h3>
                 <p className="text-gray-500">{userData.role}</p>
