@@ -1,31 +1,33 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
-import CustomerList from './pages/CustomerList';
-import CustomerCreate from './pages/CustomerCreate';
-import CustomerEdit from './pages/CustomerEdit';
-import CustomerDetails from './pages/CustomerDetails';
-import UserList from './pages/UserList';
-import UserCreate from './pages/UserCreate';
-import UserEdit from './pages/UserEdit';
-import UserDetails from './pages/UserDetails';
-import RepairList from './pages/RepairList';
-import RepairCreate from './pages/RepairCreate';
-import RepairEdit from './pages/RepairEdit';
-import RepairDetails from './pages/RepairDetails';
-import SparePartList from './pages/SparePartList';
-import SparePartCreate from './pages/SparePartCreate';
-import SparePartEdit from './pages/SparePartEdit';
-import SparePartDetails from './pages/SparePartDetails';
-import SupplierList from './pages/SupplierList';
-import SupplierCreate from './pages/SupplierCreate';
-import SupplierEdit from './pages/SupplierEdit';
-import SupplierDetails from './pages/SupplierDetails';
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
 import Layout from './components/Layout';
+// import LayoutNew from './components/LayoutNew';
+import Settings from './pages/setttings/Settings';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/setttings/Profile';
+import CustomerList from './pages/customer/CustomerList';
+import CustomerCreate from './pages/customer/CustomerCreate';
+import CustomerEdit from './pages/customer/CustomerEdit';
+import CustomerDetails from './pages/customer/CustomerDetails';
+import UserList from './pages/users/UserList';
+import UserCreate from './pages/users/UserCreate';
+import UserEdit from './pages/users/UserEdit';
+import UserDetails from './pages/users/UserDetails';
+import RepairList from './pages/repairOrder/RepairList';
+import RepairCreate from './pages/repairOrder/RepairCreate';
+import RepairEdit from './pages/repairOrder/RepairEdit';
+import RepairDetails from './pages/repairOrder/RepairDetails';
+import SparePartList from './pages/sparePart/SparePartList';
+import SparePartCreate from './pages/sparePart/SparePartCreate';
+import SparePartEdit from './pages/sparePart/SparePartEdit';
+import SparePartDetails from './pages/sparePart/SparePartDetails';
+import SupplierList from './pages/supplier/SupplierList';
+import SupplierCreate from './pages/supplier/SupplierCreate';
+import SupplierEdit from './pages/supplier/SupplierEdit';
+import SupplierDetails from './pages/supplier/SupplierDetails';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -319,10 +321,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <div className="space-y-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-                    <p className="text-gray-600">This page will show settings.</p>
-                  </div>
+                  <Settings/>
                 </Layout>
               </ProtectedRoute>
             }

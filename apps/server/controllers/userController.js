@@ -409,6 +409,54 @@ export const activateUser = async (req, res) => {
     }
 };
 
+// @desc    Permanently delete a user (hard delete)
+// @route   DELETE /api/users/:id
+// @access  Private (Admin only)
+export const deleteUserPermanently = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Prevent self delete
+        if (id.toString() === req.user.id.toString()) {
+            return res.status(400).json({
+                success: false,
+                message: 'You cannot delete your own account'
+            });
+        }
+
+        const user = await User.findById(id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Prevent deleting superadmin
+        if (user.role === 'superadmin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Superadmin cannot be deleted'
+            });
+        }
+
+        await User.findByIdAndDelete(id);
+
+        res.json({
+            success: true,
+            message: 'User permanently deleted'
+        });
+
+    } catch (error) {
+        console.error('Error deleting user permanently:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to delete user'
+        });
+    }
+};
+
 // @desc    Reset user password
 // @route   PUT /api/users/:id/reset-password
 // @access  Private (Admin only)

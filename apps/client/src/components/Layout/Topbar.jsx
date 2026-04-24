@@ -153,13 +153,18 @@ const Topbar = () => {
               <button
                 onClick={() => {
                   setIsProfileDropdownOpen(false);
-                  navigate('/profile');
+                  navigate('/settings?tab=profile');
                 }}
                 className="flex items-center gap-2 px-4 py-2 text-left w-full hover:bg-gray-100"
               >
                 <span className="font-medium">Profile</span>
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 text-left w-full hover:bg-gray-100">
+              <button
+              onClick={() => {
+                setIsProfileDropdownOpen(false);
+                navigate('/settings')
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-left w-full hover:bg-gray-100">
                 <span className="font-medium">Settings</span>
               </button>
               <hr className="my-1" />

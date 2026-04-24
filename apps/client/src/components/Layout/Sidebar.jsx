@@ -27,7 +27,7 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
   ];
 
   return (
-    <div className={`bg-white border-r border-gray-200 min-h-screen p-4 flex flex-col ${isMobile ? 'h-full' : 'hidden md:flex'}`}>
+    <div className={`w-full bg-white border-r border-gray-200 p-4 flex flex-col ${isMobile ? 'h-full' : 'hidden md:flex'}`}>
       {/* Mobile Close Button */}
       {isMobile && (
         <div className="flex justify-end mb-2">
@@ -60,7 +60,7 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
         ))}
       </nav>
 
-      <div className="pt-4 border-t border-gray-200">
+      {/* <div className="pt-4 border-t border-gray-200">
         <button
           onClick={async () => {
             try {
@@ -77,7 +77,7 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };

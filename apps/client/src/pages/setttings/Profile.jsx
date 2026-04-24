@@ -48,14 +48,6 @@ const Profile = () => {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
-          <p className="text-gray-600 mt-1">Manage your account information</p>
-        </div>
-      </div>
-
       {/* Profile Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Picture & Info */}
@@ -145,36 +137,6 @@ const Profile = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Account Settings */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle>Account Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="password">Change Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="New password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirm new password"
-              />
-            </div>
-            <Button className="w-full">
-              Update Password
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
