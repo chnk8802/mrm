@@ -9,7 +9,8 @@ import {
     resetPassword,
     getUserStats,
     activateUser,
-    deleteUserPermanently
+    deleteUserPermanently,
+    restoreUser
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import authorize from '../middleware/authorize.js';
@@ -30,10 +31,14 @@ router.route('/')
 router.route('/:id')
     .get(authorize('staff'), getUserById)
     .put(authorize('admin'), updateUser)
-    .delete(authorize('superadmin'), deleteUserPermanently);
+    .delete(authorize('superadmin'), deleteUser);
+
+router.patch("/:id/restore", restoreUser);
 
 router.patch('/:id/deactivate', authorize('admin'), deactivateUser);
 router.patch('/:id/activate', authorize('admin'), activateUser);
+
+router.delete('/:id/hard-delete', authorize('superadmin'), deleteUserPermanently);
 
 // Reset password route
 router.put('/:id/reset-password', authorize('admin'), resetPassword);

@@ -1,29 +1,29 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, UserCog, Wrench } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import userService from '@/services/userService';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ShieldCheck, Shield, ClipboardList, UserCog, Wrench, ArrowLeft, Save } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import userService from "@/services/userService";
 
 const UserCreate = () => {
   const navigate = useNavigate();
-  
+
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    password: '',
-    confirmPassword: '',
-    role: 'staff'
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    password: "",
+    confirmPassword: "",
+    role: "staff",
   });
-  
+
   // Error state
   const [errors, setErrors] = useState({});
-  
+
   // Loading state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,73 +31,74 @@ const UserCreate = () => {
   // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear error for this field
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
   // Generate random password
   const generatePassword = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
+    const chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
     for (let i = 0; i < 12; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       password,
-      confirmPassword: password
+      confirmPassword: password,
     }));
   };
 
   // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Name validation (required)
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = "Name must be at least 2 characters";
     }
-    
+
     // Email validation (required)
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+      newErrors.email = "Invalid email address";
     }
-    
+
     // Phone validation (required)
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = "Phone number is required";
     } else if (formData.phone.length < 10) {
-      newErrors.phone = 'Phone number must be at least 10 digits';
+      newErrors.phone = "Phone number must be at least 10 digits";
     }
-    
+
     // Address validation (required)
     if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+      newErrors.address = "Address is required";
     }
-    
+
     // Password validation (required)
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
-    
+
     // Confirm password validation
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -105,32 +106,32 @@ const UserCreate = () => {
   // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const { confirmPassword, ...userData } = formData;
-      
+
       await userService.createUser(userData);
-      
+
       // Navigate to user list on success
-      navigate('/users');
+      navigate("/users");
     } catch (err) {
       if (err.response?.data?.errors) {
         // Handle Zod validation errors
         const fieldErrors = {};
-        err.response.data.errors.forEach(error => {
-          const path = error.path.join('.');
+        err.response.data.errors.forEach((error) => {
+          const path = error.path.join(".");
           fieldErrors[path] = error.message;
         });
         setErrors(fieldErrors);
       } else {
-        setError(err.response?.data?.message || 'Failed to create user');
+        setError(err.response?.data?.message || "Failed to create user");
       }
     } finally {
       setLoading(false);
@@ -138,9 +139,15 @@ const UserCreate = () => {
   };
 
   // Get role icon
-  const getRoleIcon = (role) => {
+ const getRoleIcon = (role) => {
     switch (role) {
-      case 'technician':
+      case "superadmin":
+        return <ShieldCheck className="w-5 h-5" />;
+      case "admin":
+        return <Shield className="w-5 h-5" />;
+      case "manager":
+        return <ClipboardList className="w-5 h-5" />;
+      case "staff":
         return <Wrench className="w-5 h-5" />;
       default:
         return <UserCog className="w-5 h-5" />;
@@ -151,17 +158,6 @@ const UserCreate = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate('/users')}
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add User</h1>
-          <p className="text-gray-600 mt-1">Create a new user account</p>
-        </div>
       </div>
 
       {/* Error Message */}
@@ -181,33 +177,41 @@ const UserCreate = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {['staff', 'technician'].map((role) => (
-                  <label 
-                    key={role}
-                    className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      formData.role === role 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={role}
-                      checked={formData.role === role}
-                      onChange={handleChange}
-                      className="w-4 h-4"
-                    />
-                    {getRoleIcon(role)}
-                    <div>
-                      <div className="font-medium capitalize">{role}</div>
-                      <div className="text-sm text-gray-500">
-                        {role === 'staff' && 'Manage repairs and customers'}
-                        {role === 'technician' && 'Handle repair tasks'}
+                {["admin", "manager", "staff"].map(
+                  (role) => (
+                    <label
+                      key={role}
+                      className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                        formData.role === role
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={role}
+                        checked={formData.role === role}
+                        onChange={handleChange}
+                        className="w-4 h-4"
+                      />
+                      {getRoleIcon(role)}
+                      <div>
+                        <div className="font-medium capitalize">{role}</div>
+                        <div className="text-sm text-gray-500">
+                          {role === "superadmin" &&
+                            "Full system access — manage users, roles, repairs, and settings"}
+                          {role === "admin" &&
+                            "Manage repairs, customers, and oversee daily operations"}
+                          {role === "manager" &&
+                            "Oversee repair workflows, staff tasks, and reports"}
+                          {role === "staff" &&
+                            "Handle assigned repair tasks and update job status"}
+                        </div>
                       </div>
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  ),
+                )}
               </div>
             </CardContent>
           </Card>
@@ -230,7 +234,7 @@ const UserCreate = () => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter full name"
-                  className={errors.name ? 'border-red-500' : ''}
+                  className={errors.name ? "border-red-500" : ""}
                 />
                 {errors.name && (
                   <p className="text-sm text-red-600">{errors.name}</p>
@@ -249,7 +253,7 @@ const UserCreate = () => {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter email address"
-                  className={errors.email ? 'border-red-500' : ''}
+                  className={errors.email ? "border-red-500" : ""}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-600">{errors.email}</p>
@@ -268,7 +272,7 @@ const UserCreate = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Enter phone number"
-                  className={errors.phone ? 'border-red-500' : ''}
+                  className={errors.phone ? "border-red-500" : ""}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-600">{errors.phone}</p>
@@ -287,7 +291,7 @@ const UserCreate = () => {
                   value={formData.address}
                   onChange={handleChange}
                   placeholder="Enter address"
-                  className={errors.address ? 'border-red-500' : ''}
+                  className={errors.address ? "border-red-500" : ""}
                 />
                 {errors.address && (
                   <p className="text-sm text-red-600">{errors.address}</p>
@@ -316,11 +320,11 @@ const UserCreate = () => {
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="Enter password"
-                      className={errors.password ? 'border-red-500' : ''}
+                      className={errors.password ? "border-red-500" : ""}
                     />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={generatePassword}
                     >
                       Generate
@@ -343,10 +347,12 @@ const UserCreate = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     placeholder="Confirm password"
-                    className={errors.confirmPassword ? 'border-red-500' : ''}
+                    className={errors.confirmPassword ? "border-red-500" : ""}
                   />
                   {errors.confirmPassword && (
-                    <p className="text-sm text-red-600">{errors.confirmPassword}</p>
+                    <p className="text-sm text-red-600">
+                      {errors.confirmPassword}
+                    </p>
                   )}
                 </div>
               </div>
@@ -356,20 +362,16 @@ const UserCreate = () => {
 
         {/* Submit Button */}
         <div className="flex justify-end gap-3 mt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => navigate('/users')}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/users")}
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="gap-2"
-          >
+          <Button type="submit" disabled={loading} className="gap-2">
             {loading ? (
-              'Creating...'
+              "Creating..."
             ) : (
               <>
                 <Save className="w-4 h-4" />

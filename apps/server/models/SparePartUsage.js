@@ -31,6 +31,10 @@ const sparePartUsageSchema = new mongoose.Schema({
         default: 0,
         min: 0
     },
+    isInventoryItem: {
+        type: Boolean,
+        default: false,
+    },
     warrantyStartDate: {
         type: Date
     },

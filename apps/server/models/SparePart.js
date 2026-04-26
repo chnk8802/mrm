@@ -1,67 +1,78 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 // Category options for spare parts
 const CATEGORY_OPTIONS = [
-    'screen',
-    'battery',
-    'camera',
-    'charging-port',
-    'speaker',
-    'microphone',
-    'motherboard',
-    'sim-tray',
-    'back-panel',
-    'other'
+  "screen",
+  "battery",
+  "camera",
+  "charging-port",
+  "speaker",
+  "microphone",
+  "motherboard",
+  "sim-tray",
+  "back-panel",
+  "other",
 ];
 
-const sparePartSchema = new mongoose.Schema({
+const sparePartSchema = new mongoose.Schema(
+  {
     partNumber: {
-        type: String,
-        unique: true,
-        trim: true,
-        uppercase: true
+      type: String,
+      unique: true,
+      trim: true,
+      uppercase: true,
     },
     name: {
-        type: String,
-        required: true,
-        trim: true
+      type: String,
+      required: true,
+      trim: true,
     },
     category: {
-        type: String,
-        enum: CATEGORY_OPTIONS,
-        required: true
+      type: String,
+      enum: CATEGORY_OPTIONS,
+      required: true,
     },
     description: {
-        type: String,
-        trim: true
+      type: String,
+      trim: true,
+    },
+    sku: {
+      type: String,
     },
     isActive: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
+    },
+    isInventoryItem: {
+      type: Boolean,
+      default: false,
     },
     isInUse: {
-        type: Boolean,
-        default: false,
-        description: 'Whether this spare part is currently being used in a repair order'
-    }
-}, {
-    timestamps: true
-});
+      type: Boolean,
+      default: false,
+      description:
+        "Whether this spare part is currently being used in a repair order",
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
 // Auto-generate part number before saving
-sparePartSchema.pre('save', async function(next) {
-    if (!this.partNumber) {
-        const count = await mongoose.model('SparePart').countDocuments();
-        this.partNumber = `SP-${String(count + 1).padStart(5, '0')}`;
-    }
-    next();
+sparePartSchema.pre("save", async function (next) {
+  if (!this.partNumber) {
+    const count = await mongoose.model("SparePart").countDocuments();
+    this.partNumber = `SP-${String(count + 1).padStart(5, "0")}`;
+  }
+  next();
 });
 
 // Indexes for performance optimization
 sparePartSchema.index({ partNumber: 1 });
-sparePartSchema.index({ name: 'text', description: 'text' });
+sparePartSchema.index({ name: "text", description: "text" });
 sparePartSchema.index({ category: 1 });
 sparePartSchema.index({ isActive: 1 });
 
-export default mongoose.model('SparePart', sparePartSchema);
+export default mongoose.model("SparePart", sparePartSchema);
 export { CATEGORY_OPTIONS };

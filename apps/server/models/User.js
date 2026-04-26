@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true,
         trim: true,
         lowercase: true
     },
@@ -19,7 +18,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['superadmin', 'admin', 'manager', 'staff', 'guest'],
+        enum: ['superadmin', 'admin', 'manager', 'staff'],
         default: 'superadmin'
     },
     phone: {
@@ -37,13 +36,20 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true
 });
 
 // Indexes for performance optimization
-userSchema.index({ email: 1 });
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false } }
+);
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ name: 'text', email: 'text', phone: 'text' });

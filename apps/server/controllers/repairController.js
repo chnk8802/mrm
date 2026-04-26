@@ -29,7 +29,7 @@ export const createRepair = async(req, res) => {
         // Verify technician if provided
         if (validatedData.technician) {
             const technician = await User.findById(validatedData.technician);
-            if (!technician || technician.role !== 'technician') {
+            if (!technician || technician.role !== 'staff') {
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid technician'
@@ -214,7 +214,7 @@ export const updateRepair = async(req, res) => {
         // If updating technician, verify valid
         if (validatedData.technician) {
             const technician = await User.findById(validatedData.technician);
-            if (!technician || technician.role !== 'technician') {
+            if (!technician || technician.role !== 'staff') {
                 return res.status(400).json({
                     success: false,
                     message: 'Invalid technician'
@@ -298,7 +298,7 @@ export const assignTechnician = async(req, res) => {
 
         // Verify technician exists and is a technician
         const technician = await User.findById(technicianId);
-        if (!technician || technician.role !== 'technician') {
+        if (!technician || technician.role !== 'staff') {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid technician'

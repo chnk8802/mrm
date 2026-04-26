@@ -71,7 +71,7 @@ const RepairCreate = () => {
 
         // Fetch technicians (users with role: technician)
         const usersRes = await axios.get('/api/users', {
-          params: { role: 'technician', limit: 100 },
+          params: { role: 'staff', limit: 100 },
           withCredentials: true
         });
         setTechnicians(usersRes.data.data || []);

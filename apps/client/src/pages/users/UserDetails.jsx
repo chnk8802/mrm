@@ -1,54 +1,55 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Shield, 
-  UserCog, 
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Phone,
+  Mail,
+  MapPin,
+  Shield,
+  UserCog,
   Wrench,
   Calendar,
-  Key
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import userService from '@/services/userService';
-import axios from 'axios';
+  Key,
+  ShieldCheck,
+  ClipboardList,
+  MoreVertical,
+  User,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import userService from "@/services/userService";
+import axios from "axios";
 
 const UserDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  
+
   // Current user state
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   // User data state
   const [user, setUser] = useState(null);
-  
+
   // Loading and error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
-  
-  // Password reset modal state
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(null);
+
+  // Actions Button
+  const [showActions, setShowActions] = useState(false);
 
   // Fetch current user
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await axios.get('/api/auth/profile', {
-          withCredentials: true
+        const response = await axios.get("/api/auth/profile", {
+          withCredentials: true,
         });
         setCurrentUser(response.data.data);
       } catch (err) {
-        console.error('Failed to fetch current user:', err);
+        console.error("Failed to fetch current user:", err);
       }
     };
     fetchCurrentUser();
@@ -62,74 +63,67 @@ const UserDetails = () => {
         const response = await userService.getUserById(id);
         setUser(response.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch user');
+        setError(err.response?.data?.message || "Failed to fetch user");
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchUser();
   }, [id]);
-
+  // Handle Actions active inactive
+  const handleToggleActive = async () => {
+    try {
+      await userService.updateUser(id, { isActive: !user.isActive });
+      setUser((prev) => ({ ...prev, isActive: !prev.isActive }));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to update status");
+    }
+  };
   // Handle delete
   const handleDelete = async () => {
     // Prevent self-deletion
     if (id === currentUser?._id) {
-      alert('You cannot delete your own account');
+      alert("You cannot delete your own account");
       return;
     }
-    
-    if (!window.confirm('Are you sure you want to delete this user?')) {
+
+    if (!window.confirm("Are you sure you want to delete this user?")) {
       return;
     }
-    
+
     try {
       setDeleting(true);
       await userService.deleteUser(id);
-      navigate('/users');
+      navigate("/users");
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete user');
+      alert(err.response?.data?.message || "Failed to delete user");
     } finally {
       setDeleting(false);
     }
   };
 
-  // Handle password reset
-  const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
-      return;
-    }
-    
-    try {
-      setResettingPassword(true);
-      setPasswordError(null);
-      await userService.resetPassword(id, newPassword);
-      setShowPasswordModal(false);
-      setNewPassword('');
-      alert('Password reset successfully');
-    } catch (err) {
-      setPasswordError(err.response?.data?.message || 'Failed to reset password');
-    } finally {
-      setResettingPassword(false);
-    }
-  };
-
   // Format date
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Get role icon
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'technician':
+      case "superadmin":
+        return <ShieldCheck className="w-5 h-5" />;
+      case "admin":
+        return <Shield className="w-5 h-5" />;
+      case "manager":
+        return <ClipboardList className="w-5 h-5" />;
+      case "staff":
         return <Wrench className="w-5 h-5" />;
       default:
         return <UserCog className="w-5 h-5" />;
@@ -139,12 +133,16 @@ const UserDetails = () => {
   // Get role badge color
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'technician':
-        return 'bg-blue-100 text-blue-700';
-      case 'staff':
-        return 'bg-green-100 text-green-700';
+      case "superadmin":
+        return "bg-purple-100 text-purple-700";
+      case "admin":
+        return "bg-blue-100 text-blue-700";
+      case "manager":
+        return "bg-amber-100 text-amber-700";
+      case "staff":
+        return "bg-green-100 text-green-700";
       default:
-        return 'bg-gray-100 text-gray-700';
+        return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -165,7 +163,11 @@ const UserDetails = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/users')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/users")}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">User Details</h1>
@@ -182,7 +184,11 @@ const UserDetails = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/users')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/users")}
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">User Details</h1>
@@ -197,105 +203,67 @@ const UserDetails = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/users')}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{user.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                {getRoleIcon(user.role)}
-                {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </span>
-              {user.isActive === false && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                  Inactive
-                </span>
-              )}
-              {isOwnProfile && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                  Your Account
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowPasswordModal(true)}
-            className="gap-2"
-          >
-            <Key className="w-4 h-4" />
-            Reset Password
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(`/users/${id}/edit`)}
-            className="gap-2"
-          >
-            <Edit className="w-4 h-4" />
-            Edit
-          </Button>
-          <Button 
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={deleting || isOwnProfile}
-            className={`gap-2 ${isOwnProfile ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={isOwnProfile ? "Cannot delete your own account" : "Delete user"}
-          >
-            <Trash2 className="w-4 h-4" />
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </div>
-      </div>
+      <div className="flex items-center justify-end gap-2">
+        {/* Edit Button */}
+        <Button onClick={() => navigate(`/users/${id}/edit`)} className="gap-2">
+          <Edit className="w-4 h-4" />
+          Edit
+        </Button>
 
-      {/* Password Reset Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Reset Password</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">New Password</label>
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                />
-                {passwordError && (
-                  <p className="text-sm text-red-600 mt-1">{passwordError}</p>
-                )}
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
+        {/* Three dot actions */}
+        <div className="relative">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowActions((prev) => !prev)}
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
+
+          {showActions && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowActions(false)}
+              />
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                <button
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
                   onClick={() => {
-                    setShowPasswordModal(false);
-                    setNewPassword('');
-                    setPasswordError(null);
+                    handleToggleActive();
+                    setShowActions(false);
                   }}
                 >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleResetPassword}
-                  disabled={resettingPassword}
+                  <div
+                    className={`w-2 h-2 rounded-full ${user.isActive ? "bg-red-500" : "bg-green-500"}`}
+                  />
+                  {user.isActive ? "Mark as Inactive" : "Mark as Active"}
+                </button>
+
+                <div className="border-t border-gray-100 my-1" />
+
+                <button
+                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
+                    isOwnProfile
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-red-600 hover:bg-red-50"
+                  }`}
+                  disabled={isOwnProfile}
+                  onClick={() => {
+                    if (!isOwnProfile) {
+                      handleDelete();
+                      setShowActions(false);
+                    }
+                  }}
                 >
-                  {resettingPassword ? 'Resetting...' : 'Reset Password'}
-                </Button>
+                  <Trash2 className="w-4 h-4" />
+                  {deleting ? "Deleting..." : "Delete"}
+                </button>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Contact Information */}
@@ -304,6 +272,15 @@ const UserDetails = () => {
             <CardTitle className="text-lg">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Name */}
+            <div className="flex items-start gap-3">
+              <User className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <div className="text-sm text-gray-500">Name</div>
+                <div className="font-medium">{user.name}</div>
+              </div>
+            </div>
+
             {/* Phone */}
             <div className="flex items-start gap-3">
               <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
@@ -341,19 +318,25 @@ const UserDetails = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-gray-400" />
+                {getRoleIcon(user.role)}
                 <div>
                   <div className="text-sm text-gray-500">Role</div>
                   <div className="font-medium capitalize">{user.role}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${user.isActive ? 'bg-green-100' : 'bg-red-100'}`}>
-                  <div className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center ${user.isActive ? "bg-green-100" : "bg-red-100"}`}
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"}`}
+                  ></div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Status</div>
-                  <div className="font-medium">{user.isActive ? 'Active' : 'Inactive'}</div>
+                  <div className="font-medium">
+                    {user.isActive ? "Active" : "Inactive"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -371,14 +354,18 @@ const UserDetails = () => {
                 <Calendar className="w-5 h-5 text-gray-400" />
                 <div>
                   <div className="text-sm text-gray-500">Created</div>
-                  <div className="font-medium">{formatDate(user.createdAt)}</div>
+                  <div className="font-medium">
+                    {formatDate(user.createdAt)}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="w-5 h-5 text-gray-400" />
                 <div>
                   <div className="text-sm text-gray-500">Last Updated</div>
-                  <div className="font-medium">{formatDate(user.updatedAt)}</div>
+                  <div className="font-medium">
+                    {formatDate(user.updatedAt)}
+                  </div>
                 </div>
               </div>
             </div>
