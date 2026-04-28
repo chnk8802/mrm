@@ -11,33 +11,32 @@ import {
   getCustomerStats
 } from '../controllers/customerController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import authorize from '../middleware/authorize.js';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(protect);
 
-// Statistics route
+// Static named routes FIRST
 router.route('/stats')
-  .get(getCustomerStats);
+  .get(authorize('admin'), getCustomerStats);
 
-// Bulk operations
 router.route('/bulk')
-  .put(bulkUpdateCustomers)
-  .delete(bulkDeleteCustomers);
+  .put(authorize('manager'), bulkUpdateCustomers)
+  .delete(authorize('admin'), bulkDeleteCustomers);
 
-// CRUD routes
+// Dynamic :id routes AFTER
 router.route('/')
-  .get(getCustomers)
-  .post(createCustomer);
+  .get(authorize('staff'), getCustomers)
+  .post(authorize('staff'), createCustomer);
 
 router.route('/:id')
-  .get(getCustomerById)
-  .put(updateCustomer)
-  .delete(deleteCustomer);
+  .get(authorize('staff'), getCustomerById)
+  .put(authorize('staff'), updateCustomer)
+  .delete(authorize('admin'), deleteCustomer);
 
-// Permanent delete route
 router.route('/:id/permanent')
-  .delete(permanentlyDeleteCustomer);
+  .delete(authorize('superadmin'), permanentlyDeleteCustomer);
 
 export default router;

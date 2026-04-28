@@ -9,6 +9,16 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password, phone, address, role = 'superadmin' } = req.body;
 
+    if (role === 'superadmin') {
+      const superAdminExists = await User.findOne({ role: 'superadmin' });
+      if (superAdminExists) {
+        return res.status(403).json({
+          success: false,
+          message: 'A superadmin already exists'
+        });
+      }
+    }
+    
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {

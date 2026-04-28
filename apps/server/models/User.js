@@ -14,7 +14,8 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        select: false
     },
     role: {
         type: String,
@@ -39,10 +40,12 @@ const userSchema = new mongoose.Schema({
     },
     isDeleted: {
         type: Boolean,
-        default: false
+        default: false,
+        select: false
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    versionKey: false
 });
 
 // Indexes for performance optimization
@@ -54,5 +57,14 @@ userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ name: 'text', email: 'text', phone: 'text' });
 userSchema.index({ createdAt: -1 });
+
+userSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => {
+  delete ret.id;
+  return ret;
+}});
+userSchema.set('toObject', { virtuals: true, transform: (doc, ret) => {
+  delete ret.id;
+  return ret;
+}});
 
 export default mongoose.model('User', userSchema);

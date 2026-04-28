@@ -38,7 +38,7 @@ router.patch("/:id/restore", restoreUser);
 router.patch('/:id/deactivate', authorize('admin'), deactivateUser);
 router.patch('/:id/activate', authorize('admin'), activateUser);
 
-router.delete('/:id/hard-delete', authorize('superadmin'), deleteUserPermanently);
+router.delete('/:id/permanent', authorize('superadmin'), deleteUserPermanently);
 
 // Reset password route
 router.put('/:id/reset-password', authorize('admin'), resetPassword);

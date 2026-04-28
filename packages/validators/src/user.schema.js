@@ -27,11 +27,6 @@ export const userIdSchema = z.string().refine((val) => {
     return /^[0-9a-fA-F]{24}$/.test(val);
 }, 'Invalid user ID');
 
-export const userBulkUpdateSchema = z.object({
-    ids: z.array(userIdSchema).min(1, 'At least one user ID is required'),
-    data: userUpdateSchema
-});
-
 export const userQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),

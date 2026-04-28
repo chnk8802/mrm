@@ -1,15 +1,17 @@
+import { isValidObjectId } from 'mongoose';
 import Customer from '../models/Customer.js';
 import { customerSchema, customerUpdateSchema, customerBulkUpdateSchema, customerQuerySchema } from '@repo/validators';
+import { customerBulkDeleteSchema } from '@repo/validators/src/customer.schema.js';
 
 // @desc    Create a new customer
 // @route   POST /api/customers
 // @access  Private
 export const createCustomer = async (req, res) => {
   try {
-    // Validate request body
     const validatedData = customerSchema.parse(req.body);
 
     const customer = new Customer(validatedData);
+
     const savedCustomer = await customer.save();
 
     res.status(201).json({
@@ -52,7 +54,7 @@ export const getCustomers = async (req, res) => {
     } = queryParams;
 
     // Build query
-    const query = {};
+    const query = { isDeleted: false };
 
     // Search functionality
     if (search) {
@@ -66,11 +68,6 @@ export const getCustomers = async (req, res) => {
     // Filter by customer type
     if (customerType) {
       query.customerType = customerType;
-    }
-
-    // Filter by active status
-    if (isActive !== undefined) {
-      query.isActive = isActive;
     }
 
     // Sort configuration
@@ -122,7 +119,11 @@ export const getCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const customer = await Customer.findById(id);
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+    }
+
+    const customer = await Customer.findOne({ _id: id, isDeleted: false });
 
     if (!customer) {
       return res.status(404).json({
@@ -150,12 +151,13 @@ export const getCustomerById = async (req, res) => {
 export const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Validate request body
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+    }
     const validatedData = customerUpdateSchema.parse(req.body);
 
-    const customer = await Customer.findByIdAndUpdate(
-      id,
+    const customer = await Customer.findOneAndUpdate(
+      { _id: id, isDeleted: false },
       validatedData,
       { new: true, runValidators: true }
     );
@@ -188,16 +190,24 @@ export const updateCustomer = async (req, res) => {
   }
 };
 
-// @desc    Delete a customer (soft delete - sets isActive to false)
+// @desc    Delete a customer (soft delete - sets isDeleted to false)
 // @route   DELETE /api/customers/:id
 // @access  Private
 export const deleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const customer = await Customer.findByIdAndUpdate(
-      id,
-      { isActive: false },
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+    }
+
+    // TODO: check for active RepairJobs before deleting
+    // const hasActiveJobs = await RepairJob.exists({ customer: id, status: { $nin: ['completed', 'cancelled'] } });
+    // if (hasActiveJobs) return res.status(400).json({ success: false, message: 'Customer has active repair jobs' });
+
+    const customer = await Customer.findOneAndUpdate(
+      { _id: id, isDeleted: false },
+      { isDeleted: true },
       { new: true }
     );
 
@@ -227,15 +237,16 @@ export const deleteCustomer = async (req, res) => {
 export const permanentlyDeleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const customer = await Customer.findByIdAndDelete(id);
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+    }
+    const customer = await Customer.findOne({ _id: id, isDeleted: true }).select('+isDeleted');
 
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found'
-      });
+      return res.status(404).json({ success: false, message: 'Customer not found or not soft-deleted' });
     }
+
+    await Customer.findByIdAndDelete(id);
 
     res.json({
       success: true,
@@ -288,18 +299,13 @@ export const bulkUpdateCustomers = async (req, res) => {
 // @access  Private
 export const bulkDeleteCustomers = async (req, res) => {
   try {
-    const { ids } = req.body;
+    const { ids } = customerBulkDeleteSchema.parse(req.body);
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Customer IDs array is required'
-      });
-    }
+    // TODO: check for active RepairJobs before bulk deleting
 
     const result = await Customer.updateMany(
       { _id: { $in: ids } },
-      { isActive: false }
+      { isDeleted: true }
     );
 
     res.json({
@@ -321,21 +327,19 @@ export const bulkDeleteCustomers = async (req, res) => {
 // @access  Private
 export const getCustomerStats = async (req, res) => {
   try {
-    const total = await Customer.countDocuments();
-    const active = await Customer.countDocuments({ isActive: true });
-    const business = await Customer.countDocuments({ customerType: 'business' });
-    const individual = await Customer.countDocuments({ customerType: 'individual' });
-
-    res.json({
-      success: true,
-      data: {
-        total,
-        active,
-        inactive: total - active,
-        business,
-        individual
+    const stats = await Customer.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          business: { $sum: { $cond: [{ $eq: ['$customerType', 'business'] }, 1, 0] } },
+          individual: { $sum: { $cond: [{ $eq: ['$customerType', 'individual'] }, 1, 0] } },
+        }
       }
-    });
+    ]);
+
+    res.json({ success: true, data: stats[0] });
   } catch (error) {
     console.error('Error fetching customer stats:', error);
     res.status(500).json({

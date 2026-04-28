@@ -1,12 +1,12 @@
-import User from "../models/User.js";
+import { isValidObjectId } from "mongoose";
 import bcrypt from "bcryptjs";
 import {
   userSchema,
   userUpdateSchema,
-  userBulkUpdateSchema,
   userQuerySchema,
   resetPasswordSchema,
 } from "@repo/validators";
+import User from "../models/User.js";
 
 // @desc    Create a new user
 // @route   POST /api/users
@@ -51,7 +51,6 @@ export const createUser = async (req, res) => {
     });
 
     const userResponse = user.toObject();
-    delete userResponse.password;
 
     res.status(201).json({
       success: true,
@@ -120,7 +119,6 @@ export const getUsers = async (req, res) => {
     // Execute query with pagination
     const skip = (page - 1) * limit;
     const users = await User.find(query)
-      .select("-password -__v -isDeleted")
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);
@@ -163,9 +161,11 @@ export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const user = await User.findOne({ _id: id, isDeleted: false }).select(
-      "-password -__v -isDeleted",
-    );
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
+    const user = await User.findOne({ _id: id, isDeleted: false });
 
     if (!user) {
       return res.status(404).json({
@@ -194,7 +194,10 @@ export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate request body
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
     const validatedData = userUpdateSchema.parse(req.body);
 
     const existingUser = await User.findOne({ _id: id, isDeleted: false });
@@ -251,7 +254,7 @@ export const updateUser = async (req, res) => {
     const user = await User.findByIdAndUpdate(id, validatedData, {
       new: true,
       runValidators: true,
-    }).select("-password -__v -isDeleted");
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -288,7 +291,10 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Prevent self Delete
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
     if (id.toString() === req.user.id.toString()) {
       return res.status(400).json({
         success: false,
@@ -312,6 +318,10 @@ export const deleteUser = async (req, res) => {
     }
 
     // Soft delete
+    // TODO: check for active RepairJobs assigned to this user before deleting
+    // const hasActiveJobs = await RepairJob.exists({ assignedTo: id, status: { $nin: ['completed', 'cancelled'] } });
+    // if (hasActiveJobs) return res.status(400).json({ success: false, message: 'User has active repair jobs assigned' });
+
     user.isDeleted = true;
     await user.save();
 
@@ -335,7 +345,11 @@ export const restoreUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const user = await User.findById(id);
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
+    const user = await User.findById(id).select("+isDeleted");
 
     if (!user) {
       return res.status(404).json({
@@ -390,6 +404,10 @@ export const deactivateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
     // Prevent self deactivate
     if (id.toString() === req.user.id.toString()) {
       return res.status(400).json({
@@ -443,6 +461,10 @@ export const activateUser = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
     const user = await User.findOne({ _id: id, isDeleted: false });
 
     if (!user) {
@@ -481,7 +503,10 @@ export const deleteUserPermanently = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Prevent self delete
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
     if (id.toString() === req.user.id.toString()) {
       return res.status(400).json({
         success: false,
@@ -489,12 +514,12 @@ export const deleteUserPermanently = async (req, res) => {
       });
     }
 
-    const user = await User.findById(id);
+    const user = await User.findOne({ _id: id, isDeleted: true }).select('+isDeleted');
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "User not found or not soft-deleted",
       });
     }
 
@@ -529,7 +554,10 @@ export const resetPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
-    // Validate password
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+
     const validatedData = resetPasswordSchema.parse({ newPassword });
 
     const user = await User.findOne({
@@ -576,44 +604,26 @@ export const resetPassword = async (req, res) => {
 // @access  Private (Admin only)
 export const getUserStats = async (req, res) => {
   try {
-    const total = await User.countDocuments({ isDeleted: false });
-    const active = await User.countDocuments({
-      isActive: true,
-      isDeleted: false,
-    });
-    const inactive = await User.countDocuments({
-      isActive: false,
-      isDeleted: false,
-    });
-    // and same for each role...
-    const superadmin = await User.countDocuments({
-      role: "superadmin",
-      isDeleted: false,
-    });
-    const admin = await User.countDocuments({
-      role: "admin",
-      isDeleted: false,
-    });
-    const manager = await User.countDocuments({
-      role: "manager",
-      isDeleted: false,
-    });
-    const staff = await User.countDocuments({
-      role: "staff",
-      isDeleted: false,
-    });
+
+    const stats = await User.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          active: { $sum: { $cond: ['$isActive', 1, 0] } },
+          inactive: { $sum: { $cond: ['$isActive', 0, 1] } },
+          superadmin: { $sum: { $cond: [{ $eq: ['$role', 'superadmin'] }, 1, 0] } },
+          admin: { $sum: { $cond: [{ $eq: ['$role', 'admin'] }, 1, 0] } },
+          manager: { $sum: { $cond: [{ $eq: ['$role', 'manager'] }, 1, 0] } },
+          staff: { $sum: { $cond: [{ $eq: ['$role', 'staff'] }, 1, 0] } },
+        }
+      }
+    ]);
 
     res.json({
       success: true,
-      data: {
-        total,
-        active,
-        inactive,
-        superadmin,
-        admin,
-        manager,
-        staff,
-      },
+      data: stats[0],
     });
   } catch (error) {
     console.error("Error fetching user stats:", error);

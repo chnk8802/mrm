@@ -14,7 +14,6 @@ export {
     userSchema,
     userUpdateSchema,
     userIdSchema,
-    userBulkUpdateSchema,
     userQuerySchema,
     resetPasswordSchema
 }

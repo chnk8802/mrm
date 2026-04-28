@@ -59,9 +59,15 @@ const customerSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    select: false
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  versionKey: false
 });
 
 // Compound index for frequently queried fields
@@ -81,7 +87,13 @@ customerSchema.virtual('fullAddress').get(function() {
 });
 
 // Ensure virtuals are included in JSON
-customerSchema.set('toJSON', { virtuals: true });
-customerSchema.set('toObject', { virtuals: true });
+customerSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => {
+  delete ret.id;
+  return ret;
+}});
+customerSchema.set('toObject', { virtuals: true, transform: (doc, ret) => {
+  delete ret.id;
+  return ret;
+}});
 
 export default mongoose.model('Customer', customerSchema);

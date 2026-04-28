@@ -51,3 +51,7 @@ export const customerQuerySchema = z.object({
     customerType: z.enum(['business', 'individual']).optional(),
     isActive: z.coerce.boolean().optional()
 });
+
+export const customerBulkDeleteSchema = z.object({
+    ids: z.array(customerIdSchema).min(1, 'At least one customer ID is required')
+});
