@@ -11,7 +11,6 @@ import {
   UserCog,
   Wrench,
   Calendar,
-  Key,
   ShieldCheck,
   ClipboardList,
   MoreVertical,
@@ -20,14 +19,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import userService from "@/services/userService";
-import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 const UserDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // Current user state
-  const [currentUser, setCurrentUser] = useState(null);
+  const {currentUser} = useAuth();
 
   // User data state
   const [user, setUser] = useState(null);
@@ -39,21 +37,6 @@ const UserDetails = () => {
 
   // Actions Button
   const [showActions, setShowActions] = useState(false);
-
-  // Fetch current user
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await axios.get("/api/auth/profile", {
-          withCredentials: true,
-        });
-        setCurrentUser(response.data.data);
-      } catch (err) {
-        console.error("Failed to fetch current user:", err);
-      }
-    };
-    fetchCurrentUser();
-  }, []);
 
   // Fetch user data on mount
   useEffect(() => {
@@ -71,13 +54,17 @@ const UserDetails = () => {
 
     fetchUser();
   }, [id]);
-  // Handle Actions active inactive
+
   const handleToggleActive = async () => {
     try {
-      await userService.updateUser(id, { isActive: !user.isActive });
-      setUser((prev) => ({ ...prev, isActive: !prev.isActive }));
+      if (user.isActive) {
+        await userService.deactivateUser(id);
+      } else {
+        await userService.activateUser(id);
+      }
+      setUser(prev => ({ ...prev, isActive: !prev.isActive }));
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update status");
+      alert(err.response?.data?.message || 'Failed to update status');
     }
   };
   // Handle delete
@@ -147,7 +134,7 @@ const UserDetails = () => {
   };
 
   // Check if viewing own profile
-  const isOwnProfile = id === currentUser?._id;
+  const isOwnProfile = id === currentUser?._id
 
   // Loading state
   if (loading) {
@@ -227,27 +214,27 @@ const UserDetails = () => {
                 onClick={() => setShowActions(false)}
               />
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                  onClick={() => {
-                    handleToggleActive();
-                    setShowActions(false);
-                  }}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full ${user.isActive ? "bg-red-500" : "bg-green-500"}`}
-                  />
-                  {user.isActive ? "Mark as Inactive" : "Mark as Active"}
-                </button>
-
+                {user.role !== 'superadmin' && (
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+                    onClick={() => {
+                      handleToggleActive();
+                      setShowActions(false);
+                    }}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full ${user.isActive ? "bg-red-500" : "bg-green-500"}`}
+                    />
+                    {user.isActive ? "Mark as Inactive" : "Mark as Active"}
+                  </button>
+                )}
                 <div className="border-t border-gray-100 my-1" />
 
                 <button
-                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                    isOwnProfile
-                      ? "text-gray-300 cursor-not-allowed"
-                      : "text-red-600 hover:bg-red-50"
-                  }`}
+                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${isOwnProfile
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-red-600 hover:bg-red-50"
+                    }`}
                   disabled={isOwnProfile}
                   onClick={() => {
                     if (!isOwnProfile) {

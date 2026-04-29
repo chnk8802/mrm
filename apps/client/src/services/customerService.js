@@ -39,14 +39,8 @@ const customerService = {
     return response.data;
   },
 
-  // Permanently delete a customer
-  permanentlyDeleteCustomer: async (id) => {
-    const response = await api.delete(`${API_URL}/${id}/permanent`);
-    return response.data;
-  },
-
   // Bulk update customers
-  bulkUpdateCustomers: async (ids, data) => {
+  bulkUpdateCustomers: async ({ ids, data }) => {
     const response = await api.put(`${API_URL}/bulk`, { ids, data });
     return response.data;
   },

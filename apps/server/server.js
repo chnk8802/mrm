@@ -11,6 +11,9 @@ import config from './config/env.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 
+/*------Technciain Routes------*/
+import technicianRoutes from './routes/technicianRoutes.js'
+
 /*------Repair order------*/
 import repairRoutes from './routes/repairRoutes.js';
 
@@ -31,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/repairs', repairRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/technicians', technicianRoutes);
 app.use('/api/spare-parts', sparePartRoutes);
 app.use('/api/suppliers', supplierRoutes);
 

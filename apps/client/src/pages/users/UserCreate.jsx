@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Shield, ClipboardList, UserCog, Wrench, ArrowLeft, Save } from "lucide-react";
+import { ShieldCheck, Shield, ClipboardList, UserCog, Wrench, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import userService from "@/services/userService";
 
 const UserCreate = () => {
   const navigate = useNavigate();
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -139,7 +141,7 @@ const UserCreate = () => {
   };
 
   // Get role icon
- const getRoleIcon = (role) => {
+  const getRoleIcon = (role) => {
     switch (role) {
       case "superadmin":
         return <ShieldCheck className="w-5 h-5" />;
@@ -156,9 +158,6 @@ const UserCreate = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center gap-4">
-      </div>
 
       {/* Error Message */}
       {error && (
@@ -181,11 +180,10 @@ const UserCreate = () => {
                   (role) => (
                     <label
                       key={role}
-                      className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                        formData.role === role
+                      className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${formData.role === role
                           ? "border-primary bg-primary/5"
                           : "border-gray-200 hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -316,7 +314,7 @@ const UserCreate = () => {
                     <Input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={handleChange}
                       placeholder="Enter password"
@@ -324,10 +322,13 @@ const UserCreate = () => {
                     />
                     <Button
                       type="button"
-                      variant="outline"
                       onClick={generatePassword}
                     >
                       Generate
+
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setShowPassword(p => !p)}>
+                      {showPassword ? 'Hide' : 'Show'}
                     </Button>
                   </div>
                   {errors.password && (

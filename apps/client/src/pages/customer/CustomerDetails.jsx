@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Building, 
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Phone,
+  Mail,
+  MapPin,
+  Building,
   User,
   Calendar,
-  FileText
+  FileText,
+  MoreVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,14 +20,17 @@ import customerService from '@/services/customerService';
 const CustomerDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  
+
   // Customer data state
   const [customer, setCustomer] = useState(null);
-  
+
   // Loading and error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Actions Button
+  const [showActions, setShowActions] = useState(false);
 
   // Fetch customer data on mount
   useEffect(() => {
@@ -41,7 +45,7 @@ const CustomerDetails = () => {
         setLoading(false);
       }
     };
-    
+
     fetchCustomer();
   }, [id]);
 
@@ -50,7 +54,7 @@ const CustomerDetails = () => {
     if (!window.confirm('Are you sure you want to delete this customer?')) {
       return;
     }
-    
+
     try {
       setDeleting(true);
       await customerService.deleteCustomer(id);
@@ -86,12 +90,6 @@ const CustomerDetails = () => {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/customers')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Customer Details</h1>
-        </div>
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -99,16 +97,11 @@ const CustomerDetails = () => {
     );
   }
 
+
   // Not found state
   if (!customer) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/customers')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Customer Details</h1>
-        </div>
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
           Customer not found
         </div>
@@ -119,56 +112,44 @@ const CustomerDetails = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => navigate('/customers')}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                customer.customerType === 'business' 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-green-100 text-green-700'
-              }`}>
-                {customer.customerType === 'business' ? (
-                  <Building className="w-3 h-3" />
-                ) : (
-                  <User className="w-3 h-3" />
-                )}
-                {customer.customerType === 'business' ? 'Business' : 'Individual'}
-              </span>
-              {!customer.isActive && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                  Inactive
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
+          <Button
             onClick={() => navigate(`/customers/${id}/edit`)}
             className="gap-2"
           >
             <Edit className="w-4 h-4" />
             Edit
           </Button>
-          <Button 
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            {deleting ? 'Deleting...' : 'Delete'}
-          </Button>
+          <div className='relative'>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowActions((prev) => !prev)}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+            {showActions && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowActions(false)}
+                />
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                  <button
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 text-red-600 hover:bg-red-50`}
+                    onClick={() => {
+                      handleDelete();
+                      setShowActions(false);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {deleting ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -179,9 +160,32 @@ const CustomerDetails = () => {
             <CardTitle className="text-lg">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Name */}
+            <div className="flex items-start gap-3">
+              <div>
+                <div className="text-sm text-gray-500">Customer Name</div>
+                <div className="font-medium">{customer.name || 'Not provided'}</div>
+              </div>
+            </div>
+            {/* Customer Type */}
+            <div className="flex items-start gap-3">
+              <div>
+                <div className="text-sm text-gray-500">Customer Type</div>
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${customer.customerType === 'business'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-green-100 text-green-700'
+                  }`}>
+                  {customer.customerType === 'business' ? (
+                    <Building className="w-3 h-3" />
+                  ) : (
+                    <User className="w-3 h-3" />
+                  )}
+                  {customer.customerType === 'business' ? 'Business' : 'Individual'}
+                </span>
+              </div>
+            </div>
             {/* Phone */}
             <div className="flex items-start gap-3">
-              <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <div className="text-sm text-gray-500">Phone</div>
                 <div className="font-medium">{customer.phone || 'Not provided'}</div>
@@ -190,7 +194,6 @@ const CustomerDetails = () => {
 
             {/* Email */}
             <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
                 <div className="text-sm text-gray-500">Email</div>
                 <div className="font-medium">{customer.email || 'Not provided'}</div>

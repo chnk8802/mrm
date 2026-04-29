@@ -231,6 +231,37 @@ export const deleteCustomer = async (req, res) => {
   }
 };
 
+// @desc    Restore a soft-deleted customer
+// @route   PATCH /api/customers/:id/restore
+// @access  Private
+export const restoreCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+    }
+
+    const customer = await Customer.findById(id).select('+isDeleted');
+
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    if (!customer.isDeleted) {
+      return res.status(400).json({ success: false, message: 'Customer is not deleted' });
+    }
+
+    customer.isDeleted = false;
+    await customer.save();
+
+    res.json({ success: true, message: 'Customer restored successfully' });
+  } catch (error) {
+    console.error('Error restoring customer:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to restore customer' });
+  }
+};
+
 // @desc    Hard delete a customer
 // @route   DELETE /api/customers/:id/permanent
 // @access  Private (Admin only - can be extended)
@@ -269,9 +300,16 @@ export const bulkUpdateCustomers = async (req, res) => {
     const { ids, data } = customerBulkUpdateSchema.parse(req.body);
 
     const result = await Customer.updateMany(
-      { _id: { $in: ids } },
+      { _id: { $in: ids }, isDeleted: false },
       { $set: data }
     );
+
+    if (result.modifiedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No customers were updated. They may not exist or are deleted.'
+      });
+    }
 
     res.json({
       success: true,

@@ -633,3 +633,22 @@ export const getUserStats = async (req, res) => {
     });
   }
 };
+
+// userController.js
+// @desc    Get all technicians (staff) for assignment dropdowns
+// @route   GET /api/technicians
+// @access  Private
+export const getTechnicians = async (req, res) => {
+  try {
+    const technicians = await User.find({ 
+      role: 'staff', 
+      isActive: true, 
+      isDeleted: false 
+    }).select('name phone email isActive createdAt');
+
+    res.json({ success: true, data: technicians });
+  } catch (error) {
+    console.error('Error fetching technicians:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to fetch technicians' });
+  }
+};

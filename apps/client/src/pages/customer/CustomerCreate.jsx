@@ -9,8 +9,7 @@ import customerService from '@/services/customerService';
 
 const CustomerCreate = () => {
   const navigate = useNavigate();
-  
-  // Form state
+
   const [formData, setFormData] = useState({
     customerType: 'individual',
     name: '',
@@ -25,19 +24,14 @@ const CustomerCreate = () => {
     },
     notes: ''
   });
-  
-  // Error state
+
   const [errors, setErrors] = useState({});
-  
-  // Loading state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Handle nested address fields
+
     if (name.startsWith('address.')) {
       const addressField = name.split('.')[1];
       setFormData(prev => ({
@@ -53,75 +47,61 @@ const CustomerCreate = () => {
         [name]: value
       }));
     }
-    
-    // Clear error for this field
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
-    // Customer type validation
+
     if (!formData.customerType) {
       newErrors.customerType = 'Customer type is required';
     }
-    
-    // Name validation (required)
+
     if (!formData.name.trim()) {
       newErrors.name = 'Customer name is required';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Name must be at least 2 characters';
     }
-    
-    // Phone validation (optional, but must be valid if provided)
+
     if (formData.phone && !/^[0-9+\-\s()]*$/.test(formData.phone)) {
       newErrors.phone = 'Invalid phone number format';
     }
-    
-    // Email validation (optional, but must be valid if provided)
+
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email address';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+
+    if (!validateForm()) return;
+
     try {
       setLoading(true);
       setError(null);
-      
-      // Prepare data - remove empty address fields
+
+      const addressData = Object.fromEntries(
+        Object.entries(formData.address).filter(([_, v]) => v !== '')
+      );
+
+      const { notes, ...rest } = formData;
       const customerData = {
-        ...formData,
-        address: Object.fromEntries(
-          Object.entries(formData.address).filter(([_, v]) => v !== '')
-        )
+        ...rest,
+        ...(Object.keys(addressData).length > 0 ? { address: addressData } : {}),
+        ...(notes ? { notes } : {})
       };
-      
-      // Remove empty notes
-      if (!customerData.notes) {
-        delete customerData.notes;
-      }
-      
+
       await customerService.createCustomer(customerData);
-      
-      // Navigate to customer list on success
       navigate('/customers');
     } catch (err) {
       if (err.response?.data?.errors) {
-        // Handle Zod validation errors
         const fieldErrors = {};
         err.response.data.errors.forEach(error => {
           const path = error.path.join('.');
@@ -138,21 +118,6 @@ const CustomerCreate = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate('/customers')}
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add Customer</h1>
-          <p className="text-gray-600 mt-1">Create a new customer record</p>
-        </div>
-      </div>
-
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -171,8 +136,8 @@ const CustomerCreate = () => {
             <CardContent>
               <div className="space-y-3">
                 <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.customerType === 'individual' 
-                    ? 'border-primary bg-primary/5' 
+                  formData.customerType === 'individual'
+                    ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}>
                   <input
@@ -189,10 +154,10 @@ const CustomerCreate = () => {
                     <div className="text-sm text-gray-500">Personal customer</div>
                   </div>
                 </label>
-                
+
                 <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.customerType === 'business' 
-                    ? 'border-primary bg-primary/5' 
+                  formData.customerType === 'business'
+                    ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}>
                   <input
@@ -209,7 +174,7 @@ const CustomerCreate = () => {
                     <div className="text-sm text-gray-500">Corporate/Business customer</div>
                   </div>
                 </label>
-                
+
                 {errors.customerType && (
                   <p className="text-sm text-red-600">{errors.customerType}</p>
                 )}
@@ -223,7 +188,7 @@ const CustomerCreate = () => {
               <CardTitle className="text-lg">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Name (Required) */}
+              {/* Name */}
               <div className="space-y-2">
                 <Label htmlFor="name">
                   Customer Name <span className="text-red-500">*</span>
@@ -285,7 +250,6 @@ const CustomerCreate = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Street */}
                 <div className="space-y-2">
                   <Label htmlFor="address.street">Street Address</Label>
                   <Input
@@ -298,7 +262,6 @@ const CustomerCreate = () => {
                   />
                 </div>
 
-                {/* City */}
                 <div className="space-y-2">
                   <Label htmlFor="address.city">City</Label>
                   <Input
@@ -311,7 +274,6 @@ const CustomerCreate = () => {
                   />
                 </div>
 
-                {/* State */}
                 <div className="space-y-2">
                   <Label htmlFor="address.state">State/Province</Label>
                   <Input
@@ -324,7 +286,6 @@ const CustomerCreate = () => {
                   />
                 </div>
 
-                {/* Postal Code */}
                 <div className="space-y-2">
                   <Label htmlFor="address.postalCode">Postal Code</Label>
                   <Input
@@ -337,7 +298,6 @@ const CustomerCreate = () => {
                   />
                 </div>
 
-                {/* Country */}
                 <div className="space-y-2">
                   <Label htmlFor="address.country">Country</Label>
                   <Input
@@ -375,17 +335,17 @@ const CustomerCreate = () => {
           </Card>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit Buttons */}
         <div className="flex justify-end gap-3 mt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => navigate('/customers')}
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={loading}
             className="gap-2"
           >

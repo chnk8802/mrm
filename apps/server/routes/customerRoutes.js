@@ -8,7 +8,8 @@ import {
   permanentlyDeleteCustomer,
   bulkUpdateCustomers,
   bulkDeleteCustomers,
-  getCustomerStats
+  getCustomerStats,
+  restoreCustomer
 } from '../controllers/customerController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import authorize from '../middleware/authorize.js';
@@ -35,6 +36,8 @@ router.route('/:id')
   .get(authorize('staff'), getCustomerById)
   .put(authorize('staff'), updateCustomer)
   .delete(authorize('admin'), deleteCustomer);
+
+router.patch('/:id/restore', authorize('admin'), restoreCustomer);
 
 router.route('/:id/permanent')
   .delete(authorize('superadmin'), permanentlyDeleteCustomer);

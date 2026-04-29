@@ -10,8 +10,7 @@ import customerService from '@/services/customerService';
 const CustomerEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  
-  // Form state
+
   const [formData, setFormData] = useState({
     customerType: 'individual',
     name: '',
@@ -26,23 +25,20 @@ const CustomerEdit = () => {
     },
     notes: ''
   });
-  
-  // Error state
+
   const [errors, setErrors] = useState({});
-  
-  // Loading states
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch customer data on mount
+  // Fetch existing customer data
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        setLoading(true);
+        setFetchLoading(true);
         const response = await customerService.getCustomerById(id);
         const customer = response.data;
-        
+
         setFormData({
           customerType: customer.customerType || 'individual',
           name: customer.name || '',
@@ -60,18 +56,16 @@ const CustomerEdit = () => {
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch customer');
       } finally {
-        setLoading(false);
+        setFetchLoading(false);
       }
     };
-    
+
     fetchCustomer();
   }, [id]);
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Handle nested address fields
+
     if (name.startsWith('address.')) {
       const addressField = name.split('.')[1];
       setFormData(prev => ({
@@ -87,75 +81,61 @@ const CustomerEdit = () => {
         [name]: value
       }));
     }
-    
-    // Clear error for this field
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // Validate form
   const validateForm = () => {
     const newErrors = {};
-    
-    // Customer type validation
+
     if (!formData.customerType) {
       newErrors.customerType = 'Customer type is required';
     }
-    
-    // Name validation (required)
+
     if (!formData.name.trim()) {
       newErrors.name = 'Customer name is required';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Name must be at least 2 characters';
     }
-    
-    // Phone validation (optional, but must be valid if provided)
+
     if (formData.phone && !/^[0-9+\-\s()]*$/.test(formData.phone)) {
       newErrors.phone = 'Invalid phone number format';
     }
-    
-    // Email validation (optional, but must be valid if provided)
+
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email address';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
+
+    if (!validateForm()) return;
+
     try {
-      setSubmitting(true);
+      setLoading(true);
       setError(null);
-      
-      // Prepare data - remove empty address fields
+
+      const addressData = Object.fromEntries(
+        Object.entries(formData.address).filter(([_, v]) => v !== '')
+      );
+
+      const { notes, ...rest } = formData;
       const customerData = {
-        ...formData,
-        address: Object.fromEntries(
-          Object.entries(formData.address).filter(([_, v]) => v !== '')
-        )
+        ...rest,
+        ...(Object.keys(addressData).length > 0 ? { address: addressData } : {}),
+        ...(notes ? { notes } : {})
       };
-      
-      // Remove empty notes
-      if (!customerData.notes) {
-        delete customerData.notes;
-      }
-      
+
       await customerService.updateCustomer(id, customerData);
-      
-      // Navigate to customer details on success
       navigate(`/customers/${id}`);
     } catch (err) {
       if (err.response?.data?.errors) {
-        // Handle Zod validation errors
         const fieldErrors = {};
         err.response.data.errors.forEach(error => {
           const path = error.path.join('.');
@@ -166,36 +146,20 @@ const CustomerEdit = () => {
         setError(err.response?.data?.message || 'Failed to update customer');
       }
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  // Loading state
-  if (loading) {
+  if (fetchLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">Loading customer data...</div>
+      <div className="flex items-center justify-center py-12 text-gray-500">
+        Loading customer...
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(`/customers/${id}`)}
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Customer</h1>
-          <p className="text-gray-600 mt-1">Update customer information</p>
-        </div>
-      </div>
-
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -214,8 +178,8 @@ const CustomerEdit = () => {
             <CardContent>
               <div className="space-y-3">
                 <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.customerType === 'individual' 
-                    ? 'border-primary bg-primary/5' 
+                  formData.customerType === 'individual'
+                    ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}>
                   <input
@@ -232,10 +196,10 @@ const CustomerEdit = () => {
                     <div className="text-sm text-gray-500">Personal customer</div>
                   </div>
                 </label>
-                
+
                 <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.customerType === 'business' 
-                    ? 'border-primary bg-primary/5' 
+                  formData.customerType === 'business'
+                    ? 'border-primary bg-primary/5'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}>
                   <input
@@ -252,7 +216,7 @@ const CustomerEdit = () => {
                     <div className="text-sm text-gray-500">Corporate/Business customer</div>
                   </div>
                 </label>
-                
+
                 {errors.customerType && (
                   <p className="text-sm text-red-600">{errors.customerType}</p>
                 )}
@@ -266,7 +230,7 @@ const CustomerEdit = () => {
               <CardTitle className="text-lg">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Name (Required) */}
+              {/* Name */}
               <div className="space-y-2">
                 <Label htmlFor="name">
                   Customer Name <span className="text-red-500">*</span>
@@ -328,7 +292,6 @@ const CustomerEdit = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Street */}
                 <div className="space-y-2">
                   <Label htmlFor="address.street">Street Address</Label>
                   <Input
@@ -341,7 +304,6 @@ const CustomerEdit = () => {
                   />
                 </div>
 
-                {/* City */}
                 <div className="space-y-2">
                   <Label htmlFor="address.city">City</Label>
                   <Input
@@ -354,7 +316,6 @@ const CustomerEdit = () => {
                   />
                 </div>
 
-                {/* State */}
                 <div className="space-y-2">
                   <Label htmlFor="address.state">State/Province</Label>
                   <Input
@@ -367,7 +328,6 @@ const CustomerEdit = () => {
                   />
                 </div>
 
-                {/* Postal Code */}
                 <div className="space-y-2">
                   <Label htmlFor="address.postalCode">Postal Code</Label>
                   <Input
@@ -380,7 +340,6 @@ const CustomerEdit = () => {
                   />
                 </div>
 
-                {/* Country */}
                 <div className="space-y-2">
                   <Label htmlFor="address.country">Country</Label>
                   <Input
@@ -418,21 +377,21 @@ const CustomerEdit = () => {
           </Card>
         </div>
 
-        {/* Submit Button */}
+        {/* Submit Buttons */}
         <div className="flex justify-end gap-3 mt-6">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={() => navigate(`/customers/${id}`)}
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            disabled={submitting}
+          <Button
+            type="submit"
+            disabled={loading}
             className="gap-2"
           >
-            {submitting ? (
+            {loading ? (
               'Saving...'
             ) : (
               <>

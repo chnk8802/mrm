@@ -33,7 +33,19 @@ const userService = {
         return response.data;
     },
 
-    // Delete a user (soft delete)
+    // Deactivate a user
+    deactivateUser: async(id) => {
+        const response = await api.patch(`${API_URL}/${id}/deactivate`);
+        return response.data;
+    },
+
+    // Activate a user
+    activateUser: async(id) => {
+        const response = await api.patch(`${API_URL}/${id}/activate`);
+        return response.data;
+    },
+
+    // Delete User
     deleteUser: async(id) => {
         const response = await api.delete(`${API_URL}/${id}`);
         return response.data;

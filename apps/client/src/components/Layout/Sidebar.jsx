@@ -1,11 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import axios from 'axios';
 import { 
-  LayoutDashboard, 
-  Smartphone, 
+  LayoutDashboard,
   Settings, 
   HelpCircle, 
-  LogOut,
   Users,
   UserCog,
   X,
@@ -18,6 +15,7 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Users, label: 'Customers', path: '/customers' },
+    { icon: Users, label: 'Technicians', path: '/technicians' },
     { icon: UserCog, label: 'Users', path: '/users' },
     { icon: Wrench, label: 'Repairs', path: '/repairs' },
     { icon: Package, label: 'Spare Parts', path: '/spare-parts' },
@@ -59,25 +57,6 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
           </NavLink>
         ))}
       </nav>
-
-      {/* <div className="pt-4 border-t border-gray-200">
-        <button
-          onClick={async () => {
-            try {
-              await axios.post('/api/auth/logout', {}, {
-                withCredentials: true
-              });
-            } catch (err) {
-              console.error('Logout failed:', err);
-            }
-            window.location.reload();
-          }}
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Logout</span>
-        </button>
-      </div> */}
     </div>
   );
 };

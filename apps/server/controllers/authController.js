@@ -18,7 +18,7 @@ export const registerUser = async (req, res) => {
         });
       }
     }
-    
+
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -47,7 +47,7 @@ export const registerUser = async (req, res) => {
 
       // For development (localhost), use lax; for production use strict
       const isProduction = process.env.NODE_ENV === 'production';
-       
+
       res.cookie('token', token, {
         httpOnly: true,
         secure: isProduction,
@@ -89,7 +89,11 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const user = await User.findOne({email, isActive: true});
+    const user = await User.findOne({
+      email,
+      isActive: true,
+      isDeleted: false
+    }).select('+password');
 
     // Check if user exists
     if (!user) {
@@ -112,7 +116,7 @@ export const loginUser = async (req, res) => {
 
     // For development (localhost), use lax; for production use strict
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     res.cookie('token', token, {
       httpOnly: true,
       secure: isProduction,
@@ -145,7 +149,7 @@ export const loginUser = async (req, res) => {
 // @access  Private
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findOne({_id: req.user.id, isActive: true}).select('-password -__v');
+    const user = await User.findOne({ _id: req.user.id, isActive: true }).select('-password -__v');
 
     if (user) {
       res.json({
@@ -171,7 +175,7 @@ export const getProfile = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
   try {
-    const user = await User.findOne({_id: req.user.id, isActive: true});
+    const user = await User.findOne({ _id: req.user.id, isActive: true });
 
     if (user) {
       user.name = req.body.name || user.name;
@@ -218,13 +222,13 @@ export const updateProfile = async (req, res) => {
 export const logoutUser = async (req, res) => {
   try {
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     res.clearCookie('token', {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'strict' : 'lax'
     });
-    
+
     res.json({
       success: true,
       message: 'Logout successful'

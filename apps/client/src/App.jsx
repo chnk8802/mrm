@@ -28,6 +28,7 @@ import SupplierList from './pages/supplier/SupplierList';
 import SupplierCreate from './pages/supplier/SupplierCreate';
 import SupplierEdit from './pages/supplier/SupplierEdit';
 import SupplierDetails from './pages/supplier/SupplierDetails';
+import TechnicianList from './pages/technician/TechnicianList';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -145,6 +146,16 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             }
+          />
+          <Route
+          path='/technicians'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TechnicianList />
+              </Layout>
+            </ProtectedRoute>
+          }
           />
           <Route
             path="/users"

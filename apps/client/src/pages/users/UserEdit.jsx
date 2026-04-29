@@ -20,8 +20,7 @@ const UserEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // Current user state (to prevent self-deletion/modification)
-  const [currentUser, setCurrentUser] = useState(null);
+  const { currentUser } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -40,21 +39,6 @@ const UserEdit = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-
-  // Fetch current user
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await axios.get("/api/auth/profile", {
-          withCredentials: true,
-        });
-        setCurrentUser(response.data.data);
-      } catch (err) {
-        console.error("Failed to fetch current user:", err);
-      }
-    };
-    fetchCurrentUser();
-  }, []);
 
   // Fetch user data on mount
   useEffect(() => {
