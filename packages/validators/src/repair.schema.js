@@ -44,9 +44,9 @@ export const repairSchema = z.object({
     otherComponent: z.string()
         .max(100, 'Other component cannot exceed 100 characters')
         .optional(),
-    status: z.enum(['pending', 'in-progress', 'completed', 'cancelled'])
+    status: z.enum(['received', 'in-progress', 'ready', 'not-repairable', 'completed', 'cancelled'])
         .optional()
-        .default('pending'),
+        .default('received'),
     priority: z.enum(['low', 'medium', 'high'])
         .optional()
         .default('medium'),
@@ -65,7 +65,9 @@ export const repairQuerySchema = z.object({
     sortBy: z.enum(['repairId', 'model', 'status', 'repairPrice', 'createdAt', 'updatedAt']).default('createdAt'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().optional(),
-    status: z.enum(['pending', 'in-progress', 'completed', 'cancelled']).optional(),
+    status: z.enum(['received', 'in-progress', 'ready', 'not-repairable', 'completed', 'cancelled'])
+        .optional()
+        .default('received'),
     customer: z.string().optional(),
     technician: z.string().optional(),
     priority: z.enum(['low', 'medium', 'high']).optional()

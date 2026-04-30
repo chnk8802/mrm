@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 
-// Component options
 const COMPONENT_OPTIONS = [
     'SIM',
     'SIM Tray',
@@ -64,10 +63,28 @@ const repairSchema = new mongoose.Schema({
         trim: true
     },
     status: {
-        type: String,
-        enum: ['pending', 'in-progress', 'completed', 'cancelled'],
-        default: 'pending'
-    },
+    type: String,
+    /* 
+     * WORKFLOW DEFINITIONS:
+     * 1. received:       Device checked in; awaiting technician.
+     * 2. in-progress:    Technician is actively working or diagnosing.
+     * 3. ready:          REPAIR SUCCESSFUL. Device is on the shelf (NOT PICKED UP).
+     * 4. not-repairable: REPAIR FAILED. Device is on the shelf (NOT PICKED UP).
+     * 5. completed:      SUCCESSFUL pickup. (ready -> completed).
+     * 6. cancelled:      Work stopped. Customer took device or rejected quote.
+     * 
+     * NOTE: To track if a 'not-repairable' device was picked up, 
+     * check the 'isPickedUp' boolean field separately.
+     * QUESTIONS:
+     * 1. I do not want user to randomly choose statuses there must be a strict flow 
+     * 2. Will "not-repairable" ever goto completed if yes there will be no tracking shoul di do something to track changes in records? do i need this for all modules?
+     * 3. how to track if the device is picked up? both after rapair successfull or not.
+     * 4. also, is the payment made and payment can be full, partial, or even customer can take thier phone wihout paying and i have to collect payment later. at some point i want to create a payment module for payble and receivable payments thoughout the system for example.
+     *  
+     */
+    enum: ['received', 'in-progress', 'ready', 'not-repairable', 'completed', 'cancelled'],
+    default: 'received'
+},
     priority: {
         type: String,
         enum: ['low', 'medium', 'high'],
