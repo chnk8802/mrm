@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { objectIdSchema } from '../common.js';
+import { CUSTOMER_TYPE } from '../constants/customer.constant.js';
 
 export const customerSchema = z.object({
-    customerType: z.enum(['business', 'individual'], {
+    customerType: z.enum(CUSTOMER_TYPE, {
         required_error: 'Customer type is required',
         invalid_type_error: 'Customer type must be either business or individual'
     }),
@@ -28,17 +30,13 @@ export const customerSchema = z.object({
         .max(1000, 'Notes cannot exceed 1000 characters')
         .optional()
         .or(z.literal('')),
-    isActive: z.boolean().optional()
+    isActive: z.boolean()
 });
 
 export const customerUpdateSchema = customerSchema.partial();
 
-export const customerIdSchema = z.string().refine((val) => {
-    return /^[0-9a-fA-F]{24}$/.test(val);
-}, 'Invalid customer ID');
-
 export const customerBulkUpdateSchema = z.object({
-    ids: z.array(customerIdSchema).min(1, 'At least one customer ID is required'),
+    ids: z.array(objectIdSchema).min(1, 'At least one customer ID is required'),
     data: customerUpdateSchema
 });
 
@@ -48,10 +46,10 @@ export const customerQuerySchema = z.object({
     sortBy: z.enum(['name', 'customerType', 'phone', 'email', 'createdAt', 'updatedAt']).default('createdAt'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().optional(),
-    customerType: z.enum(['business', 'individual']).optional(),
+    customerType: z.enum(CUSTOMER_TYPE).optional(),
     isActive: z.coerce.boolean().optional()
 });
 
 export const customerBulkDeleteSchema = z.object({
-    ids: z.array(customerIdSchema).min(1, 'At least one customer ID is required')
+    ids: z.array(objectIdSchema).min(1, 'At least one customer ID is required')
 });

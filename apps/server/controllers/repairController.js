@@ -5,42 +5,49 @@ import {
     repairSchema,
     repairUpdateSchema,
     repairQuerySchema,
-    repairIdSchema,
     assignTechnicianSchema,
-    completeRepairSchema
 } from '@repo/validators';
+import { ZodError } from 'zod';
+import { transitionHandlers } from '../blueprints/repair.blueprint.js';
 
-// @desc    Create a new repair order
-// @route   POST /api/repairs
-// @access  Private (Admin/Staff)
-export const createRepair = async(req, res) => {
+const handleError = (res, error) => {
+    if (error instanceof ZodError) {
+        return res.status(400).json({ success: false, message: 'Validation error', errors: error.errors });
+    }
+    if (error.status) {
+        return res.status(error.status).json({ success: false, message: error.message });
+    }
+    console.error(error);
+    return res.status(500).json({ success: false, message: error.message || 'Internal server error' });
+};
+
+const invalidId = (res) => res.status(400).json({ success: false, message: 'Invalid repair ID' });
+
+
+
+/**
+ * @desc Create a new repair order
+ * @route POST /api/repairs
+ * @access Private (Admin/Staff)
+ */
+export const createRepair = async (req, res) => {
     try {
         const validatedData = repairSchema.parse(req.body);
 
-        // Verify customer exists
-        const customer = await Customer.findById(validatedData.customer);
+        const customer = await Customer.findOne({ _id: validatedData.customer, isDeleted: false, isActive: true });
         if (!customer) {
-            return res.status(404).json({
-                success: false,
-                message: 'Customer not found'
-            });
+            return res.status(404).json({ success: false, message: 'Customer not found' });
         }
 
-        // Verify technician if provided
         if (validatedData.technician) {
-            const technician = await User.findById(validatedData.technician);
+            const technician = await User.findOne({ _id: validatedData.technician, isDeleted: false, isActive: true });
             if (!technician || technician.role !== 'staff') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid technician'
-                });
+                return res.status(400).json({ success: false, message: 'Invalid technician' });
             }
         }
 
-        // Create repair order
         const repair = await Repair.create(validatedData);
 
-        // Populate customer and technician
         await repair.populate('customer', 'name phone customerType');
         await repair.populate('technician', 'name email phone');
 
@@ -50,44 +57,21 @@ export const createRepair = async(req, res) => {
             message: 'Repair order created successfully'
         });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error creating repair:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to create repair order'
-        });
+        handleError(res, error);
     }
 };
 
-// @desc    Get all repairs with pagination, sorting, and filtering
-// @route   GET /api/repairs
-// @access  Private (Admin/Staff/Technician)
-export const getRepairs = async(req, res) => {
+/** 
+* @desc  Get all repairs with pagination, sorting, and filtering
+* @route   GET /api/repairs
+* @access  Private (Admin/Staff/Technician)
+*/
+export const getRepairs = async (req, res) => {
     try {
-        const queryParams = repairQuerySchema.parse(req.query);
+        const { page, limit, sortBy, sortOrder, search, status, customer, technician, isPickedUp } = repairQuerySchema.parse(req.query);
 
-        const {
-            page = 1,
-                limit = 10,
-                sortBy = 'createdAt',
-                sortOrder = 'desc',
-                search,
-                status,
-                customer,
-                technician,
-                priority
-        } = queryParams;
+        const query = { isDeleted: false };
 
-        // Build query
-        const query = { isActive: true };
-
-        // Search functionality
         if (search) {
             query.$or = [
                 { repairId: { $regex: search, $options: 'i' } },
@@ -97,287 +81,202 @@ export const getRepairs = async(req, res) => {
             ];
         }
 
-        // Filter by status
-        if (status) {
-            query.status = status;
-        }
+        if (status) query.status = status;
+        if (customer) query.customer = customer;
+        if (technician) query.technician = technician;
+        if (isPickedUp !== undefined) query.isPickedUp = isPickedUp;
 
-        // Filter by customer
-        if (customer) {
-            query.customer = customer;
-        }
-
-        // Filter by technician
-        if (technician) {
-            query.technician = technician;
-        }
-
-        // Filter by priority
-        if (priority) {
-            query.priority = priority;
-        }
-
-        // Sort configuration
-        const sortOptions = {};
-        sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-        // Execute query with pagination
+        const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
         const skip = (page - 1) * limit;
-        const repairs = await Repair.find(query)
-            .populate('customer', 'name phone customerType')
-            .populate('technician', 'name email phone')
-            .sort(sortOptions)
-            .skip(skip)
-            .limit(limit);
 
-        // Get total count
-        const total = await Repair.countDocuments(query);
+        const [repairs, total] = await Promise.all([
+            Repair.find(query)
+                .populate('customer', 'name phone customerType')
+                .populate('technician', 'name email phone')
+                .populate('sparePartUsage')
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limit),
+            Repair.countDocuments(query)
+        ]);
 
         res.json({
             success: true,
             data: repairs,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
-            },
-            count: repairs.length,
-            total
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
         });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid query parameters',
-                errors: error.errors
-            });
-        }
-        console.error('Error fetching repairs:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to fetch repairs'
-        });
+        handleError(res, error);
     }
 };
 
-// @desc    Get single repair by ID
-// @route   GET /api/repairs/:id
-// @access  Private (Admin/Staff/Technician)
-export const getRepairById = async(req, res) => {
+/**
+*  @desc    Get single repair by ID
+*  @route   GET /api/repairs/:id
+*  @access  Private (Admin/Staff/Technician)
+*/
+export const getRepairById = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!isValidObjectId(id)) return invalidId(res);
 
-        const repair = await Repair.findById(id)
+        const repair = await Repair.findOne({ _id: id, isDeleted: false })
             .populate('customer', 'name phone email address customerType')
-            .populate('technician', 'name email phone');
+            .populate('technician', 'name email phone')
+            .populate('sparePartUsage');
 
-        if (!repair) {
-            return res.status(404).json({
-                success: false,
-                message: 'Repair not found'
-            });
-        }
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
 
-        res.json({
-            success: true,
-            data: repair
-        });
+        res.json({ success: true, data: repair });
     } catch (error) {
-        console.error('Error fetching repair:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to fetch repair'
-        });
+        handleError(res, error);
     }
 };
 
-// @desc    Update a repair
-// @route   PUT /api/repairs/:id
-// @access  Private (Admin/Staff)
-export const updateRepair = async(req, res) => {
+/** 
+*  @desc    Update a repair
+*  @route   PUT /api/repairs/:id
+*  @access  Private (Admin/Staff)
+*/
+export const updateRepair = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!isValidObjectId(id)) return invalidId(res);
+
         const validatedData = repairUpdateSchema.parse(req.body);
 
-        // If updating customer, verify exists
         if (validatedData.customer) {
-            const customer = await Customer.findById(validatedData.customer);
-            if (!customer) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Customer not found'
-                });
-            }
+            const customer = await Customer.findOne({ _id: validatedData.customer, isDeleted: false });
+            if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
         }
 
-        // If updating technician, verify valid
         if (validatedData.technician) {
-            const technician = await User.findById(validatedData.technician);
+            const technician = await User.findOne({ _id: validatedData.technician, isDeleted: false, isActive: true });
             if (!technician || technician.role !== 'staff') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid technician'
-                });
+                return res.status(400).json({ success: false, message: 'Invalid technician' });
             }
         }
 
-        const repair = await Repair.findByIdAndUpdate(
-                id,
-                validatedData, { new: true, runValidators: true }
-            )
+        const repair = await Repair.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            validatedData,
+            { new: true, runValidators: true }
+        )
             .populate('customer', 'name phone customerType')
             .populate('technician', 'name email phone');
 
-        if (!repair) {
-            return res.status(404).json({
-                success: false,
-                message: 'Repair not found'
-            });
-        }
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
 
-        res.json({
-            success: true,
-            data: repair,
-            message: 'Repair updated successfully'
-        });
+        res.json({ success: true, data: repair, message: 'Repair updated successfully' });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error updating repair:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to update repair'
-        });
+        handleError(res, error);
     }
 };
 
-// @desc    Delete a repair (soft delete)
-// @route   DELETE /api/repairs/:id
-// @access  Private (Admin only)
-export const deleteRepair = async(req, res) => {
+/**  
+*  @desc    Assign a technician to a repair order
+*  @route   PUT /api/repairs/:id/assign
+*  @access  Private (Admin/Staff)
+*/
+export const assignTechnician = async (req, res) => {
     try {
         const { id } = req.params;
+        if (!isValidObjectId(id)) return invalidId(res);
 
-        const repair = await Repair.findByIdAndUpdate(
-            id, { isActive: false }, { new: true }
-        );
-
-        if (!repair) {
-            return res.status(404).json({
-                success: false,
-                message: 'Repair not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Repair deleted successfully'
-        });
-    } catch (error) {
-        console.error('Error deleting repair:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to delete repair'
-        });
-    }
-};
-
-// @desc    Assign a technician to a repair order
-// @route   PUT /api/repairs/:id/assign
-// @access  Private (Admin/Staff)
-export const assignTechnician = async(req, res) => {
-    try {
-        const { id } = req.params;
         const { technicianId } = assignTechnicianSchema.parse(req.body);
 
-        // Verify technician exists and is a technician
-        const technician = await User.findById(technicianId);
+        const repair = await Repair.findOne({ _id: id, isDeleted: false });
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
+
+        if (repair.status !== 'received') {
+            return res.status(400).json({ success: false, message: 'Technician can only be assigned when repair is in received state' });
+        }
+
+        const technician = await User.findOne({ _id: technicianId, isDeleted: false, isActive: true });
         if (!technician || technician.role !== 'staff') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid technician'
-            });
+            return res.status(400).json({ success: false, message: 'Invalid technician' });
         }
 
-        const repair = await Repair.findByIdAndUpdate(
-                id, {
-                    technician: technicianId,
-                    status: 'in-progress'
-                }, { new: true }
-            )
-            .populate('customer', 'name phone customerType')
-            .populate('technician', 'name email phone');
+        repair.technician = technicianId;
+        await repair.save();
 
-        if (!repair) {
-            return res.status(404).json({
-                success: false,
-                message: 'Repair not found'
-            });
-        }
+        await repair.populate('customer', 'name phone customerType');
+        await repair.populate('technician', 'name email phone');
 
-        res.json({
-            success: true,
-            data: repair,
-            message: 'Technician assigned successfully'
-        });
+        res.json({ success: true, data: repair, message: 'Technician assigned successfully' });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error assigning technician:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to assign technician'
-        });
+        handleError(res, error);
     }
 };
 
-// @desc    Complete a repair order
-// @route   PUT /api/repairs/:id/complete
-// @access  Private (Admin/Technician)
-export const completeRepair = async(req, res) => {
+/** 
+*  @desc    Update repair status
+*  @route   PATCH /api/repairs/:id/status
+*  @access  Private (Admin/Staff)
+*/
+export const updateRepairStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const validatedData = completeRepairSchema.parse(req.body);
+        if (!isValidObjectId(id)) return invalidId(res);
 
-        const repair = await Repair.findById(id);
+        const { status: newStatus } = statusUpdateSchema.parse(req.body);
 
-        if (!repair) {
-            return res.status(404).json({
-                success: false,
-                message: 'Repair not found'
-            });
-        }
+        const repair = await Repair.findOne({ _id: id, isDeleted: false });
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
 
-        if (repair.status === 'completed') {
+        const currentStatus = repair.status;
+
+        if (!ALLOWED_TRANSITIONS[currentStatus].includes(newStatus)) {
             return res.status(400).json({
                 success: false,
-                message: 'Repair is already completed'
+                message: `Cannot transition from '${currentStatus}' to '${newStatus}'`
             });
         }
 
-        // Update repair
-        repair.status = 'completed';
-        repair.completedAt = new Date();
+        const handler = transitionHandlers[`${currentStatus}->${newStatus}`];
 
-        if (validatedData.repairPrice !== undefined) {
-            repair.repairPrice = validatedData.repairPrice;
+        if (handler?.before) await handler.before(repair);
+        repair.status = newStatus;
+        if (handler?.during) await handler.during(repair);
+        await repair.save();
+        if (handler?.after) await handler.after(repair);
+
+        res.json({ success: true, data: repair, message: `Status updated to '${newStatus}'` });
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
+/**
+ * @desc    Mark device as picked up
+ * @route   PATCH /api/repairs/:id/pickup
+ * @access  Private (Admin/Staff)
+ */
+export const pickupRepair = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) return invalidId(res);
+
+        const { pickedUpAt } = pickupSchema.parse(req.body);
+
+        const repair = await Repair.findOne({ _id: id, isDeleted: false });
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
+
+        if (!['ready', 'not-repairable'].includes(repair.status)) {
+            return res.status(400).json({ success: false, message: 'Device can only be picked up when status is ready or not-repairable' });
         }
-        if (validatedData.costPrice !== undefined) {
-            repair.costPrice = validatedData.costPrice;
+
+        if (repair.isPickedUp) {
+            return res.status(400).json({ success: false, message: 'Device already picked up' });
         }
-        if (validatedData.notes) {
-            repair.notes.push(validatedData.notes);
+
+        repair.isPickedUp = true;
+        repair.pickedUpAt = pickedUpAt || new Date();
+
+        // ready → completed on pickup, not-repairable stays as is
+        if (repair.status === 'ready') {
+            repair.status = 'completed';
+            repair.completedAt = new Date();
         }
 
         await repair.save();
@@ -385,61 +284,97 @@ export const completeRepair = async(req, res) => {
         await repair.populate('customer', 'name phone customerType');
         await repair.populate('technician', 'name email phone');
 
-        res.json({
-            success: true,
-            data: repair,
-            message: 'Repair completed successfully'
-        });
+        res.json({ success: true, data: repair, message: 'Device picked up successfully' });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error completing repair:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to complete repair'
-        });
+        handleError(res, error);
     }
 };
 
-// @desc    Get repair statistics
-// @route   GET /api/repairs/stats
-// @access  Private (Admin)
-export const getRepairStats = async(req, res) => {
+/**
+ * @desc    Get repair statistics
+ * @route   GET /api/repairs/stats
+ * @access  Private (Admin)
+ */
+export const getRepairStats = async (req, res) => {
     try {
-        const total = await Repair.countDocuments({ isActive: true });
-        const pending = await Repair.countDocuments({ status: 'pending', isActive: true });
-        const inProgress = await Repair.countDocuments({ status: 'in-progress', isActive: true });
-        const completed = await Repair.countDocuments({ status: 'completed', isActive: true });
-        const cancelled = await Repair.countDocuments({ status: 'cancelled', isActive: true });
+        const stats = await Repair.aggregate([
+            { $match: { isDeleted: false } },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    received: { $sum: { $cond: [{ $eq: ['$status', 'received'] }, 1, 0] } },
+                    inProgress: { $sum: { $cond: [{ $eq: ['$status', 'in-progress'] }, 1, 0] } },
+                    ready: { $sum: { $cond: [{ $eq: ['$status', 'ready'] }, 1, 0] } },
+                    notRepairable: { $sum: { $cond: [{ $eq: ['$status', 'not-repairable'] }, 1, 0] } },
+                    completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                    cancelled: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] } },
+                    totalRevenue: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'completed'] },
+                                { $subtract: ['$serviceCharge', '$discount'] },
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            { $project: { _id: 0 } }
+        ]);
 
-        // Get revenue stats
-        const completedRepairs = await Repair.find({ status: 'completed', isActive: true });
-        const totalRevenue = completedRepairs.reduce((sum, r) => sum + (r.repairPrice || 0), 0);
-        const totalCost = completedRepairs.reduce((sum, r) => sum + (r.costPrice || 0), 0);
-
-        res.json({
-            success: true,
-            data: {
-                total,
-                pending,
-                inProgress,
-                completed,
-                cancelled,
-                totalRevenue,
-                totalCost,
-                profit: totalRevenue - totalCost
-            }
-        });
+        res.json({ success: true, data: stats[0] || {} });
     } catch (error) {
-        console.error('Error fetching repair stats:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to fetch repair statistics'
-        });
+        handleError(res, error);
+    }
+};
+
+/**
+ * @desc    Soft delete a repair
+ * @route   DELETE /api/repairs/:id
+ * @access  Private (Admin only)
+ */
+export const deleteRepair = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) return invalidId(res);
+
+        const repair = await Repair.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { isDeleted: true },
+            { new: true }
+        );
+
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
+
+        res.json({ success: true, message: 'Repair deleted successfully' });
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
+/**
+ * @desc    Restore a soft deleted repair
+ * @route   PATCH /api/repairs/:id/restore
+ * @access  Private (Admin only)
+ */
+export const restoreRepair = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) return invalidId(res);
+
+        const repair = await Repair.findOne({ _id: id }).select('+isDeleted');
+        if (!repair) return res.status(404).json({ success: false, message: 'Repair not found' });
+
+        if (!repair.isDeleted) {
+            return res.status(400).json({ success: false, message: 'Repair is not deleted' });
+        }
+
+        repair.isDeleted = false;
+        await repair.save();
+
+        res.json({ success: true, message: 'Repair restored successfully' });
+    } catch (error) {
+        handleError(res, error);
     }
 };

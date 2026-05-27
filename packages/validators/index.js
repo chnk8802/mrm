@@ -1,36 +1,57 @@
-export { registerSchema, loginSchema }
-from './src/auth.schema.js';
-export { repairSchema, repairUpdateSchema, repairIdSchema, repairQuerySchema, assignTechnicianSchema, completeRepairSchema }
-from './src/repair.schema.js';
+import { CUSTOMER_TYPE } from './src/constants/customer.constant.js';
+
+export { objectIdSchema } from './src/common.js';
+
+export {
+    registerSchema,
+    loginSchema
+}
+    from './src/schemas/auth.schema.js';
+export {
+    repairSchema,
+    repairUpdateSchema,
+    repairQuerySchema,
+    assignTechnicianSchema,
+    statusUpdateSchema,
+    pickupSchema,
+} from './src/schemas/repair.schema.js';
 export {
     customerSchema,
     customerUpdateSchema,
-    customerIdSchema,
     customerBulkUpdateSchema,
     customerQuerySchema
 }
-from './src/customer.schema.js';
+    from './src/schemas/customer.schema.js';
 export {
     userSchema,
     userUpdateSchema,
-    userIdSchema,
     userQuerySchema,
     resetPasswordSchema
 }
-from './src/user.schema.js';
+    from './src/schemas/user.schema.js';
 export {
     sparePartSchema,
     sparePartUpdateSchema,
-    sparePartIdSchema,
     sparePartQuerySchema,
     sparePartUsageSchema,
     sparePartUsageUpdateSchema
 }
-from './src/sparePart.schema.js';
+    from './src/schemas/sparePart.schema.js';
 export {
     supplierSchema,
     supplierUpdateSchema,
-    supplierIdSchema,
     supplierQuerySchema
 }
-from './src/supplier.schema.js';
+    from './src/schemas/supplier.schema.js';
+
+export {
+    STATUS_OPTIONS,
+    ALLOWED_TRANSITIONS,
+    PAYMENT_STATUS
+} from './src/constants/repair.constant.js';
+
+export {
+    ROLES
+} from './src/constants/user.constant.js'
+
+export { CUSTOMER_TYPE } from './src/constants/customer.constant.js'

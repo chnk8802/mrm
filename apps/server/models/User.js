@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { ROLES } from '@repo/validators';
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -19,7 +20,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['superadmin', 'admin', 'manager', 'staff'],
+        enum: ROLES,
         default: 'superadmin'
     },
     phone: {

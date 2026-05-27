@@ -21,14 +21,10 @@ export const supplierSchema = z.object({
     notes: z.string()
         .max(1000, 'Notes cannot exceed 1000 characters')
         .optional(),
-    isActive: z.boolean().default(true)
+    isActive: z.boolean()
 });
 
 export const supplierUpdateSchema = supplierSchema.partial();
-
-export const supplierIdSchema = z.string().refine((val) => {
-    return /^[0-9a-fA-F]{24}$/.test(val);
-}, 'Invalid supplier ID');
 
 export const supplierQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),

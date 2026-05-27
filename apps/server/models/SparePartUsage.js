@@ -7,8 +7,9 @@ const sparePartUsageSchema = new mongoose.Schema({
         required: true
     },
     sparePart: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SparePart',
+        type: String,
+        trim: true,
+        minlength: 3,
         required: true
     },
     supplier: {
@@ -26,21 +27,6 @@ const sparePartUsageSchema = new mongoose.Schema({
         default: 0,
         min: 0
     },
-    totalCost: {
-        type: Number,
-        default: 0,
-        min: 0
-    },
-    isInventoryItem: {
-        type: Boolean,
-        default: false,
-    },
-    warrantyStartDate: {
-        type: Date
-    },
-    warrantyEndDate: {
-        type: Date
-    },
     installedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
@@ -52,21 +38,19 @@ const sparePartUsageSchema = new mongoose.Schema({
     notes: {
         type: String,
         trim: true
+    },isDeleted: {
+        type: Boolean,
+        default: false,
+        select: false 
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    versionKey: false
 });
 
 // Indexes for performance optimization
 sparePartUsageSchema.index({ repair: 1 });
-sparePartUsageSchema.index({ sparePart: 1 });
 sparePartUsageSchema.index({ supplier: 1 });
 sparePartUsageSchema.index({ installedAt: -1 });
-
-// Calculate totalCost before saving
-sparePartUsageSchema.pre('save', function(next) {
-    this.totalCost = this.quantity * this.unitCost;
-    next();
-});
 
 export default mongoose.model('SparePartUsage', sparePartUsageSchema);

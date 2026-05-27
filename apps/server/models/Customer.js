@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
+import { CUSTOMER_TYPE } from '@repo/validators';
 
 const customerSchema = new mongoose.Schema({
   customerType: {
     type: String,
-    enum: ['business', 'individual'],
+    enum: CUSTOMER_TYPE,
     required: true,
     default: 'individual'
   },

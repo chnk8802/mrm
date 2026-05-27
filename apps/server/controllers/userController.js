@@ -27,19 +27,19 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // superadmin can only create admin, manager and staff not other roles
-    // If role is superadmin, check if superadmin already exists
-    if (validatedData.role === "superadmin") {
-      const superAdminExists = await User.findOne({
-        role: "superadmin",
+    const canCreate = {
+      superadmin: ['admin', 'manager', 'staff'],
+      admin: ['manager', 'staff'],
+      manager: [],
+      staff: []
+    };
+
+    const allowedRoles = canCreate[req.user.role] || [];
+    if (!allowedRoles.includes(validatedData.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `You cannot create a user with role: ${validatedData.role}`
       });
-      if (superAdminExists) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "An superadmin already exists. Only one superadmin is allowed.",
-        });
-      }
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -51,6 +51,7 @@ export const createUser = async (req, res) => {
     });
 
     const userResponse = user.toObject();
+    delete userResponse.password;
 
     res.status(201).json({
       success: true,
@@ -640,10 +641,10 @@ export const getUserStats = async (req, res) => {
 // @access  Private
 export const getTechnicians = async (req, res) => {
   try {
-    const technicians = await User.find({ 
-      role: 'staff', 
-      isActive: true, 
-      isDeleted: false 
+    const technicians = await User.find({
+      role: 'staff',
+      isActive: true,
+      isDeleted: false
     }).select('name phone email isActive createdAt');
 
     res.json({ success: true, data: technicians });

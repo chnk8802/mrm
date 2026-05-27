@@ -26,10 +26,6 @@ export const sparePartSchema = z.object({
 
 export const sparePartUpdateSchema = sparePartSchema.partial();
 
-export const sparePartIdSchema = z.string().refine((val) => {
-    return /^[0-9a-fA-F]{24}$/.test(val);
-}, 'Invalid spare part ID');
-
 export const sparePartQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),

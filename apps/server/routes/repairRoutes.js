@@ -6,34 +6,35 @@ import {
     updateRepair,
     deleteRepair,
     assignTechnician,
-    completeRepair,
+    updateRepairStatus,
+    pickupRepair,
+    restoreRepair,
     getRepairStats
 } from '../controllers/repairController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import authorize from '../middleware/authorize.js';
 
 const router = express.Router();
 
-// All routes require authentication
 router.use(protect);
 
-// CRUD routes
-router.route('/')
-    .get(getRepairs)
-    .post(createRepair);
+// Stats — must be before /:id
+router.get('/stats', authorize('admin'), getRepairStats);
 
-router.route('/stats')
-    .get(getRepairStats);
+// CRUD
+router.route('/')
+    .get(authorize('staff'), getRepairs)
+    .post(authorize('manager'), createRepair);
 
 router.route('/:id')
-    .get(getRepairById)
-    .put(updateRepair)
-    .delete(deleteRepair);
+    .get(authorize('staff'), getRepairById)
+    .patch(authorize('manager'), updateRepair)
+    .delete(authorize('superadmin'), deleteRepair);
 
-// Action routes
-router.route('/:id/assign')
-    .put(assignTechnician);
-
-router.route('/:id/complete')
-    .put(completeRepair);
+// Actions
+router.patch('/:id/assign',   authorize('manager'),  assignTechnician);
+router.patch('/:id/status',   authorize('staff'),  updateRepairStatus);
+router.patch('/:id/pickup',   authorize('staff'),  pickupRepair);
+router.patch('/:id/restore',  authorize('admin'),  restoreRepair);
 
 export default router;

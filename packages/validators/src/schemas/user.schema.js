@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ROLES } from '../constants/user.constant.js';
 
 export const userSchema = z.object({
     name: z.string()
@@ -15,17 +16,11 @@ export const userSchema = z.object({
         .max(200, 'Address cannot exceed 200 characters'),
     password: z.string()
         .min(6, 'Password must be at least 6 characters'),
-    role: z.enum(['superadmin', 'admin', 'manager', 'staff'])
-        .default('superadmin'),
+    role: z.enum(ROLES),
     avatar: z.string().optional(),
-    isActive: z.boolean().default(true)
 });
 
 export const userUpdateSchema = userSchema.omit({ password: true }).partial();
-
-export const userIdSchema = z.string().refine((val) => {
-    return /^[0-9a-fA-F]{24}$/.test(val);
-}, 'Invalid user ID');
 
 export const userQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
@@ -33,7 +28,7 @@ export const userQuerySchema = z.object({
     sortBy: z.enum(['name', 'email', 'phone', 'role', 'createdAt', 'updatedAt']).default('createdAt'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().optional(),
-    role: z.enum(['superadmin', 'admin', 'manager', 'staff']).optional(),
+    role: z.enum(ROLES).optional(),
     isActive: z
         .string()
         .optional()

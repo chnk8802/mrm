@@ -1,7 +1,11 @@
 import { isValidObjectId } from 'mongoose';
 import Customer from '../models/Customer.js';
-import { customerSchema, customerUpdateSchema, customerBulkUpdateSchema, customerQuerySchema } from '@repo/validators';
-import { customerBulkDeleteSchema } from '@repo/validators/src/customer.schema.js';
+import { 
+  customerSchema, 
+  customerUpdateSchema, 
+  customerBulkUpdateSchema, 
+  customerQuerySchema 
+} from '@repo/validators';
 
 // @desc    Create a new customer
 // @route   POST /api/customers
