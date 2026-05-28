@@ -6,7 +6,6 @@ const customerSchema = new mongoose.Schema({
     type: String,
     enum: CUSTOMER_TYPE,
     required: true,
-    default: 'individual'
   },
   name: {
     type: String,
@@ -50,7 +49,6 @@ const customerSchema = new mongoose.Schema({
       type: String,
       trim: true,
       maxlength: [100, 'Country cannot exceed 100 characters'],
-      default: 'USA'
     }
   },
   notes: {
@@ -72,7 +70,7 @@ const customerSchema = new mongoose.Schema({
 });
 
 // Compound index for frequently queried fields
-customerSchema.index({ customerType: 1, isActive: 1 });
+customerSchema.index({ customerType: 1, isDeleted: 1, isActive: 1 });
 customerSchema.index({ name: 'text', email: 'text', phone: 'text' });
 customerSchema.index({ createdAt: -1 });
 

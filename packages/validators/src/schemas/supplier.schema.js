@@ -21,8 +21,7 @@ export const supplierSchema = z.object({
     notes: z.string()
         .max(1000, 'Notes cannot exceed 1000 characters')
         .optional(),
-    isActive: z.boolean()
-});
+}).strict();
 
 export const supplierUpdateSchema = supplierSchema.partial();
 

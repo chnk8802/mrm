@@ -21,7 +21,7 @@ const CustomerEdit = () => {
       city: '',
       state: '',
       postalCode: '',
-      country: 'USA'
+      country: ''
     },
     notes: ''
   });
@@ -49,7 +49,7 @@ const CustomerEdit = () => {
             city: customer.address?.city || '',
             state: customer.address?.state || '',
             postalCode: customer.address?.postalCode || '',
-            country: customer.address?.country || 'USA'
+            country: customer.address?.country || ''
           },
           notes: customer.notes || ''
         });

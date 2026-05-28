@@ -1,5 +1,5 @@
 import express from 'express';
-import { getTechnicians } from '../controllers/userController.js';
+import { getTechnicians } from '../controllers/user.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 import authorize from '../middleware/authorize.js';
 

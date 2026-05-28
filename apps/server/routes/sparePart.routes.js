@@ -14,7 +14,7 @@ import {
     getSparePartsUsage,
     getSparePartUsageById,
     getSparePartsUsageBySupplier
-} from '../controllers/sparePartController.js';
+} from '../controllers/sparePart.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();

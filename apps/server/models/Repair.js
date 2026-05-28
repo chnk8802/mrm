@@ -71,10 +71,10 @@ const repairSchema = new mongoose.Schema({
     sparePartUsage: [{
         type: mongoose.Schema.Types.ObjectId, ref: 'SparePartUsage'
     }],
-    notes: [{
+    notes: {
         type: String,
         trim: true
-    }],
+    },
     isDeleted: {
         type: Boolean,
         default: false,

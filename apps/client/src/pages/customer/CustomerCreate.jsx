@@ -20,7 +20,7 @@ const CustomerCreate = () => {
       city: '',
       state: '',
       postalCode: '',
-      country: 'USA'
+      country: ''
     },
     notes: ''
   });

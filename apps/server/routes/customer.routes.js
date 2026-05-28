@@ -10,7 +10,7 @@ import {
   bulkDeleteCustomers,
   getCustomerStats,
   restoreCustomer
-} from '../controllers/customerController.js';
+} from '../controllers/customer.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 import authorize from '../middleware/authorize.js';
 

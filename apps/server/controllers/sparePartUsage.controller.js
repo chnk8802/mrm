@@ -1,0 +1,269 @@
+import mongoose from 'mongoose';
+import { isValidObjectId } from 'mongoose';
+
+import SparePartUsage from '../models/SparePartUsage.js';
+import Repair from '../models/Repair.js';
+import Supplier from '../models/Supplier.js';
+import {
+    sparePartUsageSchema,
+    sparePartUsageBulkCreateSchema,
+    sparePartUsageUpdateSchema,
+    sparePartUsageBulkUpdateSchema,
+    sparePartUsageQuerySchema,
+} from '@repo/validators';
+import withTransaction from '../utils/withTransaction.js';
+import { createError } from '../utils/errorHandler.js';
+
+const populate = (query) => query
+    .populate('repair', 'repairId deviceModel status')
+    .populate('supplier', 'name phone')
+    .populate('installedBy', 'name email');
+
+const verifyRepair = async (repairId) => {
+    const repair = await Repair.findOne({ _id: repairId, isDeleted: false });
+    if (!repair) throw createError(404, 'Repair not found');
+    return repair;
+};
+
+const verifySupplier = async (supplierId) => {
+    const supplier = await Supplier.findOne({ _id: supplierId, isDeleted: false, isActive: true });
+    if (!supplier) throw { status: 404, message: 'Supplier not found' };
+};
+
+/**
+ * @desc    Add a spare part to a repair
+ * @route   POST /api/spare-part-usages
+ * @access  Private (Admin/Staff)
+ */
+export const createSparePartUsage = async (req, res, next) => {
+    try {
+        const validatedData = sparePartUsageSchema.parse(req.body);
+
+        const repair = await verifyRepair(validatedData.repair);
+
+        if (repair.status !== 'in-progress') {
+            throw createError(400, 'Spare parts can only be added when repair is in progress');
+        }
+
+        if (!repair.technician) {
+            throw { status: 400, message: 'Cannot add spare parts — no technician assigned to this repair' };
+        }
+        validatedData.installedBy = repair.technician;
+        if (validatedData.supplier) await verifySupplier(validatedData.supplier);
+
+        const sparePartUsage = await withTransaction(async (session) => {
+            const [created] = await SparePartUsage.create([validatedData], { session });
+            await Repair.findByIdAndUpdate(
+                validatedData.repair,
+                { $push: { sparePartUsage: created._id } },
+                { session }
+            );
+            return created;
+        })
+
+        const populated = await populate(SparePartUsage.findById(sparePartUsage._id));
+
+        res.status(201).json({ success: true, data: populated, message: 'Spare part added successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Bulk add spare parts to a repair
+ * @route   POST /api/spare-part-usages/bulk
+ * @access  Private (Admin/Staff)
+ */
+export const bulkCreateSparePartUsage = async (req, res, next) => {
+    try {
+        const { repair: repairId, parts } = sparePartUsageBulkCreateSchema.parse(req.body);
+
+        await verifyRepair(repairId);
+
+        const supplierIds = [...new Set(parts.filter(p => p.supplier).map(p => p.supplier))];
+        for (const supplierId of supplierIds) {
+            await verifySupplier(supplierId);
+        }
+
+        const docs = parts.map(part => ({
+            ...part,
+            repair: repairId,
+            installedBy: part.installedBy || req.user._id
+        }));
+
+        const created = await withTransaction(async (session) => {
+            const result = await SparePartUsage.create(docs, { session });
+            await Repair.findByIdAndUpdate(
+                repairId,
+                { $push: { sparePartUsage: { $each: result.map(p => p._id) } } },
+                { session }
+            );
+            return result;
+        })
+
+        res.status(201).json({ success: true, data: created, message: `${created.length} spare parts added successfully` });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get all spare part usages
+ * @route   GET /api/spare-part-usages
+ * @access  Private (Admin/Staff)
+ */
+export const getSparePartUsages = async (req, res, next) => {
+    try {
+        const { page, limit, sortBy, sortOrder, repair, supplier } = sparePartUsageQuerySchema.parse(req.query);
+
+        const query = { isDeleted: false };
+        if (repair) query.repair = repair;
+        if (supplier) query.supplier = supplier;
+
+        const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+        const skip = (page - 1) * limit;
+
+        const [sparePartUsages, total] = await Promise.all([
+            populate(SparePartUsage.find(query))
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limit),
+            SparePartUsage.countDocuments(query)
+        ]);
+
+        res.json({
+            success: true,
+            data: sparePartUsages,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get single spare part usage
+ * @route   GET /api/spare-part-usages/:id
+ * @access  Private (Admin/Staff)
+ */
+export const getSparePartUsageById = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        const sparePartUsage = await populate(
+            SparePartUsage.findOne({ _id: id, isDeleted: false })
+        );
+
+        if (!sparePartUsage) {
+            return res.status(404).json({ success: false, message: 'Spare part usage not found' });
+        }
+
+        res.json({ success: true, data: sparePartUsage });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update a spare part usage
+ * @route   PATCH /api/spare-part-usages/:id
+ * @access  Private (Admin/Staff)
+ */
+export const updateSparePartUsage = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        const validatedData = sparePartUsageUpdateSchema.parse(req.body);
+
+        if (validatedData.supplier) await verifySupplier(validatedData.supplier);
+
+        const sparePartUsage = await populate(
+            SparePartUsage.findOneAndUpdate(
+                { _id: id, isDeleted: false },
+                validatedData,
+                { new: true, runValidators: true }
+            )
+        );
+
+        if (!sparePartUsage) {
+            return res.status(404).json({ success: false, message: 'Spare part usage not found' });
+        }
+
+        res.json({ success: true, data: sparePartUsage, message: 'Spare part updated successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Bulk update spare part usages
+ * @route   PATCH /api/spare-part-usages/bulk
+ * @access  Private (Admin/Staff)
+ */
+export const bulkUpdateSparePartUsage = async (req, res, next) => {
+    try {
+        const { updates } = sparePartUsageBulkUpdateSchema.parse(req.body);
+
+        const results = await withTransaction(async (session) => {
+            const updated = await Promise.all(
+                updates.map(({ id, data }) =>
+                    SparePartUsage.findOneAndUpdate(
+                        { _id: id, isDeleted: false },
+                        data,
+                        { new: true, runValidators: true, session }
+                    )
+                )
+            );
+            const notFound = updates.filter((_, i) => !updated[i]).map(u => u.id);
+            if (notFound.length) {
+                throw { status: 404, message: 'Some records not found', ids: notFound };
+            }
+
+            return updated;
+        })
+
+        res.json({ success: true, data: results, message: `${results.length} spare parts updated successfully` });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Soft delete a spare part usage
+ * @route   DELETE /api/spare-part-usages/:id
+ * @access  Private (Admin/Staff)
+ */
+export const deleteSparePartUsage = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        await withTransaction(async (session) => {
+            const sparePartUsage = await SparePartUsage.findOneAndUpdate(
+                { _id: id, isDeleted: false },
+                { isDeleted: true },
+                { new: true, session }
+            );
+
+            if (!sparePartUsage) {
+                throw { status: 404, message: 'Spare part usage not found' };
+            }
+
+            const repair = await Repair.findById(sparePartUsage.repair._id || sparePartUsage.repair);
+console.log('found repair without session:', repair);
+
+            const updatedRepair = await Repair.findByIdAndUpdate(
+                sparePartUsage.repair._id || sparePartUsage.repair,
+                { $pull: { sparePartUsage: sparePartUsage._id } },
+                { session }
+            );
+            console.log('Updated repair sparePartUsage array:', updatedRepair.sparePartUsage);
+        });
+
+        res.json({ success: true, message: 'Spare part deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+};

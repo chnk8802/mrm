@@ -1,11 +1,6 @@
 import { z } from 'zod';
 import { STATUS_OPTIONS } from '../constants/repair.constant.js';
-
-// Reusable — use this instead of repeating the regex everywhere
-export const objectIdSchema = z.string().refine(
-    (val) => /^[0-9a-fA-F]{24}$/.test(val),
-    'Invalid ID'
-);
+import { objectIdSchema } from '../common.js';
 
 export const repairSchema = z.object({
     customer:      objectIdSchema,
@@ -18,7 +13,7 @@ export const repairSchema = z.object({
     discount: z.number().min(0).optional(),
     dueDate:       z.coerce.date().optional(),
     notes:         z.string().min(1).max(500).optional(),
-});
+}).strict();
 
 export const repairUpdateSchema = repairSchema.partial();
 
@@ -36,12 +31,12 @@ export const repairQuerySchema = z.object({
 
 export const statusUpdateSchema = z.object({
     status: z.enum(STATUS_OPTIONS, { required_error: 'Status is required' })
-});
+}).strict();
 
 export const assignTechnicianSchema = z.object({
     technicianId: objectIdSchema
-});
+}).strict();
 
 export const pickupSchema = z.object({
     pickedUpAt: z.coerce.date().optional()
-});
+}).strict();

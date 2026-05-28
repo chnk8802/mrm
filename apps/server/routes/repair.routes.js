@@ -10,7 +10,7 @@ import {
     pickupRepair,
     restoreRepair,
     getRepairStats
-} from '../controllers/repairController.js';
+} from '../controllers/repair.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 import authorize from '../middleware/authorize.js';
 

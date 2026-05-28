@@ -19,7 +19,8 @@ export {
     customerSchema,
     customerUpdateSchema,
     customerBulkUpdateSchema,
-    customerQuerySchema
+    customerQuerySchema,
+    customerBulkDeleteSchema
 }
     from './src/schemas/customer.schema.js';
 export {
@@ -29,20 +30,30 @@ export {
     resetPasswordSchema
 }
     from './src/schemas/user.schema.js';
-export {
-    sparePartSchema,
-    sparePartUpdateSchema,
-    sparePartQuerySchema,
-    sparePartUsageSchema,
-    sparePartUsageUpdateSchema
-}
-    from './src/schemas/sparePart.schema.js';
+
 export {
     supplierSchema,
     supplierUpdateSchema,
     supplierQuerySchema
 }
     from './src/schemas/supplier.schema.js';
+
+    export {
+        sparePartUsageBulkCreateSchema,
+        sparePartUsageBulkUpdateSchema,
+        sparePartUsageQuerySchema,
+        sparePartUsageSchema,
+        sparePartUsageUpdateSchema,
+    } from './src/schemas/sparePartUsage.schema.js'
+
+export {
+    sparePartSchema,
+    sparePartUpdateSchema,
+    sparePartQuerySchema,
+    // sparePartUsageSchema,
+    // sparePartUsageUpdateSchema
+}
+from './src/schemas/sparePart.schema.js';
 
 export {
     STATUS_OPTIONS,

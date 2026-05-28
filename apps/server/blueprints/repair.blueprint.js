@@ -1,3 +1,5 @@
+import { ALLOWED_TRANSITIONS } from "@repo/validators";
+
 export const transitionHandlers = {
     'received->in-progress': {
         before: async (repair) => {
@@ -35,4 +37,20 @@ export const transitionHandlers = {
         },
         after:  async (repair) => { /* notify customer */ }
     },
+};
+
+export const transitionRepairStatus = async (repair, newStatus) => {
+    if (!ALLOWED_TRANSITIONS[repair.status].includes(newStatus)) {
+        throw createError(400, `Cannot transition from '${repair.status}' to '${newStatus}'`);
+    }
+
+    const handler = transitionHandlers[`${repair.status}->${newStatus}`];
+
+    if (handler?.before) await handler.before(repair);
+    repair.status = newStatus;
+    if (handler?.during) await handler.during(repair);
+    await repair.save();
+    if (handler?.after) await handler.after(repair);
+
+    return repair;
 };

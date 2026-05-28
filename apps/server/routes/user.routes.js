@@ -11,7 +11,7 @@ import {
     activateUser,
     deleteUserPermanently,
     restoreUser
-} from '../controllers/userController.js';
+} from '../controllers/user.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 import authorize from '../middleware/authorize.js';
 

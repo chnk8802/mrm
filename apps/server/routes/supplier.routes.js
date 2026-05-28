@@ -6,7 +6,7 @@ import {
     updateSupplier,
     deleteSupplier,
     getSupplierStats
-} from '../controllers/supplierController.js';
+} from '../controllers/supplier.controller.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();

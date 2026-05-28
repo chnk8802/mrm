@@ -30,15 +30,16 @@ export const customerSchema = z.object({
         .max(1000, 'Notes cannot exceed 1000 characters')
         .optional()
         .or(z.literal('')),
-    isActive: z.boolean()
-});
+}).strict();
 
-export const customerUpdateSchema = customerSchema.partial();
+export const customerUpdateSchema = customerSchema.partial().extend({
+    isActive: z.boolean().optional()
+});
 
 export const customerBulkUpdateSchema = z.object({
     ids: z.array(objectIdSchema).min(1, 'At least one customer ID is required'),
     data: customerUpdateSchema
-});
+}).strict();
 
 export const customerQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
@@ -52,4 +53,4 @@ export const customerQuerySchema = z.object({
 
 export const customerBulkDeleteSchema = z.object({
     ids: z.array(objectIdSchema).min(1, 'At least one customer ID is required')
-});
+}).strict();
