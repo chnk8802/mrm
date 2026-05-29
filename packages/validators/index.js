@@ -34,7 +34,9 @@ export {
 export {
     supplierSchema,
     supplierUpdateSchema,
-    supplierQuerySchema
+    supplierQuerySchema,
+    supplierBulkDeleteSchema,
+    supplierBulkUpdateSchema
 }
     from './src/schemas/supplier.schema.js';
 

@@ -1,233 +1,265 @@
+import { isValidObjectId } from 'mongoose';
 import Supplier from '../models/Supplier.js';
-import { supplierSchema, supplierUpdateSchema, supplierQuerySchema } from '@repo/validators';
+import SparePartUsage from '../models/SparePartUsage.js';
+import { createError } from '../utils/errorHandler.js';
+import {
+    supplierSchema,
+    supplierUpdateSchema,
+    supplierBulkUpdateSchema,
+    supplierBulkDeleteSchema,
+    supplierQuerySchema
+} from '@repo/validators';
+import { flattenObject } from '../utils/flattenObject.js';
 
-// @desc    Create a new supplier
-// @route   POST /api/suppliers
-// @access  Private
-export const createSupplier = async(req, res) => {
+/**
+ * @desc    Create a new supplier
+ * @route   POST /api/suppliers
+ * @access  Private (Admin/Manager)
+ */
+export const createSupplier = async (req, res, next) => {
     try {
         const validatedData = supplierSchema.parse(req.body);
-
-        const supplier = new Supplier(validatedData);
-        const savedSupplier = await supplier.save();
-
-        res.status(201).json({
-            success: true,
-            data: savedSupplier,
-            message: 'Supplier created successfully'
-        });
+        const supplier = await Supplier.create(validatedData);
+        res.status(201).json({ success: true, data: supplier, message: 'Supplier created successfully' });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error creating supplier:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to create supplier'
-        });
+        next(error);
     }
 };
 
-// @desc    Get all suppliers with pagination, sorting, and filtering
-// @route   GET /api/suppliers
-// @access  Private
-export const getSuppliers = async(req, res) => {
+/**
+ * @desc    Get all suppliers with pagination, sorting, and filtering
+ * @route   GET /api/suppliers
+ * @access  Private (Admin/Manager)
+ */
+export const getSuppliers = async (req, res, next) => {
     try {
-        const queryParams = supplierQuerySchema.parse(req.query);
+        const { page, limit, sortBy, sortOrder, search, isActive } = supplierQuerySchema.parse(req.query);
 
-        const {
-            page = 1,
-                limit = 10,
-                sortBy = 'createdAt',
-                sortOrder = 'desc',
-                search,
-                isActive
-        } = queryParams;
+        const query = { isDeleted: false };
 
-        // Build query
-        const query = {};
-
-        // Search functionality
         if (search) {
             query.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { contactPerson: { $regex: search, $options: 'i' } },
+                { name:  { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } },
                 { email: { $regex: search, $options: 'i' } }
             ];
         }
 
-        // Filter by active status
-        if (isActive !== undefined) {
-            query.isActive = isActive;
-        }
+        if (isActive !== undefined) query.isActive = isActive;
 
-        // Sort configuration
-        const sortOptions = {};
-        sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-        // Execute query with pagination
+        const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
         const skip = (page - 1) * limit;
-        const suppliers = await Supplier.find(query)
-            .sort(sortOptions)
-            .skip(skip)
-            .limit(limit);
 
-        // Get total count
-        const total = await Supplier.countDocuments(query);
+        const [suppliers, total] = await Promise.all([
+            Supplier.find(query).sort(sortOptions).skip(skip).limit(limit),
+            Supplier.countDocuments(query)
+        ]);
 
         res.json({
             success: true,
             data: suppliers,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
-            },
-            count: suppliers.length,
-            total
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
         });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error getting suppliers:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to get suppliers'
-        });
+        next(error);
     }
 };
 
-// @desc    Get single supplier by ID
-// @route   GET /api/suppliers/:id
-// @access  Private
-export const getSupplierById = async(req, res) => {
+/**
+ * @desc    Get single supplier by ID
+ * @route   GET /api/suppliers/:id
+ * @access  Private (Admin/Manager)
+ */
+export const getSupplierById = async (req, res, next) => {
     try {
         const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
-        const supplier = await Supplier.findById(id);
+        const supplier = await Supplier.findOne({ _id: id, isDeleted: false });
+        if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
 
-        if (!supplier) {
-            return res.status(404).json({
-                success: false,
-                message: 'Supplier not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            data: supplier
-        });
+        res.json({ success: true, data: supplier });
     } catch (error) {
-        console.error('Error getting supplier:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to get supplier'
-        });
+        next(error);
     }
 };
 
-// @desc    Update supplier
-// @route   PUT /api/suppliers/:id
-// @access  Private
-export const updateSupplier = async(req, res) => {
+/**
+ * @desc    Update a supplier
+ * @route   PATCH /api/suppliers/:id
+ * @access  Private (Admin/Manager)
+ */
+export const updateSupplier = async (req, res, next) => {
     try {
         const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
         const validatedData = supplierUpdateSchema.parse(req.body);
 
-        const supplier = await Supplier.findById(id);
+        const supplier = await Supplier.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { $set: flattenObject(validatedData) },
+            { new: true, runValidators: true }
+        );
+        
 
-        if (!supplier) {
-            return res.status(404).json({
-                success: false,
-                message: 'Supplier not found'
-            });
-        }
+        if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
 
-        Object.assign(supplier, validatedData);
-        const updatedSupplier = await supplier.save();
-
-        res.json({
-            success: true,
-            data: updatedSupplier,
-            message: 'Supplier updated successfully'
-        });
+        res.json({ success: true, data: supplier, message: 'Supplier updated successfully' });
     } catch (error) {
-        if (error.name === 'ZodError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Validation error',
-                errors: error.errors
-            });
-        }
-        console.error('Error updating supplier:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to update supplier'
-        });
+        next(error);
     }
 };
 
-// @desc    Delete supplier (soft delete)
-// @route   DELETE /api/suppliers/:id
-// @access  Private
-export const deleteSupplier = async(req, res) => {
+/**
+ * @desc    Soft delete a supplier
+ * @route   DELETE /api/suppliers/:id
+ * @access  Private (Admin only)
+ */
+export const deleteSupplier = async (req, res, next) => {
     try {
         const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
-        const supplier = await Supplier.findById(id);
+        const hasSparePartUsage = await SparePartUsage.exists({ supplier: id, isDeleted: false });
+        if (hasSparePartUsage) throw createError(400, 'Supplier has spare part records and cannot be deleted');
 
-        if (!supplier) {
-            return res.status(404).json({
-                success: false,
-                message: 'Supplier not found'
-            });
-        }
+        const supplier = await Supplier.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { isDeleted: true },
+            { new: true }
+        );
 
-        // Soft delete
-        supplier.isActive = false;
-        await supplier.save();
+        if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
 
-        res.json({
-            success: true,
-            message: 'Supplier deleted successfully'
-        });
+        res.json({ success: true, message: 'Supplier deleted successfully' });
     } catch (error) {
-        console.error('Error deleting supplier:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to delete supplier'
-        });
+        next(error);
     }
 };
 
-// @desc    Get supplier statistics
-// @route   GET /api/suppliers/stats
-// @access  Private
-export const getSupplierStats = async(req, res) => {
+/**
+ * @desc    Restore a soft deleted supplier
+ * @route   PATCH /api/suppliers/:id/restore
+ * @access  Private (Admin only)
+ */
+export const restoreSupplier = async (req, res, next) => {
     try {
-        const totalSuppliers = await Supplier.countDocuments({ isActive: true });
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        const supplier = await Supplier.findById(id).select('+isDeleted');
+        if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found' });
+
+        if (!supplier.isDeleted) throw createError(400, 'Supplier is not deleted');
+
+        supplier.isDeleted = false;
+        await supplier.save();
+
+        res.json({ success: true, message: 'Supplier restored successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Permanently delete a supplier
+ * @route   DELETE /api/suppliers/:id/permanent
+ * @access  Private (Superadmin only)
+ */
+export const permanentlyDeleteSupplier = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        const supplier = await Supplier.findOne({ _id: id, isDeleted: true }).select('+isDeleted');
+        if (!supplier) return res.status(404).json({ success: false, message: 'Supplier not found or not soft deleted' });
+
+        await Supplier.findByIdAndDelete(id);
+
+        res.json({ success: true, message: 'Supplier permanently deleted' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Bulk update suppliers
+ * @route   PATCH /api/suppliers/bulk
+ * @access  Private (Admin only)
+ */
+export const bulkUpdateSuppliers = async (req, res, next) => {
+    try {
+        const { ids, data } = supplierBulkUpdateSchema.parse(req.body);
+
+        const result = await Supplier.updateMany(
+            { _id: { $in: ids }, isDeleted: false },
+            { $set: flattenObject(data) }
+        );
 
         res.json({
             success: true,
-            data: {
-                totalSuppliers
-            }
+            message: `${result.modifiedCount} of ${ids.length} suppliers updated successfully`,
+            modifiedCount: result.modifiedCount,
+            skipped: ids.length - result.modifiedCount
         });
     } catch (error) {
-        console.error('Error getting supplier stats:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Failed to get supplier statistics'
+        next(error);
+    }
+};
+
+/**
+ * @desc    Bulk soft delete suppliers
+ * @route   DELETE /api/suppliers/bulk
+ * @access  Private (Admin only)
+ */
+export const bulkDeleteSuppliers = async (req, res, next) => {
+    try {
+        const { ids } = supplierBulkDeleteSchema.parse(req.body);
+
+        const hasSparePartUsage = await SparePartUsage.exists({
+            supplier: { $in: ids },
+            isDeleted: false
         });
+        if (hasSparePartUsage) throw createError(400, 'One or more suppliers have spare part records and cannot be deleted');
+
+        const result = await Supplier.updateMany(
+            { _id: { $in: ids }, isDeleted: false },
+            { isDeleted: true }
+        );
+
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} suppliers deleted successfully`,
+            deletedCount: result.modifiedCount
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get supplier statistics
+ * @route   GET /api/suppliers/stats
+ * @access  Private (Admin only)
+ */
+export const getSupplierStats = async (req, res, next) => {
+    try {
+        const stats = await Supplier.aggregate([
+            { $match: { isDeleted: false } },
+            {
+                $group: {
+                    _id: null,
+                    total:    { $sum: 1 },
+                    active:   { $sum: { $cond: ['$isActive', 1, 0] } },
+                    inactive: { $sum: { $cond: ['$isActive', 0, 1] } },
+                }
+            },
+            { $project: { _id: 0 } }
+        ]);
+
+        res.json({ success: true, data: stats[0] || {} });
+    } catch (error) {
+        next(error);
     }
 };
