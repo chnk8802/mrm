@@ -18,3 +18,17 @@ export const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
     password: z.string().min(1, 'Password is required'),
 }).strict();
+
+export const updateProfileSchema = z.object({
+    name: z.string().min(2).max(100).optional(),
+    phone: z.string().min(10).max(20).optional(),
+    avatar: z.string().optional(),
+    address: z.object({
+        street: z.string().max(200).optional(),
+        city: z.string().max(100).optional(),
+        state: z.string().max(100).optional(),
+        postalCode: z.string().max(20).optional(),
+        country: z.string().max(100).optional()
+    }).optional(),
+    password: z.string().min(6).optional(),
+}).strict();

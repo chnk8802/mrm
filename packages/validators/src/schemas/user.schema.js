@@ -24,7 +24,7 @@ export const userSchema = z.object({
     avatar: z.string().optional(),
 }).strict();
 
-export const userUpdateSchema = userSchema.omit({ password: true }).partial().extend({
+export const userUpdateSchema = userSchema.omit({ password: true, email: true}).partial().extend({
     isActive: z.boolean().optional()
 });
 

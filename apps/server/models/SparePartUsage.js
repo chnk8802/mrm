@@ -1,3 +1,4 @@
+import { PAYMENT_METHODS } from '@repo/validators';
 import mongoose from 'mongoose';
 
 const sparePartUsageSchema = new mongoose.Schema({
@@ -26,6 +27,15 @@ const sparePartUsageSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         min: 0
+    },
+    amountPaid: {
+        type: Number,
+        default: 0
+    },
+    paymentStatus: {
+        type: String,
+        enum: PAYMENT_METHODS,
+        default: "unpaid"
     },
     installedBy: {
         type: mongoose.Schema.Types.ObjectId,

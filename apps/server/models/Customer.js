@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import { CUSTOMER_TYPE } from '@repo/validators';
+import mongoose from 'mongoose';
 
 const customerSchema = new mongoose.Schema({
   customerType: {
@@ -54,6 +54,10 @@ const customerSchema = new mongoose.Schema({
   notes: {
     type: String,
     maxlength: [1000, 'Notes cannot exceed 1000 characters']
+  },
+  outstandingBalance: {
+    type: Number,
+    default: 0
   },
   isActive: {
     type: Boolean,

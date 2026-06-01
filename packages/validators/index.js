@@ -58,6 +58,11 @@ export {
 from './src/schemas/sparePart.schema.js';
 
 export {
+    paymentSchema,
+    paymentQuerySchema,
+} from './src/schemas/payment.schema.js'
+
+export {
     STATUS_OPTIONS,
     ALLOWED_TRANSITIONS,
     PAYMENT_STATUS
@@ -68,3 +73,8 @@ export {
 } from './src/constants/user.constant.js'
 
 export { CUSTOMER_TYPE } from './src/constants/customer.constant.js'
+
+export {
+    PAYMENT_METHODS,
+    PAYMENT_TYPES
+} from './src/constants/payment.constant.js';

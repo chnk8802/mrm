@@ -25,7 +25,9 @@ const userSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        maxlength: [20, 'Phone number cannot exceed 20 characters']
     },
     address: {
         street: {
@@ -74,31 +76,35 @@ const userSchema = new mongoose.Schema({
 
 // Indexes for performance optimization
 userSchema.index(
-  { email: 1 },
-  { unique: true, partialFilterExpression: { isDeleted: false } }
+    { email: 1 },
+    { unique: true, partialFilterExpression: { isDeleted: false } }
 );
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ name: 'text', email: 'text', phone: 'text' });
 userSchema.index({ createdAt: -1 });
 
-userSchema.virtual('fullAddress').get(function() {
-  const parts = [];
-  if (this.address?.street) parts.push(this.address.street);
-  if (this.address?.city) parts.push(this.address.city);
-  if (this.address?.state) parts.push(this.address.state);
-  if (this.address?.postalCode) parts.push(this.address.postalCode);
-  if (this.address?.country) parts.push(this.address.country);
-  return parts.join(', ');
+userSchema.virtual('fullAddress').get(function () {
+    const parts = [];
+    if (this.address?.street) parts.push(this.address.street);
+    if (this.address?.city) parts.push(this.address.city);
+    if (this.address?.state) parts.push(this.address.state);
+    if (this.address?.postalCode) parts.push(this.address.postalCode);
+    if (this.address?.country) parts.push(this.address.country);
+    return parts.join(', ');
 });
 
-userSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => {
-  delete ret.id;
-  return ret;
-}});
-userSchema.set('toObject', { virtuals: true, transform: (doc, ret) => {
-  delete ret.id;
-  return ret;
-}});
+userSchema.set('toJSON', {
+    virtuals: true, transform: (doc, ret) => {
+        delete ret.id;
+        return ret;
+    }
+});
+userSchema.set('toObject', {
+    virtuals: true, transform: (doc, ret) => {
+        delete ret.id;
+        return ret;
+    }
+});
 
 export default mongoose.model('User', userSchema);

@@ -46,6 +46,10 @@ const supplierSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    outstandingBalance: {
+    type: Number,
+    default: 0
+  },
     isActive: {
         type: Boolean,
         default: true

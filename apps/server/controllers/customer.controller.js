@@ -128,8 +128,8 @@ export const deleteCustomer = async (req, res, next) => {
         const { id } = req.params;
         if (!isValidObjectId(id)) throw createError('400', 'Invalid ID')
 
-        const hasActiveRepairs = await Repair.exists({ customer: id, status: { $nin: ['completed', 'cancelled', 'not-repairable'] } });
-        if (hasActiveRepairs) throw createError(400, 'Customer has active repair orders');
+        const hasRepairs = await Repair.exists({ technician: id, isDeleted: false });
+        if (hasRepairs) throw createError(400, 'User has repair orders assigned and cannot be deleted');
 
         const customer = await Customer.findOneAndUpdate(
             { _id: id, isDeleted: false },

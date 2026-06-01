@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import Counter from './Counter.js';
-import { PAYMENT_STATUS, STATUS_OPTIONS } from '@repo/validators';
+import { PAYMENT_METHODS, PAYMENT_STATUS, STATUS_OPTIONS } from '@repo/validators';
 
 const repairSchema = new mongoose.Schema({
     repairId: {
@@ -75,6 +75,15 @@ const repairSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    amountPaid: {
+            type: Number,
+            default: 0
+        },
+        paymentStatus: {
+            type: String,
+            enum: PAYMENT_METHODS,
+            default: "unpaid"
+        },
     isDeleted: {
         type: Boolean,
         default: false,
