@@ -1,6 +1,6 @@
 import { isValidObjectId } from 'mongoose';
-import Supplier from '../models/Supplier.js';
-import SparePartUsage from '../models/SparePartUsage.js';
+import Supplier from '../models/supplier.model.js';
+import SparePartUsage from '../models/sparePartUsage.model.js';
 import { createError } from '../utils/errorHandler.js';
 import {
     supplierSchema,

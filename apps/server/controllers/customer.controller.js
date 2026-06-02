@@ -1,6 +1,6 @@
 import { isValidObjectId } from 'mongoose';
-import Customer from '../models/Customer.js';
-import Repair from '../models/Repair.js'
+import Customer from '../models/customer.model.js';
+import Repair from '../models/repair.model.js'
 import { createError } from '../utils/errorHandler.js';
 import {
     customerSchema,

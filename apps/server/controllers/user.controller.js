@@ -1,6 +1,6 @@
 import { isValidObjectId } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
+import User from '../models/user.model.js';
 import { createError } from '../utils/errorHandler.js';
 import { flattenObject } from '../utils/flattenObject.js';
 import {

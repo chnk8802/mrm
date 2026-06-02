@@ -11,8 +11,8 @@ import {
     bulkDeleteSuppliers,
     getSupplierStats
 } from '../controllers/supplier.controller.js';
-import { protect } from '../middleware/authMiddleware.js';
-import authorize from '../middleware/authorize.js';
+import { protect } from '../middleware/auth.middleware.js';
+import authorize from '../middleware/rbac.middleware.js.js';
 
 const router = express.Router();
 

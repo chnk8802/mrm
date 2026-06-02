@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import { isValidObjectId } from 'mongoose';
 
-import SparePartUsage from '../models/SparePartUsage.js';
-import Repair from '../models/Repair.js';
-import Supplier from '../models/Supplier.js';
+import SparePartUsage from '../models/sparePartUsage.model.js';
+import Repair from '../models/repair.model.js';
+import Supplier from '../models/supplier.model.js';
 import {
     sparePartUsageSchema,
     sparePartUsageBulkCreateSchema,

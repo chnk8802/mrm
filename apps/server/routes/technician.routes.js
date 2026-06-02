@@ -1,7 +1,7 @@
 import express from 'express';
 import { getTechnicians } from '../controllers/user.controller.js';
-import { protect } from '../middleware/authMiddleware.js';
-import authorize from '../middleware/authorize.js';
+import { protect } from '../middleware/auth.middleware.js';
+import authorize from '../middleware/rbac.middleware.js.js';
 
 const router = express.Router();
 

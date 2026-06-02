@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Counter from './Counter.js';
+import Counter from './counter.model.js';
 import { PAYMENT_METHODS, PAYMENT_STATUS, STATUS_OPTIONS } from '@repo/validators';
 
 const repairSchema = new mongoose.Schema({

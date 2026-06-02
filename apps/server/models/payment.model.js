@@ -1,12 +1,10 @@
 import mongoose from 'mongoose';
-
-export const PAYMENT_METHODS = ['cash', 'upi', 'card', 'bank_transfer'];
-export const PAYMENT_TYPES = ['receivable', 'payable'];
+import { PAYMENT_METHODS, PAYMENT_TYPES } from '@repo/validators'
 
 const paymentSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: PAYMENT_TYPES,
+        enum: PAYMENT_METHODS,
         required: true
     },
     customer: {
@@ -78,13 +76,17 @@ paymentSchema.index({ paidAt: -1 });
 paymentSchema.index({ createdAt: -1 });
 paymentSchema.index({ isDeleted: 1, type: 1 });
 
-paymentSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => {
-    delete ret.id;
-    return ret;
-}});
-paymentSchema.set('toObject', { virtuals: true, transform: (doc, ret) => {
-    delete ret.id;
-    return ret;
-}});
+paymentSchema.set('toJSON', {
+    virtuals: true, transform: (doc, ret) => {
+        delete ret.id;
+        return ret;
+    }
+});
+paymentSchema.set('toObject', {
+    virtuals: true, transform: (doc, ret) => {
+        delete ret.id;
+        return ret;
+    }
+});
 
 export default mongoose.model('Payment', paymentSchema);
