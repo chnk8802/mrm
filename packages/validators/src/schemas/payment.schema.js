@@ -3,21 +3,31 @@ import { objectIdSchema } from '../common.js';
 import { PAYMENT_METHODS, PAYMENT_TYPES } from '../constants/payment.constant.js';
 
 const lineItemSchema = z.object({
-    repair:          objectIdSchema.optional(),
-    sparePartUsage:  objectIdSchema.optional(),
-    amountPaid:      z.number().min(0, 'Amount cannot be negative'),
+    repair: objectIdSchema.optional(),
+    sparePartUsage: objectIdSchema.optional(),
+    amountPaid: z.number().min(0, 'Amount cannot be negative'),
 }).strict();
 
-export const paymentSchema = z.object({
-    type:          z.enum(PAYMENT_TYPES, { required_error: 'Payment type is required' }),
-    customer:      objectIdSchema.optional(),
-    supplier:      objectIdSchema.optional(),
+const basePaymentSchema = z.object({
+    type: z.enum(PAYMENT_TYPES, { required_error: 'Payment type is required' }),
+    customer: objectIdSchema.optional(),
+    supplier: objectIdSchema.optional(),
     paymentMethod: z.enum(PAYMENT_METHODS, { required_error: 'Payment method is required' }),
-    paidAt:        z.coerce.date().optional(),
-    notes:         z.string().max(500).optional(),
-    lineItems:     z.array(lineItemSchema).min(1, 'At least one line item is required'),
+    paidAt: z.coerce.date().optional(),
+    notes: z.string().max(500).optional(),
+    lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required'),
     isFullAndFinal: z.boolean().optional(),
-}).strict().superRefine((data, ctx) => {
+}).strict();
+
+export const paymentFNFSchema = basePaymentSchema.pick({
+    type: true,
+    customer: true,
+    supplier: true,
+    paymentMethod: true,
+    notes: true
+});
+
+export const paymentSchema = basePaymentSchema.superRefine((data, ctx) => {
     // customer/supplier validation based on type
     if (data.type === 'receivable' && !data.customer) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['customer'], message: 'Customer is required for receivable payments' });
@@ -38,15 +48,15 @@ export const paymentSchema = z.object({
 });
 
 export const paymentQuerySchema = z.object({
-    page:          z.coerce.number().int().positive().default(1),
-    limit:         z.coerce.number().int().positive().max(100).default(10),
-    sortBy:        z.enum(['paidAt', 'totalAmount', 'createdAt']).default('createdAt'),
-    sortOrder:     z.enum(['asc', 'desc']).default('desc'),
-    type:          z.enum(PAYMENT_TYPES).optional(),
-    customer:      objectIdSchema.optional(),
-    supplier:      objectIdSchema.optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(10),
+    sortBy: z.enum(['paidAt', 'totalAmount', 'createdAt']).default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+    type: z.enum(PAYMENT_TYPES).optional(),
+    customer: objectIdSchema.optional(),
+    supplier: objectIdSchema.optional(),
     paymentMethod: z.enum(PAYMENT_METHODS).optional(),
     isFullAndFinal: z.coerce.boolean().optional(),
-    fromDate:      z.coerce.date().optional(),
-    toDate:        z.coerce.date().optional(),
+    fromDate: z.coerce.date().optional(),
+    toDate: z.coerce.date().optional(),
 });

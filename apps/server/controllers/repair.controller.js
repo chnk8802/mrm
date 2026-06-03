@@ -79,7 +79,7 @@ export const getRepairs = async (req, res, next) => {
 
         const [repairs, total] = await Promise.all([
             Repair.find(query)
-                .populate('customer', 'name phone customerType')
+                .populate('customer', 'customerType name phone')
                 .populate('technician', 'name email phone')
                 .populate('sparePartUsage')
                 .sort(sortOptions)
@@ -109,7 +109,7 @@ export const getRepairById = async (req, res, next) => {
         if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
         const repair = await Repair.findOne({ _id: id, isDeleted: false })
-            .populate('customer', 'name phone email address customerType')
+            .populate('customer', 'customerType name phone')
             .populate('technician', 'name email phone')
             .populate('sparePartUsage');
 

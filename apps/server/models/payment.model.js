@@ -4,7 +4,7 @@ import { PAYMENT_METHODS, PAYMENT_TYPES } from '@repo/validators'
 const paymentSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: PAYMENT_METHODS,
+        enum: PAYMENT_TYPES,
         required: true
     },
     customer: {
