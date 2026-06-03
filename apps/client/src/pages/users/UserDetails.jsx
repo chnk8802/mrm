@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import userService from "@/services/userService";
+import userService from "@/api/userService";
 import { useAuth } from "@/context/AuthContext";
 
 const UserDetails = () => {

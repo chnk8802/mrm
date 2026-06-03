@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import sparePartService from '@/services/sparePartService';
-import supplierService from '@/services/supplierService';
+import sparePartService from '@/api/sparePartService';
+import supplierService from '@/api/supplierService';
 
 const CATEGORY_LABELS = {
     'screen': 'Screen',

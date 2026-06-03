@@ -22,8 +22,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import repairService from '@/services/repairService';
-import customerService from '@/services/customerService';
+import repairService from '@/api/repairService';
+import customerService from '@/api/customerService';
 import axios from 'axios';
 
 const RepairList = () => {

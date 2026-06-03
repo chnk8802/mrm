@@ -21,8 +21,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import repairService from '@/services/repairService';
-import sparePartService from '@/services/sparePartService';
+import repairService from '@/api/repairService';
+import sparePartService from '@/api/sparePartService';
 import SparePartSelector from '@/components/SparePartSelector';
 
 const RepairDetails = () => {

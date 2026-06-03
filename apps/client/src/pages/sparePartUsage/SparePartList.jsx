@@ -4,7 +4,7 @@ import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import sparePartService from '@/services/sparePartService';
+import sparePartService from '@/api/sparePartService';
 
 const CATEGORY_LABELS = {
     'screen': 'Screen',

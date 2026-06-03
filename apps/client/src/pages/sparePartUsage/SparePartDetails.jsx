@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import sparePartService from '@/services/sparePartService';
+import sparePartService from '@/api/sparePartService';
 
 const CATEGORY_LABELS = {
     'screen': 'Screen',

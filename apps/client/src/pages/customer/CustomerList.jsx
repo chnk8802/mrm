@@ -34,7 +34,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-import customerService from '@/services/customerService';
+import customerService from '@/api/customerService';
 import SelectCustomerType from '@/components/Select';
 import Select from '@/components/Select';
 

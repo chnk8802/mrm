@@ -10,8 +10,9 @@ import {
     statusUpdateSchema,
     pickupSchema
 } from '@repo/validators';
-import { transitionHandlers, transitionRepairStatus } from '../blueprints/repair.blueprint.js';
+import { transitionRepairStatus } from '../blueprints/repair.blueprint.js';
 import { createError } from '../utils/errorHandler.js';
+import withTransaction from '../utils/withTransaction.js';
 
 /**
  * @desc Create a new repair order
@@ -34,7 +35,15 @@ export const createRepair = async (req, res, next) => {
             }
         }
 
-        const repair = await Repair.create(validatedData);
+        const repair = await withTransaction(async (session) => {
+            const [created] = await Repair.create([validatedData], { session });
+            await Customer.findByIdAndUpdate(
+                validatedData.customer,
+                { $inc: { outstandingBalance: validatedData.serviceCharge - (validatedData.discount || 0) } },
+                { session }
+            );
+            return created;
+        });
 
         await repair.populate('customer', 'name phone customerType');
         await repair.populate('technician', 'name email phone');
@@ -145,6 +154,13 @@ export const updateRepair = async (req, res, next) => {
             }
         }
 
+        const existingRepair = await Repair.findOne({ _id: id, isDeleted: false });
+        if (!existingRepair) throw createError(404, 'Repair not found');
+
+        if (existingRepair.amountPaid > 0 && (validatedData.serviceCharge !== undefined || validatedData.discount !== undefined)) {
+            throw createError(400, 'Cannot change service charge or discount after payment has been made');
+        }
+
         const repair = await Repair.findOneAndUpdate(
             { _id: id, isDeleted: false },
             validatedData,
@@ -175,7 +191,7 @@ export const assignTechnician = async (req, res, next) => {
         const { technicianId } = assignTechnicianSchema.parse(req.body);
 
         const repair = await Repair.findOne({ _id: id, isDeleted: false });
-        if (!repair) throw res.status(404).json({ success: false, message: 'Repair not found' });
+        if (!repair) throw createError(404, 'Repair not found');
 
         if (repair.status !== 'received') {
             throw createError(400, 'Technician can only be assigned when repair is in received state');
@@ -211,8 +227,8 @@ export const updateRepairStatus = async (req, res, next) => {
         const { status: newStatus } = statusUpdateSchema.parse(req.body);
 
         const repair = await Repair.findOne({ _id: id, isDeleted: false });
-        if (!repair) throw createError(404, 'Repair not found'); 
-            
+        if (!repair) throw createError(404, 'Repair not found');
+
         await transitionRepairStatus(repair, newStatus);
 
         res.json({ success: true, data: repair, message: `Status updated to '${newStatus}'` });
@@ -234,10 +250,10 @@ export const pickupRepair = async (req, res, next) => {
         const { pickedUpAt } = pickupSchema.parse(req.body);
 
         const repair = await Repair.findOne({ _id: id, isDeleted: false });
-        if (!repair) throw createError(404, 'Repair not found'); 
+        if (!repair) throw createError(404, 'Repair not found');
 
         if (!['ready', 'not-repairable'].includes(repair.status)) {
-            throw createError(400, 'Device can only be picked up when status is ready or not-repairable'); 
+            throw createError(400, 'Device can only be picked up when status is ready or not-repairable');
         }
 
         if (repair.isPickedUp) {
@@ -313,41 +329,24 @@ export const deleteRepair = async (req, res, next) => {
         const { id } = req.params;
         if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
-        const repair = await Repair.findOneAndUpdate(
-            { _id: id, isDeleted: false },
-            { isDeleted: true },
-            { new: true }
-        );
-
+        const repair = await Repair.findOne({ _id: id, isDeleted: false });
         if (!repair) throw createError(404, 'Repair not found');
+
+        await withTransaction(async (session) => {
+            await Repair.findByIdAndUpdate(repair._id, { isDeleted: true }, { session });
+            
+            // Reverse unpaid balance only
+            const unpaidAmount = (repair.serviceCharge - (repair.discount || 0)) - (repair.amountPaid || 0);
+            if (unpaidAmount > 0) {
+                await Customer.findByIdAndUpdate(
+                    repair.customer,
+                    { $inc: { outstandingBalance: -unpaidAmount } },
+                    { session }
+                );
+            }
+        });
 
         res.json({ success: true, message: 'Repair deleted successfully' });
-    } catch (error) {
-        next(error)
-    }
-};
-
-/**
- * @desc    Restore a soft deleted repair
- * @route   PATCH /api/repairs/:id/restore
- * @access  Private (Admin only)
- */
-export const restoreRepair = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
-
-        const repair = await Repair.findOne({ _id: id }).select('+isDeleted');
-        if (!repair) throw createError(404, 'Repair not found');
-
-        if (!repair.isDeleted) {
-            throw createError(400, 'Repair is not deleted');
-        }
-
-        repair.isDeleted = false;
-        await repair.save();
-
-        res.json({ success: true, message: 'Repair restored successfully' });
     } catch (error) {
         next(error)
     }

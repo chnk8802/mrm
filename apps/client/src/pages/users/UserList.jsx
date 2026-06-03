@@ -37,7 +37,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import userService from "@/services/userService";
+import userService from "@/api/userService";
 import { useAuth } from '@/context/AuthContext';
 
 const roleOptions = [

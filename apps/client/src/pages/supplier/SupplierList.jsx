@@ -4,7 +4,7 @@ import { Plus, Search, Edit, Trash2, Eye, ChevronLeft, ChevronRight, Truck } fro
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import supplierService from '@/services/supplierService';
+import supplierService from '@/api/supplierService';
 
 const SupplierList = () => {
     const navigate = useNavigate();

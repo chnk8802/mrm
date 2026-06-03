@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import customerService from '@/services/customerService';
+import customerService from '@/api/customerService';
 
 const CustomerDetails = () => {
   const navigate = useNavigate();

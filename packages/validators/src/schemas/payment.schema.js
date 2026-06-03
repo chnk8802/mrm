@@ -5,7 +5,7 @@ import { PAYMENT_METHODS, PAYMENT_TYPES } from '../constants/payment.constant.js
 const lineItemSchema = z.object({
     repair: objectIdSchema.optional(),
     sparePartUsage: objectIdSchema.optional(),
-    amountPaid: z.number().min(0, 'Amount cannot be negative'),
+    amountPaid: z.number().min(0.01, 'Amount must be greater than 0'),
 }).strict();
 
 const basePaymentSchema = z.object({
@@ -25,6 +25,13 @@ export const paymentFNFSchema = basePaymentSchema.pick({
     supplier: true,
     paymentMethod: true,
     notes: true
+}).superRefine((data, ctx) => {
+    if (data.type === 'receivable' && !data.customer) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['customer'], message: 'Customer is required for receivable payments' });
+    }
+    if (data.type === 'payable' && !data.supplier) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['supplier'], message: 'Supplier is required for payable payments' });
+    }
 });
 
 export const paymentSchema = basePaymentSchema.superRefine((data, ctx) => {

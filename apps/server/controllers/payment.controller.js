@@ -5,7 +5,6 @@ import Repair from '../models/repair.model.js';
 import SparePartUsage from '../models/sparePartUsage.model.js';
 import Customer from '../models/customer.model.js';
 import Supplier from '../models/supplier.model.js';
-import User from '../models/user.model.js';
 import { createError } from '../utils/errorHandler.js';
 import withTransaction from '../utils/withTransaction.js';
 import { paymentSchema, paymentQuerySchema, paymentFNFSchema } from '@repo/validators';
@@ -20,6 +19,7 @@ const populate = (query) => query
     .populate('lineItems.sparePartUsage', 'sparePart unitCost quantity amountPaid paymentStatus');
 
 const calculatePaymentStatus = (totalOwed, amountPaid) => {
+    if (totalOwed === 0) return 'paid';
     if (amountPaid <= 0) return 'unpaid';
     if (amountPaid >= totalOwed) return 'paid';
     return 'partial';
@@ -52,8 +52,12 @@ export const createPayment = async (req, res, next) => {
         const lineItemDocs = await Promise.all(
             validatedData.lineItems.map(async (item) => {
                 if (validatedData.type === 'receivable') {
-                    const repair = await Repair.findOne({ _id: item.repair, isDeleted: false});
+                    const repair = await Repair.findOne({ _id: item.repair, isDeleted: false, status: { $in: ["ready", "completed"] } });
                     if (!repair) throw createError(404, `Repair ${item.repair} not found`);
+
+                    if (repair.paymentStatus === 'paid') {
+                        throw createError(400, `Repair ${repair.repairId} is already fully paid`);
+                    }
 
                     const totalOwed = repair.serviceCharge - (repair.discount || 0);
                     const remainingAmount = totalOwed - (repair.amountPaid || 0);
@@ -65,6 +69,10 @@ export const createPayment = async (req, res, next) => {
                 } else {
                     const sparePartUsage = await SparePartUsage.findOne({ _id: item.sparePartUsage, isDeleted: false });
                     if (!sparePartUsage) throw createError(404, `Spare part usage ${item.sparePartUsage} not found`);
+
+                    if (sparePartUsage.paymentStatus === 'paid') {
+                        throw createError(400, `Spare part ${sparePartUsage.sparePart} is already fully paid`);
+                    }
 
                     const totalOwed = sparePartUsage.unitCost * sparePartUsage.quantity;
                     const remainingAmount = totalOwed - (sparePartUsage.amountPaid || 0);
@@ -159,6 +167,7 @@ export const createFullAndFinalPayment = async (req, res, next) => {
             const unpaidRepairs = await Repair.find({
                 customer,
                 paymentStatus: { $in: ['unpaid', 'partial'] },
+                status: { $in: ['ready', 'completed'] },
                 isDeleted: false
             });
 
@@ -203,10 +212,14 @@ export const createFullAndFinalPayment = async (req, res, next) => {
 
             // Mark all items as paid
             if (type === 'receivable') {
-                await Repair.updateMany(
-                    { _id: { $in: lineItems.map(i => i.repair) } },
-                    { paymentStatus: 'paid', $inc: { amountPaid: 0 } },
-                    { session }
+                await Promise.all(
+                    lineItems.map(item =>
+                        Repair.findByIdAndUpdate(
+                            item.repair,
+                            { $inc: { amountPaid: item.amountPaid }, paymentStatus: 'paid' },
+                            { session }
+                        )
+                    )
                 );
                 await Customer.findByIdAndUpdate(
                     customer,
@@ -214,10 +227,14 @@ export const createFullAndFinalPayment = async (req, res, next) => {
                     { session }
                 );
             } else {
-                await SparePartUsage.updateMany(
-                    { _id: { $in: lineItems.map(i => i.sparePartUsage) } },
-                    { paymentStatus: 'paid' },
-                    { session }
+                await Promise.all(
+                    lineItems.map(item =>
+                        SparePartUsage.findByIdAndUpdate(
+                            item.sparePartUsage,
+                            { $inc: { amountPaid: item.amountPaid }, paymentStatus: 'paid' },
+                            { session }
+                        )
+                    )
                 );
                 await Supplier.findByIdAndUpdate(
                     supplier,
@@ -250,16 +267,16 @@ export const getPayments = async (req, res, next) => {
 
         const query = { isDeleted: false };
 
-        if (type)            query.type          = type;
-        if (customer)        query.customer      = customer;
-        if (supplier)        query.supplier      = supplier;
-        if (paymentMethod)   query.paymentMethod = paymentMethod;
+        if (type) query.type = type;
+        if (customer) query.customer = customer;
+        if (supplier) query.supplier = supplier;
+        if (paymentMethod) query.paymentMethod = paymentMethod;
         if (isFullAndFinal !== undefined) query.isFullAndFinal = isFullAndFinal;
 
         if (fromDate || toDate) {
             query.paidAt = {};
             if (fromDate) query.paidAt.$gte = fromDate;
-            if (toDate)   query.paidAt.$lte = toDate;
+            if (toDate) query.paidAt.$lte = toDate;
         }
 
         const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
@@ -314,85 +331,16 @@ export const getPaymentStats = async (req, res, next) => {
                 $group: {
                     _id: null,
                     totalReceivable: { $sum: { $cond: [{ $eq: ['$type', 'receivable'] }, '$totalAmount', 0] } },
-                    totalPayable:    { $sum: { $cond: [{ $eq: ['$type', 'payable'] }, '$totalAmount', 0] } },
-                    totalPayments:   { $sum: 1 },
+                    totalPayable: { $sum: { $cond: [{ $eq: ['$type', 'payable'] }, '$totalAmount', 0] } },
+                    totalPayments: { $sum: 1 },
                     receivableCount: { $sum: { $cond: [{ $eq: ['$type', 'receivable'] }, 1, 0] } },
-                    payableCount:    { $sum: { $cond: [{ $eq: ['$type', 'payable'] }, 1, 0] } },
+                    payableCount: { $sum: { $cond: [{ $eq: ['$type', 'payable'] }, 1, 0] } },
                 }
             },
             { $project: { _id: 0 } }
         ]);
 
         res.json({ success: true, data: stats[0] || {} });
-    } catch (error) {
-        next(error);
-    }
-};
-
-// ─── Delete ───────────────────────────────────────────────────────────────────
-
-/**
- * @desc    Soft delete a payment (No use Right now)
- * @route   DELETE /api/payments/:id
- * @access  Private (Superadmin only)
- */
-export const deletePayment = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError(400, "Invalid ID");
-
-        const payment = await Payment.findOne({ _id: id, isDeleted: false });
-        if (!payment) return res.status(404).json({ success: false, message: 'Payment not found' });
-
-        await withTransaction(async (session) => {
-            // Reverse all line item updates
-            await Promise.all(
-                payment.lineItems.map(async (item) => {
-                    if (item.repair) {
-                        const repair = await Repair.findById(item.repair);
-                        if (repair) {
-                            const newAmountPaid = Math.max(0, (repair.amountPaid || 0) - item.amountPaid);
-                            const totalOwed = repair.serviceCharge - (repair.discount || 0);
-                            await Repair.findByIdAndUpdate(repair._id, {
-                                amountPaid: newAmountPaid,
-                                paymentStatus: calculatePaymentStatus(totalOwed, newAmountPaid)
-                            }, { session });
-                        }
-                    }
-                    if (item.sparePartUsage) {
-                        const sparePartUsage = await SparePartUsage.findById(item.sparePartUsage);
-                        if (sparePartUsage) {
-                            const newAmountPaid = Math.max(0, (sparePartUsage.amountPaid || 0) - item.amountPaid);
-                            const totalOwed = sparePartUsage.unitCost * sparePartUsage.quantity;
-                            await SparePartUsage.findByIdAndUpdate(sparePartUsage._id, {
-                                amountPaid: newAmountPaid,
-                                paymentStatus: calculatePaymentStatus(totalOwed, newAmountPaid)
-                            }, { session });
-                        }
-                    }
-                })
-            );
-
-            // Reverse outstanding balance
-            if (payment.type === 'receivable') {
-                await Customer.findByIdAndUpdate(
-                    payment.customer,
-                    { $inc: { outstandingBalance: payment.totalAmount } },
-                    { session }
-                );
-            } else {
-                await Supplier.findByIdAndUpdate(
-                    payment.supplier,
-                    { $inc: { outstandingBalance: payment.totalAmount } },
-                    { session }
-                );
-            }
-
-            // Soft delete payment
-            await Payment.findByIdAndUpdate(payment._id, { isDeleted: true }, { session });
-        });
-
-        res.json({ success: true, message: 'Payment deleted successfully' });
     } catch (error) {
         next(error);
     }

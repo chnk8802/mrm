@@ -1,6 +1,6 @@
 import { ALLOWED_TRANSITIONS } from "@repo/validators";
 
-export const transitionHandlers = {
+const transitionHandlers = {
     'received->in-progress': {
         before: async (repair) => {
             if (!repair.technician) {
