@@ -49,7 +49,7 @@ const Profile = () => {
   return (
     <div className="space-y-8">
       {/* Profile Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Profile Picture & Info */}
         <Card className="shadow-sm">
           <CardHeader>
@@ -81,7 +81,7 @@ const Profile = () => {
             <CardTitle>Account Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className="space-y-6 p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
@@ -125,7 +125,7 @@ const Profile = () => {
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
-                  value={userData.address}
+                  value={userData.fullAddress}
                   readOnly
                   className="bg-gray-50"
                 />

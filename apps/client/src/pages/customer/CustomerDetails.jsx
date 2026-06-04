@@ -89,7 +89,7 @@ const CustomerDetails = () => {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -101,7 +101,7 @@ const CustomerDetails = () => {
   // Not found state
   if (!customer) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
           Customer not found
         </div>
@@ -110,7 +110,7 @@ const CustomerDetails = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
         <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ const CustomerDetails = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Contact Information */}
         <Card className="shadow-sm">
           <CardHeader>

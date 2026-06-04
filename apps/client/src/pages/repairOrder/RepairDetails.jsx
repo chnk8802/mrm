@@ -194,7 +194,7 @@ const RepairDetails = () => {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/repairs')}>
             <ArrowLeft className="w-5 h-5" />
@@ -211,7 +211,7 @@ const RepairDetails = () => {
   // Not found state
   if (!repair) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/repairs')}>
             <ArrowLeft className="w-5 h-5" />
@@ -228,7 +228,7 @@ const RepairDetails = () => {
   const statusInfo = getStatusInfo(repair.status);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-4">

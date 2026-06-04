@@ -148,7 +148,7 @@ const UserDetails = () => {
   // Error state
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -169,7 +169,7 @@ const UserDetails = () => {
   // Not found state
   if (!user) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -188,7 +188,7 @@ const UserDetails = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       {/* Page Header */}
       <div className="flex items-center justify-end gap-2">
         {/* Edit Button */}

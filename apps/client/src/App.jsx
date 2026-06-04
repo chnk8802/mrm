@@ -1,372 +1,90 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Login from './pages/auth/Login';
-import Signup from './pages/auth/Signup';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-// import LayoutNew from './components/LayoutNew';
-import Settings from './pages/settings/Settings';
+
+import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/settings/Profile';
-import CustomerList from './pages/customer/CustomerList';
-import CustomerCreate from './pages/customer/CustomerCreate';
-import CustomerEdit from './pages/customer/CustomerEdit';
-import CustomerDetails from './pages/customer/CustomerDetails';
-import UserList from './pages/users/UserList';
-import UserCreate from './pages/users/UserCreate';
-import UserEdit from './pages/users/UserEdit';
-import UserDetails from './pages/users/UserDetails';
+
 import RepairList from './pages/repairOrder/RepairList';
 import RepairCreate from './pages/repairOrder/RepairCreate';
-import RepairEdit from './pages/repairOrder/RepairEdit';
 import RepairDetails from './pages/repairOrder/RepairDetails';
-import SparePartList from './pages/sparePartUsage/SparePartList';
-import SparePartCreate from './pages/sparePartUsage/SparePartCreate';
-import SparePartEdit from './pages/sparePartUsage/SparePartEdit';
-import SparePartDetails from './pages/sparePartUsage/SparePartDetails';
+import RepairEdit from './pages/repairOrder/RepairEdit';
+
+import CustomerList from './pages/customer/CustomerList';
+import CustomerCreate from './pages/customer/CustomerCreate';
+import CustomerDetails from './pages/customer/CustomerDetails';
+import CustomerEdit from './pages/customer/CustomerEdit';
+
 import SupplierList from './pages/supplier/SupplierList';
 import SupplierCreate from './pages/supplier/SupplierCreate';
-import SupplierEdit from './pages/supplier/SupplierEdit';
 import SupplierDetails from './pages/supplier/SupplierDetails';
+import SupplierEdit from './pages/supplier/SupplierEdit';
+
+import SparePartList from './pages/sparePartUsage/SparePartList';
+import SparePartCreate from './pages/sparePartUsage/SparePartCreate';
+import SparePartDetails from './pages/sparePartUsage/SparePartDetails';
+import SparePartEdit from './pages/sparePartUsage/SparePartEdit';
+
+import UserList from './pages/users/UserList';
+import UserCreate from './pages/users/UserCreate';
+import UserDetails from './pages/users/UserDetails';
+import UserEdit from './pages/users/UserEdit';
+
 import TechnicianList from './pages/technician/TechnicianList';
+import Profile from './pages/settings/Profile';
+import Settings from './pages/settings/Settings';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if user is authenticated by making a request to the profile endpoint
-    const checkAuth = async () => {
-      try {
-        await axios.get('/api/auth/profile', {
-          withCredentials: true
-        });
-        setIsAuthenticated(true);
-      } catch (err) {
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  // Protected route component
-  const ProtectedRoute = ({ children }) => {
-    if (loading) {
-      return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-    }
-    if (!isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
+const ProtectedRoute = ({ children, roles }) => {
+    const { user, loading } = useAuth();
+    if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    if (!user) return <Navigate to="/login" replace />;
+    if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
     return children;
-  };
+};
 
-  // Public route component (redirect if authenticated)
-  const PublicRoute = ({ children }) => {
-    if (loading) {
-      return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-    }
-    if (isAuthenticated) {
-      return <Navigate to="/" replace />;
-    }
-    return children;
-  };
+export default function App() {
+    const { user, loading } = useAuth();
 
-  return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
+    if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+
+    return (
         <Routes>
-          {/* Public routes */}
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/customers"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <CustomerList />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/customers/new"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <CustomerCreate />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/customers/:id"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <CustomerDetails />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/customers/:id/edit"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <CustomerEdit />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-          path='/technicians'
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <TechnicianList />
-              </Layout>
-            </ProtectedRoute>
-          }
-          />
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <UserList />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users/new"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <UserCreate />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users/:id"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <UserDetails />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/users/:id/edit"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <UserEdit />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/repairs"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <RepairList />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/repairs/new"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <RepairCreate />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/repairs/:id"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <RepairDetails />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/repairs/:id/edit"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <RepairEdit />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/spare-parts"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SparePartList />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/spare-parts/create"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SparePartCreate />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/spare-parts/:id"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SparePartDetails />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/spare-parts/:id/edit"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SparePartEdit />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/suppliers"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SupplierList />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/suppliers/create"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SupplierCreate />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/suppliers/new"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SupplierCreate />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/suppliers/:id"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SupplierDetails />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/suppliers/:id/edit"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SupplierEdit />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Settings/>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/help"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <div className="space-y-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Help Center</h1>
-                    <p className="text-gray-600">This page will show help and support.</p>
-                  </div>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Profile />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route index element={<Dashboard />} />
 
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="repairs" element={<RepairList />} />
+                <Route path="repairs/new" element={<RepairCreate />} />
+                <Route path="repairs/:id" element={<RepairDetails />} />
+                <Route path="repairs/:id/edit" element={<RepairEdit />} />
+
+                <Route path="customers" element={<CustomerList />} />
+                <Route path="customers/new" element={<CustomerCreate />} />
+                <Route path="customers/:id" element={<CustomerDetails />} />
+                <Route path="customers/:id/edit" element={<CustomerEdit />} />
+
+                <Route path="suppliers" element={<SupplierList />} />
+                <Route path="suppliers/new" element={<SupplierCreate />} />
+                <Route path="suppliers/:id" element={<SupplierDetails />} />
+                <Route path="suppliers/:id/edit" element={<SupplierEdit />} />
+
+                <Route path="spare-parts" element={<SparePartList />} />
+                <Route path="spare-parts/new" element={<SparePartCreate />} />
+                <Route path="spare-parts/:id" element={<SparePartDetails />} />
+                <Route path="spare-parts/:id/edit" element={<SparePartEdit />} />
+
+                <Route path="users" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserList /></ProtectedRoute>} />
+                <Route path="users/new" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserCreate /></ProtectedRoute>} />
+                <Route path="users/:id" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserDetails /></ProtectedRoute>} />
+                <Route path="users/:id/edit" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserEdit /></ProtectedRoute>} />
+
+                <Route path="technicians" element={<TechnicianList />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="settings/profile" element={<Profile />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </div>
-    </Router>
-  );
+    );
 }
-
-export default App;

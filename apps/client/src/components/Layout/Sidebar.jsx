@@ -1,64 +1,73 @@
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard,
-  Settings, 
-  HelpCircle, 
-  Users,
-  UserCog,
-  X,
-  Wrench,
-  Package,
-  Truck
+import { useAuth } from '@/context/AuthContext';
+import {
+    LayoutDashboard, Users, UserCog, Wrench,
+    Package, Truck, Settings, X, CreditCard, HardHat,
+    ChartArea
 } from 'lucide-react';
 
+const allMenuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: null },
+    { icon: Wrench, label: 'Repairs', path: '/repairs', roles: null },
+    { icon: Package, label: 'Spare Parts', path: '/spare-parts', roles: null },
+    { icon: CreditCard, label: 'Payments', path: '/payments', roles: null },
+    { icon: Users, label: 'Customers', path: '/customers', roles: null },
+    { icon: Truck, label: 'Suppliers', path: '/suppliers', roles: null },
+    { icon: HardHat, label: 'Technicians', path: '/technicians', roles: null },
+    { icon: UserCog, label: 'Users', path: '/users', roles: ['superadmin', 'admin'] },
+    { icon: Settings, label: 'Settings', path: '/settings', roles: null },
+    { icon: ChartArea, label: 'Reports', path: '/reports', roles: null },
+];
+
 const Sidebar = ({ isMobile = false, onClose = null }) => {
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Users, label: 'Customers', path: '/customers' },
-    { icon: Users, label: 'Technicians', path: '/technicians' },
-    { icon: UserCog, label: 'Users', path: '/users' },
-    { icon: Wrench, label: 'Repairs', path: '/repairs' },
-    { icon: Package, label: 'Spare Parts', path: '/spare-parts' },
-    { icon: Truck, label: 'Suppliers', path: '/suppliers' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
-    { icon: HelpCircle, label: 'Help', path: '/help' },
-  ];
+    const { user } = useAuth();
 
-  return (
-    <div className={`w-full bg-white border-r border-gray-200 p-4 flex flex-col ${isMobile ? 'h-full' : 'hidden md:flex'}`}>
-      {/* Mobile Close Button */}
-      {isMobile && (
-        <div className="flex justify-end mb-2">
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    const menuItems = allMenuItems.filter(item =>
+        !item.roles || item.roles.includes(user?.role)
+    );
+
+    return (
+        <div className="w-60 h-full bg-[hsl(var(--sidebar-bg))] border-r border-border flex flex-col">
+            {isMobile && (
+                <div className="flex justify-end p-3">
+                    <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            <div className="px-3 py-4 flex-1 overflow-y-auto">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
+                    Menu
+                </p>
+                <nav className="space-y-0.5">
+                    {menuItems.map((item) => (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            end={item.path === '/'}
+                            onClick={isMobile ? onClose : undefined}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${isActive
+                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                }`
+                            }
+                        >
+                            <item.icon className="w-4 h-4 shrink-0" />
+                            {item.label}
+                        </NavLink>
+                    ))}
+                </nav>
+            </div>
+
+            <div className="px-3 py-4 border-t border-border">
+                <p className="text-xs text-muted-foreground px-3">
+                    MRM v{__APP_VERSION__} · {user?.role}
+                </p>
+            </div>
         </div>
-      )}
-
-      <nav className="space-y-1 flex-1">
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            onClick={isMobile ? onClose : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`
-            }
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-    </div>
-  );
+    );
 };
 
 export default Sidebar;

@@ -1,4 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 240 10% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 240 5% 94%;
+    --muted-foreground: 240 5% 45%;
+    --border: 240 6% 90%;
+    --sidebar-bg: 0 0% 100%;
+    --topbar-bg: 0 0% 100%;
+    font-family: 'Geist', sans-serif;
+  }
+
+  .dark {
+    --background: 240 10% 8%;
+    --foreground: 0 0% 95%;
+    --card: 240 10% 11%;
+    --card-foreground: 0 0% 95%;
+    --primary: 243 75% 65%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 240 8% 15%;
+    --muted-foreground: 240 5% 55%;
+    --border: 240 8% 18%;
+    --sidebar-bg: 240 10% 10%;
+    --topbar-bg: 240 10% 10%;
+  }
+
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+}
+
+
+/* @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -56,4 +97,4 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%
   }
-}
+} */
