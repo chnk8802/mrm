@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import Layout from './components/Layout';
+import Layout from './components/Layout/Layout';
 
 import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
@@ -9,6 +9,10 @@ import RepairList from './pages/repairOrder/RepairList';
 import RepairCreate from './pages/repairOrder/RepairCreate';
 import RepairDetails from './pages/repairOrder/RepairDetails';
 import RepairEdit from './pages/repairOrder/RepairEdit';
+
+import PaymentList from './pages/payments/PaymentList';
+import PaymentCreate from './pages/payments/PaymentCreate';
+import PaymentDetails from './pages/payments/PaymentDetails';
 
 import CustomerList from './pages/customer/CustomerList';
 import CustomerCreate from './pages/customer/CustomerCreate';
@@ -58,6 +62,10 @@ export default function App() {
                 <Route path="repairs/new" element={<RepairCreate />} />
                 <Route path="repairs/:id" element={<RepairDetails />} />
                 <Route path="repairs/:id/edit" element={<RepairEdit />} />
+
+                <Route path="payments" element={<PaymentList />} />
+                <Route path="payments/new" element={<PaymentCreate />} />
+                <Route path="payments/:id" element={<PaymentDetails />} />
 
                 <Route path="customers" element={<CustomerList />} />
                 <Route path="customers/new" element={<CustomerCreate />} />

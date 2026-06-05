@@ -19,7 +19,7 @@ const recentRepairs = [
 ];
 
 const weeklyTrends = [
-  { day: 'Mon', repairs: 12 },
+  { day: 'Mon', repairs: 200 },
   { day: 'Tue', repairs: 18 },
   { day: 'Wed', repairs: 15 },
   { day: 'Thu', repairs: 22 },
@@ -67,15 +67,6 @@ const Dashboard = () => {
               Here's what's happening today.
             </p>
           </div>
-
-          {/* Optional Action Button */}
-          {/* <button
-            onClick={() => navigate('/repairs/new')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Repair
-          </button> */}
           <div className="flex flex-col items-end text-right text-xs sm:text-sm bg-muted/40 sm:bg-transparent p-2 sm:p-0 rounded-lg border border-border/40 sm:border-none">
             <span className="font-medium text-muted-foreground mb-1 text-[11px] uppercase tracking-wider">
               Need Support?
@@ -126,7 +117,6 @@ const Dashboard = () => {
 
         {/* Recent Repairs + Weekly Trend */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
           {/* Recent Repairs */}
           <Card className="lg:col-span-2 border-border shadow-none">
             <CardHeader className="pb-3">

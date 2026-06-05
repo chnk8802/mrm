@@ -1,4 +1,4 @@
-import { Bell, ChevronDown, LogOut, User, Settings, Menu, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Settings, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';

@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Wrench, Settings, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
-import Topbar from './Topbar';;
+import Topbar from './Topbar';
 
 const mobileNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
