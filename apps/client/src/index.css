@@ -10,6 +10,8 @@
     --foreground: 240 10% 10%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
     --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
     --muted: 240 5% 94%;
@@ -25,6 +27,8 @@
     --foreground: 0 0% 95%;
     --card: 240 10% 11%;
     --card-foreground: 0 0% 95%;
+    --popover: 240 10% 11%;
+    --popover-foreground: 0 0% 95%;
     --primary: 243 75% 65%;
     --primary-foreground: 0 0% 100%;
     --muted: 240 8% 15%;

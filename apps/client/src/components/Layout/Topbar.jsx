@@ -18,7 +18,7 @@ const Topbar = ({ sidebarOpen, onToggleSidebar }) => {
             {/* Sidebar Toggle */}
             <button
                 onClick={onToggleSidebar}
-                className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                className="hidden md:flex p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             >
                 {sidebarOpen
                     ? <PanelLeftClose className="w-4 h-4" />

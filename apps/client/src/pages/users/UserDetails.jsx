@@ -1,366 +1,250 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Phone,
-  Mail,
-  MapPin,
-  Shield,
-  UserCog,
-  Wrench,
-  Calendar,
-  ShieldCheck,
-  ClipboardList,
-  MoreVertical,
-  User,
+    ArrowLeft, Edit, Trash2, Phone, Mail, MapPin,
+    Shield, UserCog, Wrench, Calendar, ShieldCheck,
+    ClipboardList, User, PowerOff, Power,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import userService from "@/api/userService";
 import { useAuth } from "@/context/AuthContext";
+import RowActions from "@/components/common/RowActions";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import toast from "react-hot-toast";
+
+const getRoleIcon = (role) => {
+    switch (role) {
+        case "superadmin": return <ShieldCheck className="w-4 h-4" />;
+        case "admin":      return <Shield className="w-4 h-4" />;
+        case "manager":    return <ClipboardList className="w-4 h-4" />;
+        case "staff":      return <Wrench className="w-4 h-4" />;
+        default:           return <UserCog className="w-4 h-4" />;
+    }
+};
+
+const getRoleBadge = (role) => {
+    switch (role) {
+        case "superadmin": return "bg-purple-500/10 text-purple-500";
+        case "admin":      return "bg-blue-500/10 text-blue-500";
+        case "manager":    return "bg-amber-500/10 text-amber-500";
+        case "staff":      return "bg-green-500/10 text-green-500";
+        default:           return "bg-muted text-muted-foreground";
+    }
+};
+
+const InfoRow = ({ icon: Icon, label, value }) => (
+    <div className="flex items-start gap-3">
+        <Icon className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+        <div>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="text-sm font-medium text-foreground">{value || '—'}</p>
+        </div>
+    </div>
+);
+
+const formatDate = (d) => new Date(d).toLocaleDateString("en-IN", {
+    year: "numeric", month: "long", day: "numeric",
+    hour: "2-digit", minute: "2-digit"
+});
+
+const formatAddress = (address) => {
+    if (!address) return '—';
+    if (typeof address === 'string') return address;
+    return [address.street, address.city, address.state, address.postalCode, address.country]
+        .filter(Boolean).join(', ') || '—';
+};
 
 const UserDetails = () => {
-  const navigate = useNavigate();
-  const { id } = useParams();
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const { user: currentUser } = useAuth();
 
-  const {currentUser} = useAuth();
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null });
+    const [actionLoading, setActionLoading] = useState(false);
 
-  // User data state
-  const [user, setUser] = useState(null);
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                setLoading(true);
+                const response = await userService.getUserById(id);
+                setUser(response.data);
+            } catch (err) {
+                setError(err.response?.data?.message || "Failed to fetch user");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUser();
+    }, [id]);
 
-  // Loading and error states
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-
-  // Actions Button
-  const [showActions, setShowActions] = useState(false);
-
-  // Fetch user data on mount
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const response = await userService.getUserById(id);
-        setUser(response.data);
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to fetch user");
-      } finally {
-        setLoading(false);
-      }
+    const handleToggleActive = async () => {
+        try {
+            setActionLoading(true);
+            if (user.isActive) {
+                await userService.deactivateUser(id);
+                toast.success("User deactivated");
+            } else {
+                await userService.activateUser(id);
+                toast.success("User activated");
+            }
+            setUser(prev => ({ ...prev, isActive: !prev.isActive }));
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to update status');
+        } finally {
+            setActionLoading(false);
+            setConfirmDialog({ open: false, type: null });
+        }
     };
 
-    fetchUser();
-  }, [id]);
+    const handleDelete = async () => {
+        try {
+            setActionLoading(true);
+            await userService.deleteUser(id);
+            toast.success("User deleted");
+            navigate("/users");
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to delete user");
+        } finally {
+            setActionLoading(false);
+            setConfirmDialog({ open: false, type: null });
+        }
+    };
 
-  const handleToggleActive = async () => {
-    try {
-      if (user.isActive) {
-        await userService.deactivateUser(id);
-      } else {
-        await userService.activateUser(id);
-      }
-      setUser(prev => ({ ...prev, isActive: !prev.isActive }));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update status');
-    }
-  };
-  // Handle delete
-  const handleDelete = async () => {
-    // Prevent self-deletion
-    if (id === currentUser?._id) {
-      alert("You cannot delete your own account");
-      return;
-    }
+    const isOwnProfile = id === currentUser?._id;
 
-    if (!window.confirm("Are you sure you want to delete this user?")) {
-      return;
-    }
-
-    try {
-      setDeleting(true);
-      await userService.deleteUser(id);
-      navigate("/users");
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete user");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  // Format date
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // Get role icon
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case "superadmin":
-        return <ShieldCheck className="w-5 h-5" />;
-      case "admin":
-        return <Shield className="w-5 h-5" />;
-      case "manager":
-        return <ClipboardList className="w-5 h-5" />;
-      case "staff":
-        return <Wrench className="w-5 h-5" />;
-      default:
-        return <UserCog className="w-5 h-5" />;
-    }
-  };
-
-  // Get role badge color
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case "superadmin":
-        return "bg-purple-100 text-purple-700";
-      case "admin":
-        return "bg-blue-100 text-blue-700";
-      case "manager":
-        return "bg-amber-100 text-amber-700";
-      case "staff":
-        return "bg-green-100 text-green-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  // Check if viewing own profile
-  const isOwnProfile = id === currentUser?._id
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">Loading user details...</div>
-      </div>
+    if (loading) return (
+        <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+            Loading user details...
+        </div>
     );
-  }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="space-y-6 p-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/users")}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900">User Details</h1>
+    if (error) return (
+        <div className="p-4 space-y-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/users")} className="gap-1.5">
+                <ArrowLeft className="w-4 h-4" /> Back
+            </Button>
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">{error}</div>
         </div>
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      </div>
     );
-  }
 
-  // Not found state
-  if (!user) {
-    return (
-      <div className="space-y-6 p-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/users")}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900">User Details</h1>
+    if (!user) return (
+        <div className="p-4 space-y-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/users")} className="gap-1.5">
+                <ArrowLeft className="w-4 h-4" /> Back
+            </Button>
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 px-3 py-2 rounded-lg text-sm">User not found</div>
         </div>
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-          User not found
-        </div>
-      </div>
     );
-  }
 
-  return (
-    <div className="space-y-6 p-4">
-      {/* Page Header */}
-      <div className="flex items-center justify-end gap-2">
-        {/* Edit Button */}
-        <Button onClick={() => navigate(`/users/${id}/edit`)} className="gap-2">
-          <Edit className="w-4 h-4" />
-          Edit
-        </Button>
+    return (
+        <div className="space-y-4 p-4">
 
-        {/* Three dot actions */}
-        <div className="relative">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setShowActions((prev) => !prev)}
-          >
-            <MoreVertical className="w-4 h-4" />
-          </Button>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/users")} className="gap-1.5 text-muted-foreground">
+                    <ArrowLeft className="w-4 h-4" /> Users
+                </Button>
+                <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => navigate(`/users/${id}/edit`)} className="h-8 gap-1.5">
+                        <Edit className="w-3.5 h-3.5" /> Edit
+                    </Button>
+                    <RowActions actions={[
+                        ...(user.role !== 'superadmin' ? [{
+                            label: user.isActive ? 'Deactivate' : 'Activate',
+                            icon: user.isActive ? PowerOff : Power,
+                            onClick: () => setConfirmDialog({ open: true, type: user.isActive ? 'deactivate' : 'activate' })
+                        }] : []),
+                        {
+                            label: 'Delete',
+                            icon: Trash2,
+                            danger: true,
+                            divider: true,
+                            disabled: isOwnProfile,
+                            onClick: () => setConfirmDialog({ open: true, type: 'delete' })
+                        }
+                    ]} />
+                </div>
+            </div>
 
-          {showActions && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowActions(false)}
-              />
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-                {user.role !== 'superadmin' && (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
-                    onClick={() => {
-                      handleToggleActive();
-                      setShowActions(false);
-                    }}
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full ${user.isActive ? "bg-red-500" : "bg-green-500"}`}
-                    />
-                    {user.isActive ? "Mark as Inactive" : "Mark as Active"}
-                  </button>
-                )}
-                <div className="border-t border-gray-100 my-1" />
+            {/* Profile Card */}
+            <Card className="border-border shadow-none">
+                <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-lg">
+                            {user.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="text-base font-semibold text-foreground">{user.name}</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${getRoleBadge(user.role)}`}>
+                                    {getRoleIcon(user.role)}
+                                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${user.isActive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                    {user.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
-                <button
-                  className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${isOwnProfile
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-red-600 hover:bg-red-50"
-                    }`}
-                  disabled={isOwnProfile}
-                  onClick={() => {
-                    if (!isOwnProfile) {
-                      handleDelete();
-                      setShowActions(false);
-                    }
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {deleting ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </>
-          )}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+                {/* Contact */}
+                <Card className="border-border shadow-none">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-semibold">Contact Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <InfoRow icon={Phone} label="Phone"   value={user.phone} />
+                        <InfoRow icon={Mail}  label="Email"   value={user.email} />
+                        <InfoRow icon={MapPin} label="Address" value={formatAddress(user.address)} />
+                    </CardContent>
+                </Card>
+
+                {/* Record Info */}
+                <Card className="border-border shadow-none">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-semibold">Record Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <InfoRow icon={Calendar} label="Created"      value={formatDate(user.createdAt)} />
+                        <InfoRow icon={Calendar} label="Last Updated" value={formatDate(user.updatedAt)} />
+                        <InfoRow icon={User}     label="User ID"      value={user._id} />
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Confirm Dialogs */}
+            <ConfirmDialog
+                open={confirmDialog.open && confirmDialog.type === 'delete'}
+                onClose={() => setConfirmDialog({ open: false, type: null })}
+                onConfirm={handleDelete}
+                title="Delete User"
+                description="This action cannot be undone. The user will be permanently removed."
+                confirmLabel="Delete"
+                loading={actionLoading}
+            />
+            <ConfirmDialog
+                open={confirmDialog.open && (confirmDialog.type === 'deactivate' || confirmDialog.type === 'activate')}
+                onClose={() => setConfirmDialog({ open: false, type: null })}
+                onConfirm={handleToggleActive}
+                title={confirmDialog.type === 'deactivate' ? 'Deactivate User' : 'Activate User'}
+                description={confirmDialog.type === 'deactivate'
+                    ? 'User will not be able to login until reactivated.'
+                    : 'User will be able to login again.'
+                }
+                confirmLabel={confirmDialog.type === 'deactivate' ? 'Deactivate' : 'Activate'}
+                danger={confirmDialog.type === 'deactivate'}
+                loading={actionLoading}
+            />
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Contact Information */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Name */}
-            <div className="flex items-start gap-3">
-              <User className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <div className="text-sm text-gray-500">Name</div>
-                <div className="font-medium">{user.name}</div>
-              </div>
-            </div>
-
-            {/* Phone */}
-            <div className="flex items-start gap-3">
-              <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <div className="text-sm text-gray-500">Phone</div>
-                <div className="font-medium">{user.phone}</div>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="flex items-start gap-3">
-              <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <div className="text-sm text-gray-500">Email</div>
-                <div className="font-medium">{user.email}</div>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-              <div>
-                <div className="text-sm text-gray-500">Address</div>
-                <div className="font-medium">{user.address}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Role & Status */}
-        <Card className="shadow-sm lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">Account Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                {getRoleIcon(user.role)}
-                <div>
-                  <div className="text-sm text-gray-500">Role</div>
-                  <div className="font-medium capitalize">{user.role}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center ${user.isActive ? "bg-green-100" : "bg-red-100"}`}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full ${user.isActive ? "bg-green-500" : "bg-red-500"}`}
-                  ></div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">Status</div>
-                  <div className="font-medium">
-                    {user.isActive ? "Active" : "Inactive"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Metadata */}
-        <Card className="shadow-sm lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="text-lg">Record Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-500">Created</div>
-                  <div className="font-medium">
-                    {formatDate(user.createdAt)}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-500">Last Updated</div>
-                  <div className="font-medium">
-                    {formatDate(user.updatedAt)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default UserDetails;

@@ -1,61 +1,78 @@
-import axios from 'axios';
+import api from './axiosInstance';
 
-const API_URL = '/api/customers';
-
-// Create axios instance with default config
-const api = axios.create({
-  withCredentials: true
-});
-
-// Customer Service API
 const customerService = {
-  // Create a new customer
-  createCustomer: async (customerData) => {
-    const response = await api.post(API_URL, customerData);
-    return response.data;
-  },
-
-  // Get all customers with pagination, sorting, and filtering
-  getCustomers: async (params = {}) => {
-    const response = await api.get(API_URL, { params });
-    return response.data;
-  },
-
-  // Get single customer by ID
-  getCustomerById: async (id) => {
-    const response = await api.get(`${API_URL}/${id}`);
-    return response.data;
-  },
-
-  // Update a customer
-  updateCustomer: async (id, customerData) => {
-    const response = await api.put(`${API_URL}/${id}`, customerData);
-    return response.data;
-  },
-
-  // Delete a customer (soft delete)
-  deleteCustomer: async (id) => {
-    const response = await api.delete(`${API_URL}/${id}`);
-    return response.data;
-  },
-
-  // Bulk update customers
-  bulkUpdateCustomers: async ({ ids, data }) => {
-    const response = await api.put(`${API_URL}/bulk`, { ids, data });
-    return response.data;
-  },
-
-  // Bulk delete customers
-  bulkDeleteCustomers: async (ids) => {
-    const response = await api.delete(`${API_URL}/bulk`, { data: { ids } });
-    return response.data;
-  },
-
-  // Get customer statistics
-  getCustomerStats: async () => {
-    const response = await api.get(`${API_URL}/stats`);
-    return response.data;
-  }
+    getCustomers:           (params = {})    => api.get('/customers', { params }).then(r => r.data),
+    getCustomerById:        (id)             => api.get(`/customers/${id}`).then(r => r.data),
+    getCustomerStats:       ()               => api.get('/customers/stats').then(r => r.data),
+    createCustomer:         (data)           => api.post('/customers', data).then(r => r.data),
+    updateCustomer:         (id, data)       => api.patch(`/customers/${id}`, data).then(r => r.data),
+    deleteCustomer:         (id)             => api.delete(`/customers/${id}`).then(r => r.data),
+    restoreCustomer:        (id)             => api.patch(`/customers/${id}/restore`).then(r => r.data),
+    permanentlyDeleteCustomer: (id)          => api.delete(`/customers/${id}/permanent`).then(r => r.data),
+    bulkUpdateCustomers:    (data)           => api.patch('/customers/bulk', data).then(r => r.data),
+    bulkDeleteCustomers:    (data)           => api.delete('/customers/bulk', { data }).then(r => r.data),
 };
 
 export default customerService;
+
+// import axios from 'axios';
+
+// const API_URL = '/api/customers';
+
+// // Create axios instance with default config
+// const api = axios.create({
+//   withCredentials: true
+// });
+
+// // Customer Service API
+// const customerService = {
+//   // Create a new customer
+//   createCustomer: async (customerData) => {
+//     const response = await api.post(API_URL, customerData);
+//     return response.data;
+//   },
+
+//   // Get all customers with pagination, sorting, and filtering
+//   getCustomers: async (params = {}) => {
+//     const response = await api.get(API_URL, { params });
+//     return response.data;
+//   },
+
+//   // Get single customer by ID
+//   getCustomerById: async (id) => {
+//     const response = await api.get(`${API_URL}/${id}`);
+//     return response.data;
+//   },
+
+//   // Update a customer
+//   updateCustomer: async (id, customerData) => {
+//     const response = await api.put(`${API_URL}/${id}`, customerData);
+//     return response.data;
+//   },
+
+//   // Delete a customer (soft delete)
+//   deleteCustomer: async (id) => {
+//     const response = await api.delete(`${API_URL}/${id}`);
+//     return response.data;
+//   },
+
+//   // Bulk update customers
+//   bulkUpdateCustomers: async ({ ids, data }) => {
+//     const response = await api.put(`${API_URL}/bulk`, { ids, data });
+//     return response.data;
+//   },
+
+//   // Bulk delete customers
+//   bulkDeleteCustomers: async (ids) => {
+//     const response = await api.delete(`${API_URL}/bulk`, { data: { ids } });
+//     return response.data;
+//   },
+
+//   // Get customer statistics
+//   getCustomerStats: async () => {
+//     const response = await api.get(`${API_URL}/stats`);
+//     return response.data;
+//   }
+// };
+
+// export default customerService;

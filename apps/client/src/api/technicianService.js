@@ -1,19 +1,7 @@
-import axios from 'axios';
+import api from './axiosInstance';
 
-const API_URL = '/api/technicians';
-
-// Create axios instance with default config
-const api = axios.create({
-    withCredentials: true
-});
-
-// Technician Service API
 const technicianService = {
-    // Get all Technicians with pagination, sorting, and filtering
-    getTechnicians: async(params = {}) => {
-        const response = await api.get(API_URL, { params });
-        return response.data;
-    },
+    getTechnicians: () => api.get('/technicians').then(r => r.data),
 };
 
 export default technicianService;

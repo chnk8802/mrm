@@ -1,67 +1,19 @@
-import axios from 'axios';
+import api from './axiosInstance';
 
-const API_URL = '/api/users';
+const BASE = '/users';
 
-// Create axios instance with default config
-const api = axios.create({
-    withCredentials: true
-});
-
-// User Service API
 const userService = {
-    // Create a new user
-    createUser: async(userData) => {
-        const response = await api.post(API_URL, userData);
-        return response.data;
-    },
-
-    // Get all users with pagination, sorting, and filtering
-    getUsers: async(params = {}) => {
-        const response = await api.get(API_URL, { params });
-        return response.data;
-    },
-
-    // Get single user by ID
-    getUserById: async(id) => {
-        const response = await api.get(`${API_URL}/${id}`);
-        return response.data;
-    },
-
-    // Update a user
-    updateUser: async(id, userData) => {
-        const response = await api.put(`${API_URL}/${id}`, userData);
-        return response.data;
-    },
-
-    // Deactivate a user
-    deactivateUser: async(id) => {
-        const response = await api.patch(`${API_URL}/${id}/deactivate`);
-        return response.data;
-    },
-
-    // Activate a user
-    activateUser: async(id) => {
-        const response = await api.patch(`${API_URL}/${id}/activate`);
-        return response.data;
-    },
-
-    // Delete User
-    deleteUser: async(id) => {
-        const response = await api.delete(`${API_URL}/${id}`);
-        return response.data;
-    },
-
-    // Reset user password
-    resetPassword: async(id, newPassword) => {
-        const response = await api.put(`${API_URL}/${id}/reset-password`, { newPassword });
-        return response.data;
-    },
-
-    // Get user statistics
-    getUserStats: async() => {
-        const response = await api.get(`${API_URL}/stats`);
-        return response.data;
-    }
+    getUsers:      (params = {})    => api.get(BASE, { params }).then(r => r.data),
+    getUserById:   (id)             => api.get(`${BASE}/${id}`).then(r => r.data),
+    getUserStats:  ()               => api.get(`${BASE}/stats`).then(r => r.data),
+    createUser:    (data)           => api.post(BASE, data).then(r => r.data),
+    updateUser:    (id, data)       => api.patch(`${BASE}/${id}`, data).then(r => r.data),
+    deleteUser:    (id)             => api.delete(`${BASE}/${id}`).then(r => r.data),
+    restoreUser:   (id)             => api.patch(`${BASE}/${id}/restore`).then(r => r.data),
+    deactivateUser:(id)             => api.patch(`${BASE}/${id}/deactivate`).then(r => r.data),
+    activateUser:  (id)             => api.patch(`${BASE}/${id}/activate`).then(r => r.data),
+    deleteUserPermanently: (id)     => api.delete(`${BASE}/${id}/permanent`).then(r => r.data),
+    resetPassword: (id, newPassword)=> api.patch(`${BASE}/${id}/reset-password`, { newPassword }).then(r => r.data),
 };
 
 export default userService;

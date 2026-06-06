@@ -1,389 +1,255 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Shield, ClipboardList, UserCog, Wrench, Save } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { userSchema } from "@repo/validators";
+import {
+    ArrowLeft, Eye, EyeOff, RefreshCw,
+    ShieldCheck, Shield, ClipboardList, UserCog, Wrench,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import userService from "@/api/userService";
+import toast from "react-hot-toast";
+
+// extend userSchema with confirmPassword client-side only
+const createUserSchema = userSchema.extend({
+    confirmPassword: z.string().min(1, 'Please confirm password'),
+}).refine(data => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+});
+
+const roles = [
+    {
+        value: 'admin',
+        icon: Shield,
+        description: 'Manage repairs, customers, and daily operations'
+    },
+    {
+        value: 'manager',
+        icon: ClipboardList,
+        description: 'Oversee workflows, staff tasks, and reports'
+    },
+    {
+        value: 'staff',
+        icon: Wrench,
+        description: 'Handle assigned repairs and update job status'
+    },
+];
+
+const generatePassword = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+};
+
+const FieldError = ({ message }) => message
+    ? <p className="text-xs text-red-500 mt-1">{message}</p>
+    : null;
 
 const UserCreate = () => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
+    const {
+        register,
+        handleSubmit,
+        setValue,
+        watch,
+        formState: { errors, isSubmitting }
+    } = useForm({
+        resolver: zodResolver(createUserSchema),
+        defaultValues: { role: 'staff' }
+    });
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    password: "",
-    confirmPassword: "",
-    role: "staff",
-  });
+    const selectedRole = watch('role');
 
-  // Error state
-  const [errors, setErrors] = useState({});
+    const handleGenerate = () => {
+        const pwd = generatePassword();
+        setValue('password', pwd);
+        setValue('confirmPassword', pwd);
+        setShowPassword(true);
+    };
 
-  // Loading state
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+    const onSubmit = async (data) => {
+        try {
+            const { confirmPassword, ...userData } = data;
+            await userService.createUser(userData);
+            toast.success("User created successfully");
+            navigate("/users");
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to create user");
+        }
+    };
 
-  // Handle input change
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    return (
+        <div className="space-y-4 p-4">
 
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/users")}
+                    className="gap-1.5 text-muted-foreground"
+                >
+                    <ArrowLeft className="w-4 h-4" /> Users
+                </Button>
+                <h1 className="text-base font-semibold text-foreground">Create User</h1>
+            </div>
 
-  // Generate random password
-  const generatePassword = () => {
-    const chars =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setFormData((prev) => ({
-      ...prev,
-      password,
-      confirmPassword: password,
-    }));
-  };
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
+                    {/* Role Selection */}
+                    <Card className="border-border shadow-none">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold">Role</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            {roles.map(({ value, icon: Icon, description }) => (
+                                <label key={value}
+                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                                        selectedRole === value
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:bg-muted/50'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        value={value}
+                                        {...register('role')}
+                                        className="mt-0.5 accent-primary"
+                                    />
+                                    <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${selectedRole === value ? 'text-primary' : 'text-muted-foreground'}`} />
+                                    <div>
+                                        <p className={`text-sm font-medium capitalize ${selectedRole === value ? 'text-primary' : 'text-foreground'}`}>
+                                            {value}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                                    </div>
+                                </label>
+                            ))}
+                            <FieldError message={errors.role?.message} />
+                        </CardContent>
+                    </Card>
 
-    // Name validation (required)
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
-    }
+                    {/* Basic Info */}
+                    <Card className="border-border shadow-none lg:col-span-2">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold">Basic Information</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-xs">Full Name <span className="text-red-500">*</span></Label>
+                                    <Input {...register('name')} placeholder="Enter full name"
+                                        className={`mt-1 h-8 text-sm ${errors.name ? 'border-red-500' : ''}`}
+                                    />
+                                    <FieldError message={errors.name?.message} />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Email <span className="text-red-500">*</span></Label>
+                                    <Input {...register('email')} type="email" placeholder="Enter email"
+                                        className={`mt-1 h-8 text-sm ${errors.email ? 'border-red-500' : ''}`}
+                                    />
+                                    <FieldError message={errors.email?.message} />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Phone <span className="text-red-500">*</span></Label>
+                                    <Input {...register('phone')} type="tel" placeholder="Enter phone number"
+                                        className={`mt-1 h-8 text-sm ${errors.phone ? 'border-red-500' : ''}`}
+                                    />
+                                    <FieldError message={errors.phone?.message} />
+                                </div>
+                            </div>
 
-    // Email validation (required)
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email address";
-    }
+                            {/* Address */}
+                            <div>
+                                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Address</Label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                                    <div className="md:col-span-2">
+                                        <Input {...register('address.street')} placeholder="Street address"
+                                            className="h-8 text-sm"
+                                        />
+                                    </div>
+                                    <Input {...register('address.city')}       placeholder="City"         className="h-8 text-sm" />
+                                    <Input {...register('address.state')}      placeholder="State"        className="h-8 text-sm" />
+                                    <Input {...register('address.postalCode')} placeholder="Postal code"  className="h-8 text-sm" />
+                                    <Input {...register('address.country')}    placeholder="Country"      className="h-8 text-sm" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-    // Phone validation (required)
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (formData.phone.length < 10) {
-      newErrors.phone = "Phone number must be at least 10 digits";
-    }
-
-    // Address validation (required)
-    if (!formData.address.trim()) {
-      newErrors.address = "Address is required";
-    }
-
-    // Password validation (required)
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-
-    // Confirm password validation
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Handle submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { confirmPassword, ...userData } = formData;
-
-      await userService.createUser(userData);
-
-      // Navigate to user list on success
-      navigate("/users");
-    } catch (err) {
-      if (err.response?.data?.errors) {
-        // Handle Zod validation errors
-        const fieldErrors = {};
-        err.response.data.errors.forEach((error) => {
-          const path = error.path.join(".");
-          fieldErrors[path] = error.message;
-        });
-        setErrors(fieldErrors);
-      } else {
-        setError(err.response?.data?.message || "Failed to create user");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Get role icon
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case "superadmin":
-        return <ShieldCheck className="w-5 h-5" />;
-      case "admin":
-        return <Shield className="w-5 h-5" />;
-      case "manager":
-        return <ClipboardList className="w-5 h-5" />;
-      case "staff":
-        return <Wrench className="w-5 h-5" />;
-      default:
-        return <UserCog className="w-5 h-5" />;
-    }
-  };
-
-  return (
-    <div className="space-y-6 p-4">
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Role Selection */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">User Role</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {["admin", "manager", "staff"].map(
-                  (role) => (
-                    <label
-                      key={role}
-                      className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${formData.role === role
-                          ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:bg-gray-50"
-                        }`}
-                    >
-                      <input
-                        type="radio"
-                        name="role"
-                        value={role}
-                        checked={formData.role === role}
-                        onChange={handleChange}
-                        className="w-4 h-4"
-                      />
-                      {getRoleIcon(role)}
-                      <div>
-                        <div className="font-medium capitalize">{role}</div>
-                        <div className="text-sm text-gray-500">
-                          {role === "superadmin" &&
-                            "Full system access — manage users, roles, repairs, and settings"}
-                          {role === "admin" &&
-                            "Manage repairs, customers, and oversee daily operations"}
-                          {role === "manager" &&
-                            "Oversee repair workflows, staff tasks, and reports"}
-                          {role === "staff" &&
-                            "Handle assigned repair tasks and update job status"}
-                        </div>
-                      </div>
-                    </label>
-                  ),
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Basic Information */}
-          <Card className="shadow-sm lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Name (Required) */}
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Full Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter full name"
-                  className={errors.name ? "border-red-500" : ""}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600">{errors.name}</p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">
-                  Email Address <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address"
-                  className={errors.email ? "border-red-500" : ""}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">
-                  Phone Number <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number"
-                  className={errors.phone ? "border-red-500" : ""}
-                />
-                {errors.phone && (
-                  <p className="text-sm text-red-600">{errors.phone}</p>
-                )}
-              </div>
-
-              {/* Address */}
-              <div className="space-y-2">
-                <Label htmlFor="address">
-                  Address <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="address"
-                  name="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter address"
-                  className={errors.address ? "border-red-500" : ""}
-                />
-                {errors.address && (
-                  <p className="text-sm text-red-600">{errors.address}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Password */}
-          <Card className="shadow-sm lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-lg">Password</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="password">
-                    Password <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Enter password"
-                      className={errors.password ? "border-red-500" : ""}
-                    />
-                    <Button
-                      type="button"
-                      onClick={generatePassword}
-                    >
-                      Generate
-
-                    </Button>
-                    <Button type="button" variant="outline" onClick={() => setShowPassword(p => !p)}>
-                      {showPassword ? 'Hide' : 'Show'}
-                    </Button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-sm text-red-600">{errors.password}</p>
-                  )}
+                    {/* Password */}
+                    <Card className="border-border shadow-none lg:col-span-3">
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm font-semibold">Password</CardTitle>
+                                <Button type="button" variant="outline" size="sm"
+                                    onClick={handleGenerate} className="h-7 text-xs gap-1.5"
+                                >
+                                    <RefreshCw className="w-3 h-3" /> Generate
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-xs">Password <span className="text-red-500">*</span></Label>
+                                    <div className="relative mt-1">
+                                        <Input {...register('password')}
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder="Enter password"
+                                            className={`h-8 text-sm pr-9 ${errors.password ? 'border-red-500' : ''}`}
+                                        />
+                                        <button type="button"
+                                            onClick={() => setShowPassword(p => !p)}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                        </button>
+                                    </div>
+                                    <FieldError message={errors.password?.message} />
+                                </div>
+                                <div>
+                                    <Label className="text-xs">Confirm Password <span className="text-red-500">*</span></Label>
+                                    <div className="relative mt-1">
+                                        <Input {...register('confirmPassword')}
+                                            type={showConfirm ? 'text' : 'password'}
+                                            placeholder="Confirm password"
+                                            className={`h-8 text-sm pr-9 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                                        />
+                                        <button type="button"
+                                            onClick={() => setShowConfirm(p => !p)}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showConfirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                        </button>
+                                    </div>
+                                    <FieldError message={errors.confirmPassword?.message} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Confirm Password */}
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">
-                    Confirm Password <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Confirm password"
-                    className={errors.confirmPassword ? "border-red-500" : ""}
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-sm text-red-600">
-                      {errors.confirmPassword}
-                    </p>
-                  )}
+                {/* Actions */}
+                <div className="flex justify-end gap-2 mt-4">
+                    <Button type="button" variant="outline" size="sm"
+                        onClick={() => navigate("/users")}
+                    >
+                        Cancel
+                    </Button>
+                    <Button type="submit" size="sm" disabled={isSubmitting}>
+                        {isSubmitting ? 'Creating...' : 'Create User'}
+                    </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+            </form>
         </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end gap-3 mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/users")}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={loading} className="gap-2">
-            {loading ? (
-              "Creating..."
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Create User
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
-    </div>
-  );
+    );
 };
 
 export default UserCreate;
