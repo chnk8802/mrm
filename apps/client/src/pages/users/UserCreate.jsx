@@ -5,8 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { userSchema } from "@repo/validators";
 import {
-    ArrowLeft, Eye, EyeOff, RefreshCw,
-    ShieldCheck, Shield, ClipboardList, UserCog, Wrench,
+    ArrowLeft, Eye, EyeOff, RefreshCw, Shield, ClipboardList, Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +14,8 @@ import { Label } from "@/components/ui/label";
 import userService from "@/api/userService";
 import toast from "react-hot-toast";
 
-// extend userSchema with confirmPassword client-side only
-const createUserSchema = userSchema.extend({
+const createUserSchema = z.object({
+    ...userSchema.shape,
     confirmPassword: z.string().min(1, 'Please confirm password'),
 }).refine(data => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -87,7 +86,7 @@ const UserCreate = () => {
     };
 
     return (
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 pb-20 md:pb-4">
 
             {/* Header */}
             <div className="flex items-center justify-between">
