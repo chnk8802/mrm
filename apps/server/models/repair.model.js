@@ -76,14 +76,9 @@ const repairSchema = new mongoose.Schema({
         trim: true
     },
     amountPaid: {
-            type: Number,
-            default: 0
-        },
-        paymentStatus: {
-            type: String,
-            enum: PAYMENT_METHODS,
-            default: "unpaid"
-        },
+        type: Number,
+        default: 0
+    },
     isDeleted: {
         type: Boolean,
         default: false,

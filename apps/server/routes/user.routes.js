@@ -37,6 +37,6 @@ router.patch('/:id/activate', authorize('admin'), activateUser);
 
 router.delete('/:id/permanent', authorize('superadmin'), deleteUserPermanently);
 
-router.put('/:id/reset-password', authorize('admin'), resetPassword);
+router.patch('/:id/reset-password', authorize('admin'), resetPassword);
 
 export default router;

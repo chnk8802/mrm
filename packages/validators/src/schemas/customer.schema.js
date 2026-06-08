@@ -12,6 +12,10 @@ export const customerSchema = z.object({
         .max(100, 'Name cannot exceed 100 characters'),
     phone: z.string()
         .max(20, 'Phone number cannot exceed 20 characters')
+        .refine(
+            val => val === '' || /^[0-9+\-\s()]+$/.test(val),
+            { message: 'Invalid phone number format' }
+        )
         .optional()
         .or(z.literal('')),
     email: z.string()

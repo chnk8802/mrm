@@ -1,404 +1,229 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Building, User } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { customerUpdateSchema } from '@repo/validators';
+import { ArrowLeft, Building, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import customerService from '@/api/customerService';
+import toast from 'react-hot-toast';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const customerTypes = [
+  { value: 'individual', icon: Users,    label: 'Individual', description: 'Personal customer'            },
+  { value: 'business',   icon: Building, label: 'Business',   description: 'Corporate / business customer' },
+];
+
+// ─── FieldError ───────────────────────────────────────────────────────────────
+
+const FieldError = ({ message }) =>
+  message ? <p className="text-xs text-red-500 mt-1">{message}</p> : null;
+
+// ─── CustomerEdit ─────────────────────────────────────────────────────────────
 
 const CustomerEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const [formData, setFormData] = useState({
-    customerType: 'individual',
-    name: '',
-    phone: '',
-    email: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      postalCode: '',
-      country: ''
-    },
-    notes: ''
-  });
+  const [loading, setLoading] = useState(true);
 
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({ resolver: zodResolver(customerUpdateSchema) });
 
-  // Fetch existing customer data
+  const selectedType = watch('customerType');
+
+  // ── Fetch & pre-fill ───────────────────────────────────────────────────────
+
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        setFetchLoading(true);
         const response = await customerService.getCustomerById(id);
-        const customer = response.data;
-
-        setFormData({
-          customerType: customer.customerType || 'individual',
-          name: customer.name || '',
-          phone: customer.phone || '',
-          email: customer.email || '',
+        const c = response.data;
+        reset({
+          customerType: c.customerType || 'individual',
+          name:         c.name         || '',
+          phone:        c.phone        || '',
+          email:        c.email        || '',
+          notes:        c.notes        || '',
           address: {
-            street: customer.address?.street || '',
-            city: customer.address?.city || '',
-            state: customer.address?.state || '',
-            postalCode: customer.address?.postalCode || '',
-            country: customer.address?.country || ''
+            street:     c.address?.street     || '',
+            city:       c.address?.city       || '',
+            state:      c.address?.state      || '',
+            postalCode: c.address?.postalCode || '',
+            country:    c.address?.country    || '',
           },
-          notes: customer.notes || ''
         });
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch customer');
+        toast.error(err.response?.data?.message || 'Failed to fetch customer');
+        navigate('/customers');
       } finally {
-        setFetchLoading(false);
+        setLoading(false);
       }
     };
-
     fetchCustomer();
   }, [id]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  // ── Submit ─────────────────────────────────────────────────────────────────
 
-    if (name.startsWith('address.')) {
-      const addressField = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        address: {
-          ...prev.address,
-          [addressField]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.customerType) {
-      newErrors.customerType = 'Customer type is required';
-    }
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Customer name is required';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
-    }
-
-    if (formData.phone && !/^[0-9+\-\s()]*$/.test(formData.phone)) {
-      newErrors.phone = 'Invalid phone number format';
-    }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
+  const onSubmit = async (data) => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const addressData = Object.fromEntries(
-        Object.entries(formData.address).filter(([_, v]) => v !== '')
+      // Strip empty address fields before sending
+      const address = Object.fromEntries(
+        Object.entries(data.address || {}).filter(([, v]) => v !== '' && v !== undefined)
       );
-
-      const { notes, ...rest } = formData;
-      const customerData = {
-        ...rest,
-        ...(Object.keys(addressData).length > 0 ? { address: addressData } : {}),
-        ...(notes ? { notes } : {})
+      const payload = {
+        ...data,
+        ...(Object.keys(address).length > 0 ? { address } : {}),
       };
-
-      await customerService.updateCustomer(id, customerData);
+      await customerService.updateCustomer(id, payload);
+      toast.success('Customer updated successfully');
       navigate(`/customers/${id}`);
     } catch (err) {
-      if (err.response?.data?.errors) {
-        const fieldErrors = {};
-        err.response.data.errors.forEach(error => {
-          const path = error.path.join('.');
-          fieldErrors[path] = error.message;
-        });
-        setErrors(fieldErrors);
-      } else {
-        setError(err.response?.data?.message || 'Failed to update customer');
-      }
-    } finally {
-      setLoading(false);
+      toast.error(err.response?.data?.message || 'Failed to update customer');
     }
   };
 
-  if (fetchLoading) {
-    return (
-      <div className="flex items-center justify-center py-12 text-gray-500">
-        Loading customer...
-      </div>
-    );
-  }
+  // ── Loading ────────────────────────────────────────────────────────────────
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+      Loading customer data...
+    </div>
+  );
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+    <div className="space-y-4 p-4 pb-20 md:pb-4">
 
-      {/* Form */}
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Customer Type Selection */}
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg">Customer Type</CardTitle>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/customers/${id}`)}
+          className="gap-1.5 text-muted-foreground"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+        <h1 className="text-base font-semibold text-foreground">Edit Customer</h1>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+          {/* ── Customer Type ── */}
+          <Card className="border-border shadow-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Customer Type</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.customerType === 'individual'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}>
+            <CardContent className="space-y-2">
+              {customerTypes.map(({ value, icon: Icon, label, description }) => (
+                <label key={value}
+                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                    selectedType === value
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:bg-muted/50'
+                  }`}
+                >
                   <input
                     type="radio"
-                    name="customerType"
-                    value="individual"
-                    checked={formData.customerType === 'individual'}
-                    onChange={handleChange}
-                    className="w-4 h-4"
+                    value={value}
+                    {...register('customerType')}
+                    className="mt-0.5 accent-primary"
                   />
-                  <User className="w-5 h-5 text-gray-500" />
+                  <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${selectedType === value ? 'text-primary' : 'text-muted-foreground'}`} />
                   <div>
-                    <div className="font-medium">Individual</div>
-                    <div className="text-sm text-gray-500">Personal customer</div>
+                    <p className={`text-sm font-medium ${selectedType === value ? 'text-primary' : 'text-foreground'}`}>
+                      {label}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
                   </div>
                 </label>
-
-                <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                  formData.customerType === 'business'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}>
-                  <input
-                    type="radio"
-                    name="customerType"
-                    value="business"
-                    checked={formData.customerType === 'business'}
-                    onChange={handleChange}
-                    className="w-4 h-4"
-                  />
-                  <Building className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <div className="font-medium">Business</div>
-                    <div className="text-sm text-gray-500">Corporate/Business customer</div>
-                  </div>
-                </label>
-
-                {errors.customerType && (
-                  <p className="text-sm text-red-600">{errors.customerType}</p>
-                )}
-              </div>
+              ))}
+              <FieldError message={errors.customerType?.message} />
             </CardContent>
           </Card>
 
-          {/* Basic Information */}
-          <Card className="shadow-sm lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Basic Information</CardTitle>
+          {/* ── Basic Information ── */}
+          <Card className="border-border shadow-none lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Customer Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="Enter customer name"
-                  className={errors.name ? 'border-red-500' : ''}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600">{errors.name}</p>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div className="md:col-span-2">
+                  <Label className="text-xs">Customer Name <span className="text-red-500">*</span></Label>
+                  <Input {...register('name')} placeholder="Enter customer name"
+                    className={`mt-1 h-8 text-sm ${errors.name ? 'border-red-500' : ''}`}
+                  />
+                  <FieldError message={errors.name?.message} />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Phone Number</Label>
+                  <Input {...register('phone')} type="tel" placeholder="Enter phone number"
+                    className={`mt-1 h-8 text-sm ${errors.phone ? 'border-red-500' : ''}`}
+                  />
+                  <FieldError message={errors.phone?.message} />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Email Address</Label>
+                  <Input {...register('email')} type="email" placeholder="Enter email address"
+                    className={`mt-1 h-8 text-sm ${errors.email ? 'border-red-500' : ''}`}
+                  />
+                  <FieldError message={errors.email?.message} />
+                </div>
               </div>
 
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number (optional)"
-                  className={errors.phone ? 'border-red-500' : ''}
-                />
-                {errors.phone && (
-                  <p className="text-sm text-red-600">{errors.phone}</p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address (optional)"
-                  className={errors.email ? 'border-red-500' : ''}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email}</p>
-                )}
+              {/* Address */}
+              <div>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Address</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                  <div className="md:col-span-2">
+                    <Input {...register('address.street')} placeholder="Street address" className="h-8 text-sm" />
+                  </div>
+                  <Input {...register('address.city')}       placeholder="City"        className="h-8 text-sm" />
+                  <Input {...register('address.state')}      placeholder="State"       className="h-8 text-sm" />
+                  <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
+                  <Input {...register('address.country')}    placeholder="Country"     className="h-8 text-sm" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Address */}
-          <Card className="shadow-sm lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-lg">Address</CardTitle>
+          {/* ── Notes ── */}
+          <Card className="border-border shadow-none lg:col-span-3">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address.street">Street Address</Label>
-                  <Input
-                    id="address.street"
-                    name="address.street"
-                    type="text"
-                    value={formData.address.street}
-                    onChange={handleChange}
-                    placeholder="Street address"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address.city">City</Label>
-                  <Input
-                    id="address.city"
-                    name="address.city"
-                    type="text"
-                    value={formData.address.city}
-                    onChange={handleChange}
-                    placeholder="City"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address.state">State/Province</Label>
-                  <Input
-                    id="address.state"
-                    name="address.state"
-                    type="text"
-                    value={formData.address.state}
-                    onChange={handleChange}
-                    placeholder="State"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address.postalCode">Postal Code</Label>
-                  <Input
-                    id="address.postalCode"
-                    name="address.postalCode"
-                    type="text"
-                    value={formData.address.postalCode}
-                    onChange={handleChange}
-                    placeholder="Postal code"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address.country">Country</Label>
-                  <Input
-                    id="address.country"
-                    name="address.country"
-                    type="text"
-                    value={formData.address.country}
-                    onChange={handleChange}
-                    placeholder="Country"
-                  />
-                </div>
-              </div>
+              <textarea {...register('notes')}
+                placeholder="Add any additional notes about this customer..."
+                rows={3}
+                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+              />
+              <FieldError message={errors.notes?.message} />
             </CardContent>
           </Card>
 
-          {/* Notes */}
-          <Card className="shadow-sm lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-lg">Additional Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Add any additional notes about this customer..."
-                  rows={4}
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex justify-end gap-3 mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(`/customers/${id}`)}
-          >
+        {/* ── Actions ── */}
+        <div className="flex justify-end gap-2 mt-4">
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/customers/${id}`)}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading ? (
-              'Saving...'
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Save Changes
-              </>
-            )}
+          <Button type="submit" size="sm" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </form>

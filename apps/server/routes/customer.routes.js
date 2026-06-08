@@ -24,7 +24,7 @@ router.route('/stats')
   .get(authorize('admin'), getCustomerStats);
 
 router.route('/bulk')
-  .put(authorize('manager'), bulkUpdateCustomers)
+  .patch(authorize('manager'), bulkUpdateCustomers)
   .delete(authorize('admin'), bulkDeleteCustomers);
 
 // Dynamic :id routes AFTER
@@ -34,7 +34,7 @@ router.route('/')
 
 router.route('/:id')
   .get(authorize('staff'), getCustomerById)
-  .put(authorize('staff'), updateCustomer)
+  .patch(authorize('staff'), updateCustomer)
   .delete(authorize('admin'), deleteCustomer);
 
 router.patch('/:id/restore', authorize('admin'), restoreCustomer);

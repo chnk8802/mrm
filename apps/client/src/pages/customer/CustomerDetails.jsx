@@ -7,32 +7,66 @@ import {
   Phone,
   Mail,
   MapPin,
-  Building,
-  User,
   Calendar,
   FileText,
-  MoreVertical
+  Building,
+  Users,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import customerService from '@/api/customerService';
+import RowActions from '@/components/common/RowActions';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
+import toast from 'react-hot-toast';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const InfoRow = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-3">
+    <Icon className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium text-foreground">{value || '—'}</p>
+    </div>
+  </div>
+);
+
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString('en-IN', {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+const formatAddress = (address) => {
+  if (!address) return null;
+  const parts = [
+    address.street,
+    address.city,
+    address.state,
+    address.postalCode,
+    address.country,
+  ].filter(Boolean);
+  return parts.length ? parts.join(', ') : null;
+};
+
+const getTypeBadge = (type) =>
+  type === 'business'
+    ? 'bg-blue-500/10 text-blue-500'
+    : 'bg-green-500/10 text-green-500';
+
+// ─── CustomerDetails ──────────────────────────────────────────────────────────
 
 const CustomerDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  // Customer data state
-  const [customer, setCustomer] = useState(null);
+  const [customer, setCustomer]       = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
 
-  // Loading and error states
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [deleting, setDeleting] = useState(false);
-
-  // Actions Button
-  const [showActions, setShowActions] = useState(false);
-
-  // Fetch customer data on mount
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
@@ -45,232 +79,175 @@ const CustomerDetails = () => {
         setLoading(false);
       }
     };
-
     fetchCustomer();
   }, [id]);
 
-  // Handle delete
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this customer?')) {
-      return;
-    }
-
     try {
-      setDeleting(true);
+      setActionLoading(true);
       await customerService.deleteCustomer(id);
+      toast.success('Customer deleted');
       navigate('/customers');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete customer');
+      toast.error(err.response?.data?.message || 'Failed to delete customer');
     } finally {
-      setDeleting(false);
+      setActionLoading(false);
+      setConfirmDialog({ open: false });
     }
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // ── States ────────────────────────────────────────────────────────────────
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-gray-500">Loading customer details...</div>
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+      Loading customer details...
+    </div>
+  );
+
+  if (error) return (
+    <div className="p-4 space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/customers')} className="gap-1.5">
+        <ArrowLeft className="w-4 h-4" /> Back
+      </Button>
+      <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
+        {error}
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Error state
-  if (error) {
-    return (
-      <div className="space-y-6 p-4">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
+  if (!customer) return (
+    <div className="p-4 space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/customers')} className="gap-1.5">
+        <ArrowLeft className="w-4 h-4" /> Back
+      </Button>
+      <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 px-3 py-2 rounded-lg text-sm">
+        Customer not found
       </div>
-    );
-  }
+    </div>
+  );
 
-
-  // Not found state
-  if (!customer) {
-    return (
-      <div className="space-y-6 p-4">
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-          Customer not found
-        </div>
-      </div>
-    );
-  }
+  const address = formatAddress(customer.address);
 
   return (
-    <div className="space-y-4 p-4">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
+    <div className="space-y-4 p-4 pb-24 md:pb-4">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/customers')}
+          className="gap-1.5 text-muted-foreground"
+        >
+          <ArrowLeft className="w-4 h-4" /> Customers
+        </Button>
         <div className="flex items-center gap-2">
           <Button
+            size="sm"
             onClick={() => navigate(`/customers/${id}/edit`)}
-            className="gap-2"
+            className="h-8 gap-1.5"
           >
-            <Edit className="w-4 h-4" />
-            Edit
+            <Edit className="w-3.5 h-3.5" /> Edit
           </Button>
-          <div className='relative'>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowActions((prev) => !prev)}
-            >
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-            {showActions && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowActions(false)}
-                />
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
-                  <button
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 text-red-600 hover:bg-red-50`}
-                    onClick={() => {
-                      handleDelete();
-                      setShowActions(false);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {deleting ? "Deleting..." : "Delete"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <RowActions
+            actions={[
+              {
+                label: 'Delete',
+                icon: Trash2,
+                danger: true,
+                onClick: () => setConfirmDialog({ open: true }),
+              },
+            ]}
+          />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Contact Information */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Name */}
-            <div className="flex items-start gap-3">
-              <div>
-                <div className="text-sm text-gray-500">Customer Name</div>
-                <div className="font-medium">{customer.name || 'Not provided'}</div>
-              </div>
+      {/* ── Profile Card ── */}
+      <Card className="border-border shadow-none">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-lg shrink-0">
+              {customer.name?.charAt(0).toUpperCase()}
             </div>
-            {/* Customer Type */}
-            <div className="flex items-start gap-3">
-              <div>
-                <div className="text-sm text-gray-500">Customer Type</div>
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${customer.customerType === 'business'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-green-100 text-green-700'
-                  }`}>
-                  {customer.customerType === 'business' ? (
-                    <Building className="w-3 h-3" />
-                  ) : (
-                    <User className="w-3 h-3" />
-                  )}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-semibold text-foreground truncate">
+                {customer.name}
+              </h2>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${getTypeBadge(customer.customerType)}`}>
+                  {customer.customerType === 'business'
+                    ? <Building className="w-3 h-3" />
+                    : <Users className="w-3 h-3" />}
                   {customer.customerType === 'business' ? 'Business' : 'Individual'}
                 </span>
+                {customer.address?.city && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {customer.address.city}
+                  </span>
+                )}
               </div>
             </div>
-            {/* Phone */}
-            <div className="flex items-start gap-3">
-              <div>
-                <div className="text-sm text-gray-500">Phone</div>
-                <div className="font-medium">{customer.phone || 'Not provided'}</div>
-              </div>
-            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Email */}
-            <div className="flex items-start gap-3">
-              <div>
-                <div className="text-sm text-gray-500">Email</div>
-                <div className="font-medium">{customer.email || 'Not provided'}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        {/* Address */}
-        <Card className="shadow-sm lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">Address</CardTitle>
+        {/* ── Contact Information ── */}
+        <Card className="border-border shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Contact Information</CardTitle>
           </CardHeader>
-          <CardContent>
-            {customer.address?.street || customer.address?.city || customer.address?.state || customer.address?.postalCode ? (
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  {customer.address?.street && (
-                    <div className="font-medium">{customer.address.street}</div>
-                  )}
-                  <div className="text-gray-600">
-                    {[customer.address?.city, customer.address?.state, customer.address?.postalCode]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </div>
-                  {customer.address?.country && (
-                    <div className="text-gray-600">{customer.address.country}</div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-gray-500">No address provided</div>
-            )}
+          <CardContent className="space-y-4">
+            <InfoRow icon={Phone} label="Phone" value={customer.phone} />
+            <InfoRow icon={Mail}  label="Email" value={customer.email} />
+            <InfoRow icon={MapPin} label="Address" value={address} />
           </CardContent>
         </Card>
 
-        {/* Notes */}
+        {/* ── Record Information ── */}
+        <Card className="border-border shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Record Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <InfoRow icon={Calendar} label="Created"      value={formatDate(customer.createdAt)} />
+            <InfoRow icon={Calendar} label="Last Updated" value={formatDate(customer.updatedAt)} />
+            <InfoRow icon={User}     label="Customer ID"  value={customer._id} />
+          </CardContent>
+        </Card>
+
+        {/* ── Notes (full width, only if present) ── */}
         {customer.notes && (
-          <Card className="shadow-sm lg:col-span-3">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="w-5 h-5" />
+          <Card className="border-border shadow-none lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-muted-foreground" />
                 Notes
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 whitespace-pre-wrap">{customer.notes}</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                {customer.notes}
+              </p>
             </CardContent>
           </Card>
         )}
 
-        {/* Metadata */}
-        <Card className="shadow-sm lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="text-lg">Record Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-500">Created</div>
-                  <div className="font-medium">{formatDate(customer.createdAt)}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-gray-400" />
-                <div>
-                  <div className="text-sm text-gray-500">Last Updated</div>
-                  <div className="font-medium">{formatDate(customer.updatedAt)}</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* ── Confirm Delete ── */}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false })}
+        onConfirm={handleDelete}
+        title="Delete Customer"
+        description={`"${customer.name}" will be permanently deleted. This cannot be undone.`}
+        confirmLabel="Delete"
+        loading={actionLoading}
+        danger
+      />
     </div>
   );
 };

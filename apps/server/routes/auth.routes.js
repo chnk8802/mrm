@@ -23,6 +23,6 @@ router.route('/logout')
 // Private routes
 router.route('/profile')
   .get(protect, getProfile)
-  .put(protect, updateProfile);
+  .patch(protect, updateProfile);
 
 export default router;
