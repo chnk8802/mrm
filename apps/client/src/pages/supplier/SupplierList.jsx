@@ -317,7 +317,7 @@ const SupplierList = () => {
                   className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
                   onClick={() => navigate(`/suppliers/${supplier._id}`)}
                 >
-                  <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedSuppliers.includes(supplier._id)}
@@ -325,19 +325,19 @@ const SupplierList = () => {
                       className="w-3.5 h-3.5 rounded border-border"
                     />
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-1 px-4">
                     <p className="text-sm font-medium text-foreground">{supplier.name}</p>
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">
+                  <td className="py-1 px-4 text-sm text-muted-foreground">
                     {supplier.contactPerson || '—'}
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">
+                  <td className="py-1 px-4 text-sm text-muted-foreground">
                     {supplier.phone || '—'}
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">
+                  <td className="py-1 px-4 text-sm text-muted-foreground">
                     {supplier.email || '—'}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-1 px-4">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
                       supplier.isActive
                         ? 'bg-green-500/10 text-green-500'
@@ -346,10 +346,10 @@ const SupplierList = () => {
                       {supplier.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                  <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
                     {formatDate(supplier.createdAt)}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-1 px-4">
                     <RowActions
                       actions={[
                         {

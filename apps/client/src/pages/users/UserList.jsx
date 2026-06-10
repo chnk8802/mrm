@@ -365,10 +365,10 @@ const UserList = () => {
                   className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
                   onClick={() => navigate(`/users/${user._id}`)}
                 >
-                  <td className="py-3 px-4 text-sm font-medium text-foreground">
+                  <td className="py-1 px-4 text-sm font-medium text-foreground">
                     {user.name}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-1 px-4">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${getRoleBadge(user.role)}`}
                     >
@@ -376,23 +376,23 @@ const UserList = () => {
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">
+                  <td className="py-1 px-4 text-sm text-muted-foreground">
                     {user.email}
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">
+                  <td className="py-1 px-4 text-sm text-muted-foreground">
                     {user.phone}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-1 px-4">
                     <span
                       className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${user.isActive ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}
                     >
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                  <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
                     {formatDate(user.createdAt)}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-1 px-4">
                     <RowActions
                       actions={[
                         {
