@@ -65,7 +65,7 @@ export const createRepair = async (req, res, next) => {
 */
 export const getRepairs = async (req, res, next) => {
     try {
-        const { page, limit, sortBy, sortOrder, search, status, customer, technician, isPickedUp } = repairQuerySchema.parse(req.query);
+        const { page, limit, sortBy, sortOrder, search, status, statuses, customer, technician, paymentStatus, isPickedUp } = repairQuerySchema.parse(req.query);
 
         const query = { isDeleted: false };
 
@@ -79,8 +79,10 @@ export const getRepairs = async (req, res, next) => {
         }
 
         if (status) query.status = status;
+        if (statuses) query.status = { $in: statuses };
         if (customer) query.customer = customer;
         if (technician) query.technician = technician;
+        if (paymentStatus) query.paymentStatus = paymentStatus;
         if (isPickedUp !== undefined) query.isPickedUp = isPickedUp;
 
         const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { STATUS_OPTIONS } from '../constants/repair.constant.js';
+import { PAYMENT_STATUS, STATUS_OPTIONS } from '../constant.index.js';
 import { objectIdSchema } from '../common.js';
 
 export const repairSchema = z.object({
@@ -24,8 +24,10 @@ export const repairQuerySchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search:    z.string().optional(),
     status:    z.enum(STATUS_OPTIONS).optional(),
+    statuses: z.array(z.enum(STATUS_OPTIONS)).optional(),
     customer:  z.string().optional(),
     technician:z.string().optional(),
+    paymentStatus: z.enum(PAYMENT_STATUS).optional(),
     isPickedUp:z.coerce.boolean().optional(),
 });
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { objectIdSchema } from '../common.js';
+import { PAYMENT_STATUS } from '../constant.index.js';
 
 export const sparePartUsageSchema = z.object({
     repair:      objectIdSchema,
@@ -31,5 +32,6 @@ export const sparePartUsageQuerySchema = z.object({
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     repair:    objectIdSchema.optional(),
     supplier:  objectIdSchema.optional(),
+    paymentStatus: z.enum(PAYMENT_STATUS).optional(),
 });
 

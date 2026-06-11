@@ -52,7 +52,7 @@ export const createPayment = async (req, res, next) => {
         const lineItemDocs = await Promise.all(
             validatedData.lineItems.map(async (item) => {
                 if (validatedData.type === 'receivable') {
-                    const repair = await Repair.findOne({ _id: item.repair, isDeleted: false, status: { $in: ["ready", "completed"] } });
+                    const repair = await Repair.findOne({ _id: item.repair, isDeleted: false });
                     if (!repair) throw createError(404, `Repair ${item.repair} not found`);
 
                     if (repair.paymentStatus === 'paid') {
@@ -148,13 +148,7 @@ export const createPayment = async (req, res, next) => {
  */
 export const createFullAndFinalPayment = async (req, res, next) => {
     try {
-        const { type, customer, supplier, paymentMethod, notes } = paymentFNFSchema.pick({
-            type: true,
-            customer: true,
-            supplier: true,
-            paymentMethod: true,
-            notes: true
-        }).parse(req.body);
+        const { type, customer, supplier, paymentMethod, notes } = paymentFNFSchema.parse(req.body);
 
         // Get all unpaid/partial items
         let lineItems = [];

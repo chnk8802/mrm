@@ -24,6 +24,7 @@ export const paymentFNFSchema = basePaymentSchema.pick({
     customer: true,
     supplier: true,
     paymentMethod: true,
+    paidAt: true,
     notes: true
 }).superRefine((data, ctx) => {
     if (data.type === 'receivable' && !data.customer) {

@@ -3,20 +3,22 @@ import { useAuth } from '@/context/AuthContext';
 import {
     LayoutDashboard, Users, UserCog, Wrench,
     Package, Truck, Settings, X, CreditCard, HardHat,
-    ChartArea
+    ChartArea,
+    Link,
+    Plug
 } from 'lucide-react';
 
 const allMenuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: null },
     { icon: Wrench, label: 'Repairs', path: '/repairs', roles: null },
-    { icon: Package, label: 'Spare Parts', path: '/spare-parts', roles: null },
     { icon: CreditCard, label: 'Payments', path: '/payments', roles: null },
     { icon: Users, label: 'Customers', path: '/customers', roles: null },
     { icon: Truck, label: 'Suppliers', path: '/suppliers', roles: null },
     { icon: HardHat, label: 'Technicians', path: '/technicians', roles: null },
     { icon: UserCog, label: 'Users', path: '/users', roles: ['superadmin', 'admin'] },
-    { icon: Settings, label: 'Settings', path: '/settings', roles: null },
     { icon: ChartArea, label: 'Reports', path: '/reports', roles: null },
+    { icon: Settings, label: 'Settings', path: '/settings', roles: null },
+    { icon: Plug, label: 'Integrations', path: '/integrations', roles: null },
 ];
 
 const Sidebar = ({ isMobile = false, onClose = null }) => {

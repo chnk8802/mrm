@@ -15,4 +15,4 @@ export const ALLOWED_TRANSITIONS = {
     'cancelled': []
 };
 
-export const PAYMENT_STATUS = ['unpaid', 'paid', 'partial-paid', 'waived']
+export const PAYMENT_STATUS = ['unpaid', 'paid', 'partial', 'waived']

@@ -47,7 +47,7 @@ const Dashboard = () => {
       <div className="relative overflow-hidden border-b border-border bg-gradient-to-r from-background via-muted/20 to-background p-6">
 
         {/* Tech Blueprint Pattern Overlay */}
-        <div className="absolute inset-0 opacity-25 dark:opacity-20 pointer-events-none"
+        <div className="absolute inset-0 opacity-30 dark:opacity-20 pointer-events-none"
           style={{
             backgroundImage: `url("/dashboard-pattern.svg")`,
             backgroundSize: '100px 100px'

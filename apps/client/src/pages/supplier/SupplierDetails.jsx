@@ -12,6 +12,7 @@ import {
   User,
   Power,
   PowerOff,
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -196,10 +197,19 @@ const SupplierDetails = () => {
             <CardTitle className="text-sm font-semibold">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={User}  label="Contact Person" value={supplier.contactPerson} />
             <InfoRow icon={Phone} label="Phone"           value={supplier.phone} />
             <InfoRow icon={Mail}  label="Email"           value={supplier.email} />
             <InfoRow icon={MapPin} label="Address"        value={address} />
+          </CardContent>
+        </Card>
+
+        {/* ── Financial Information ── */}
+        <Card className="border-border shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Financial Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <InfoRow icon={Receipt} label="Outstanding Balance" value={`₹ ${supplier.outstandingBalance}`} />
           </CardContent>
         </Card>
 

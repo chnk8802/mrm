@@ -15,7 +15,6 @@ import ConfirmDialog from '@/components/common/ConfirmDialog';
 
 const columns = [
   { label: 'Name',           col: 'name'         },
-  { label: 'Contact Person', col: 'contactPerson' },
   { label: 'Phone',          col: 'phone'         },
   { label: 'Email',          col: 'email'         },
   { label: 'Status',         col: 'isActive'      },
@@ -329,9 +328,6 @@ const SupplierList = () => {
                     <p className="text-sm font-medium text-foreground">{supplier.name}</p>
                   </td>
                   <td className="py-1 px-4 text-sm text-muted-foreground">
-                    {supplier.contactPerson || '—'}
-                  </td>
-                  <td className="py-1 px-4 text-sm text-muted-foreground">
                     {supplier.phone || '—'}
                   </td>
                   <td className="py-1 px-4 text-sm text-muted-foreground">
@@ -403,9 +399,6 @@ const SupplierList = () => {
               {/* Left: name / contact */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{supplier.name}</p>
-                {supplier.contactPerson && (
-                  <p className="text-xs text-muted-foreground truncate">{supplier.contactPerson}</p>
-                )}
                 {supplier.phone && (
                   <p className="text-xs text-muted-foreground">{supplier.phone}</p>
                 )}

@@ -58,6 +58,11 @@ export const createSparePartUsage = async (req, res, next) => {
                 { $push: { sparePartUsage: created._id } },
                 { session }
             );
+            await Supplier.findByIdAndUpdate(
+                validatedData.supplier,
+                { $inc: { outstandingBalance: (validatedData.unitCost || 0) * (validatedData.quantity || 0)} },
+                { session }
+            );
             return created;
         })
 
@@ -114,11 +119,12 @@ export const bulkCreateSparePartUsage = async (req, res, next) => {
  */
 export const getSparePartUsages = async (req, res, next) => {
     try {
-        const { page, limit, sortBy, sortOrder, repair, supplier } = sparePartUsageQuerySchema.parse(req.query);
+        const { page, limit, sortBy, sortOrder, repair, supplier, paymentStatus } = sparePartUsageQuerySchema.parse(req.query);
 
         const query = { isDeleted: false };
         if (repair) query.repair = repair;
         if (supplier) query.supplier = supplier;
+        if (paymentStatus) query.paymentStatus = paymentStatus;
 
         const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
         const skip = (page - 1) * limit;
@@ -252,7 +258,7 @@ export const deleteSparePartUsage = async (req, res, next) => {
             }
 
             const repair = await Repair.findById(sparePartUsage.repair._id || sparePartUsage.repair);
-console.log('found repair without session:', repair);
+            console.log('found repair without session:', repair);
 
             const updatedRepair = await Repair.findByIdAndUpdate(
                 sparePartUsage.repair._id || sparePartUsage.repair,
