@@ -3,16 +3,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Edit, Trash2, Wrench, Phone, Calendar,
   CheckCircle, Clock, AlertCircle, XCircle, PackageCheck,
-  IndianRupee, Package, User, FileText, CircleDot,
+  IndianRupee, Package, User, FileText, CircleDot, Plus, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import repairService from '@/api/repairService';
 import userService from '@/api/userService';
+import supplierService from '@/api/supplierService';
+import sparePartUsageService from '@/api/sparePartUsageService';
 import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { AsyncCombobox } from '@/components/AsyncComboBox';
@@ -50,9 +54,7 @@ const InfoRow = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-const formatDate = (d) => d
-  ? format(new Date(d), 'dd MMM yyyy, hh:mm a')
-  : null;
+const formatDate = (d) => d ? format(new Date(d), 'dd MMM yyyy, hh:mm a') : null;
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
@@ -80,9 +82,140 @@ const getPaymentBadge = (status) => {
   }
 };
 
+const FieldError = ({ message }) =>
+  message ? <p className="text-xs text-red-500 mt-1">{message}</p> : null;
+
 const fetchTechnicians = async (search) => {
   const res = await userService.getUsers({ role: 'staff', search, limit: 5, isActive: true });
   return (res.data || []).map((t) => ({ value: t._id, label: t.name }));
+};
+
+const fetchSuppliers = async (search) => {
+  const res = await supplierService.getSuppliers({ search, limit: 5 });
+  return (res.data || []).map((s) => ({ value: s._id, label: s.name }));
+};
+
+// ─── Spare Part Form (inline) ─────────────────────────────────────────────────
+
+const defaultPartForm = { sparePart: '', quantity: 1, unitCost: '', supplier: '', notes: '' };
+
+const SparePartForm = ({ repairId, onAdded, onCancel }) => {
+  const [form, setForm]         = useState(defaultPartForm);
+  const [supplierId, setSupplierId] = useState('');
+  const [errors, setErrors]     = useState({});
+  const [saving, setSaving]     = useState(false);
+
+  const validate = () => {
+    const e = {};
+    if (!form.sparePart || form.sparePart.length < 3) e.sparePart = 'Min 3 characters';
+    if (!form.quantity || form.quantity < 1)          e.quantity  = 'Min 1';
+    if (form.unitCost === '' || form.unitCost < 0)    e.unitCost  = 'Required, min 0';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    try {
+      setSaving(true);
+      const payload = {
+        repair:    repairId,
+        sparePart: form.sparePart,
+        quantity:  Number(form.quantity),
+        unitCost:  Number(form.unitCost),
+        ...(supplierId ? { supplier: supplierId } : {}),
+        ...(form.notes ? { notes: form.notes }    : {}),
+      };
+      const response = await sparePartUsageService.createSparePartUsage(payload);
+      toast.success('Spare part added');
+      onAdded(response.data);
+      setForm(defaultPartForm);
+      setSupplierId('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add spare part');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border border-border rounded-lg p-4 bg-muted/20 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Add Spare Part</p>
+        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Part Name <span className="text-red-500">*</span></Label>
+          <Input
+            value={form.sparePart}
+            onChange={(e) => setForm((p) => ({ ...p, sparePart: e.target.value }))}
+            placeholder="e.g. Screen, Battery"
+            className={`mt-1 h-8 text-sm ${errors.sparePart ? 'border-red-500' : ''}`}
+          />
+          <FieldError message={errors.sparePart} />
+        </div>
+
+        <div>
+          <Label className="text-xs">Supplier</Label>
+          <div className="mt-1">
+            <AsyncCombobox
+              value={supplierId}
+              onChange={setSupplierId}
+              fetchOptions={fetchSuppliers}
+              placeholder="Search suppliers..."
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs">Quantity <span className="text-red-500">*</span></Label>
+          <Input
+            type="number"
+            min="1"
+            value={form.quantity}
+            onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))}
+            className={`mt-1 h-8 text-sm ${errors.quantity ? 'border-red-500' : ''}`}
+          />
+          <FieldError message={errors.quantity} />
+        </div>
+
+        <div>
+          <Label className="text-xs">Unit Cost (₹) <span className="text-red-500">*</span></Label>
+          <Input
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.unitCost}
+            onChange={(e) => setForm((p) => ({ ...p, unitCost: e.target.value }))}
+            placeholder="0.00"
+            className={`mt-1 h-8 text-sm ${errors.unitCost ? 'border-red-500' : ''}`}
+          />
+          <FieldError message={errors.unitCost} />
+        </div>
+
+        <div className="md:col-span-2">
+          <Label className="text-xs">Notes</Label>
+          <Input
+            value={form.notes}
+            onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            placeholder="Optional notes..."
+            className="mt-1 h-8 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button type="button" size="sm" onClick={handleSubmit} disabled={saving}>
+          {saving ? 'Adding...' : 'Add Part'}
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 // ─── RepairDetails ────────────────────────────────────────────────────────────
@@ -91,30 +224,30 @@ const RepairDetails = () => {
   const navigate = useNavigate();
   const { id }   = useParams();
 
-  const [repair, setRepair]           = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState(null);
+  const [repair, setRepair]               = useState(null);
+  const [spareParts, setSpareParts]       = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showAddPart, setShowAddPart]     = useState(false);
 
-  // Dialog state
-  const [dialog, setDialog] = useState({ open: false, type: null });
-
-  // Status update
-  const [newStatus, setNewStatus]     = useState('');
-
-  // Assign technician
-  const [technicianId, setTechnicianId] = useState('');
+  const [dialog, setDialog]               = useState({ open: false, type: null });
+  const [newStatus, setNewStatus]         = useState('');
+  const [technicianId, setTechnicianId]   = useState('');
+  const [deletePartId, setDeletePartId]   = useState(null);
 
   const closeDialog = () => setDialog({ open: false, type: null });
 
-  // ── Fetch ───────────────────────────────────────────────────────────────
+  // ── Fetch ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const fetchRepair = async () => {
       try {
         setLoading(true);
         const response = await repairService.getRepairById(id);
-        setRepair(response.data);
+        const r = response.data;
+        setRepair(r);
+        setSpareParts(r.sparePartUsage || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch repair');
       } finally {
@@ -124,7 +257,7 @@ const RepairDetails = () => {
     fetchRepair();
   }, [id]);
 
-  // ── Actions ─────────────────────────────────────────────────────────────
+  // ── Actions ────────────────────────────────────────────────────────────────
 
   const handleDelete = async () => {
     try {
@@ -143,7 +276,7 @@ const RepairDetails = () => {
   const handleStatusUpdate = async () => {
     try {
       setActionLoading(true);
-      const response = await repairService.updateStatus(id, { status: newStatus });
+      const response = await repairService.updateRepairStatus(id, { status: newStatus });
       setRepair(response.data);
       toast.success(`Status updated to "${STATUS_LABELS[newStatus]}"`);
       setNewStatus('');
@@ -184,7 +317,23 @@ const RepairDetails = () => {
     }
   };
 
-  // ── Loading / Error states ───────────────────────────────────────────────
+  const handlePartAdded = (newPart) => {
+    setSpareParts((prev) => [...prev, newPart]);
+    setShowAddPart(false);
+  };
+
+  const handleDeletePart = async () => {
+    try {
+      await sparePartUsageService.deleteSparePartUsage(deletePartId);
+      setSpareParts((prev) => prev.filter((p) => p._id !== deletePartId));
+      toast.success('Spare part removed');
+      setDeletePartId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove spare part');
+    }
+  };
+
+  // ── States ────────────────────────────────────────────────────────────────
 
   if (loading) return (
     <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
@@ -205,8 +354,10 @@ const RepairDetails = () => {
 
   const { icon: StatusIcon, color: statusColor } = getStatusBadge(repair.status);
   const allowedTransitions = ALLOWED_TRANSITIONS[repair.status] || [];
-  const netAmount = (repair.serviceCharge ?? 0) - (repair.discount ?? 0);
-  const balance   = netAmount - (repair.amountPaid ?? 0);
+  const netAmount  = (repair.serviceCharge ?? 0) - (repair.discount ?? 0);
+  const balance    = netAmount - (repair.amountPaid ?? 0);
+  const canEditParts = repair.status === 'in-progress';
+  const totalPartsCost = spareParts.reduce((sum, p) => sum + (p.quantity ?? 1) * (p.unitCost ?? 0), 0);
 
   return (
     <div className="space-y-4 p-4 pb-24 md:pb-4">
@@ -224,19 +375,16 @@ const RepairDetails = () => {
           </Button>
           <RowActions
             actions={[
-              // Assign technician — only when received
               ...(repair.status === 'received' ? [{
                 label: 'Assign Technician',
                 icon: User,
                 onClick: () => setDialog({ open: true, type: 'assign' }),
               }] : []),
-              // Status update — only when transitions available
               ...(allowedTransitions.length > 0 ? [{
                 label: 'Update Status',
                 icon: CircleDot,
                 onClick: () => setDialog({ open: true, type: 'status' }),
               }] : []),
-              // Pickup — only when ready or not-repairable and not yet picked up
               ...(['ready', 'not-repairable'].includes(repair.status) && !repair.isPickedUp ? [{
                 label: 'Mark as Picked Up',
                 icon: PackageCheck,
@@ -270,7 +418,7 @@ const RepairDetails = () => {
                   {STATUS_LABELS[repair.status]}
                 </span>
                 <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${getPaymentBadge(repair.paymentStatus)}`}>
-                  {repair.paymentStatus?.replace('-', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  {repair.paymentStatus?.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                 </span>
                 {repair.isPickedUp && (
                   <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-green-500/10 text-green-500">
@@ -291,11 +439,11 @@ const RepairDetails = () => {
             <CardTitle className="text-sm font-semibold">Device Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={Wrench}   label="Device Model" value={repair.deviceModel} />
-            <InfoRow icon={CircleDot} label="IMEI"         value={repair.imei} />
-            <InfoRow icon={AlertCircle} label="Problem"    value={repair.problem} />
+            <InfoRow icon={Wrench}      label="Device Model"  value={repair.deviceModel} />
+            <InfoRow icon={CircleDot}   label="IMEI"          value={repair.imei} />
+            <InfoRow icon={AlertCircle} label="Problem"       value={repair.problem} />
             {repair.accessories && (
-              <InfoRow icon={Package} label="Accessories"  value={repair.accessories} />
+              <InfoRow icon={Package}   label="Accessories"   value={repair.accessories} />
             )}
           </CardContent>
         </Card>
@@ -322,7 +470,9 @@ const RepairDetails = () => {
               <Wrench className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
               <div>
                 <p className="text-xs text-muted-foreground">Technician</p>
-                <p className="text-sm font-medium text-foreground">{repair.technician?.name || 'Not assigned'}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {repair.technician?.name || 'Not assigned'}
+                </p>
                 {repair.technician?.phone && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                     <Phone className="w-3 h-3" />{repair.technician.phone}
@@ -356,42 +506,79 @@ const RepairDetails = () => {
         </Card>
 
         {/* ── Spare Parts ── */}
-        {repair.sparePartUsage?.length > 0 && (
-          <Card className="border-border shadow-none lg:col-span-2">
-            <CardHeader className="pb-3">
+        <Card className="border-border shadow-none lg:col-span-2">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Package className="w-4 h-4 text-muted-foreground" />
                 Spare Parts Used
               </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {repair.sparePartUsage.map((usage) => (
-                  <div key={usage._id}
+              {canEditParts && !showAddPart && (
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                  onClick={() => setShowAddPart(true)}
+                >
+                  <Plus className="w-3 h-3" /> Add Part
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+
+            {/* Add form */}
+            {showAddPart && (
+              <SparePartForm
+                repairId={id}
+                onAdded={handlePartAdded}
+                onCancel={() => setShowAddPart(false)}
+              />
+            )}
+
+            {/* Parts list */}
+            {spareParts.length > 0 ? (
+              <>
+                {spareParts.map((part) => (
+                  <div key={part._id}
                     className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 text-sm"
                   >
-                    <div>
-                      <p className="font-medium text-foreground">{usage.sparePart || '—'}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground truncate">{part.sparePart}</p>
                       <p className="text-xs text-muted-foreground">
-                        Qty: {usage.quantity} × {formatCurrency(usage.unitCost)}
-                        {usage.supplier?.name && ` · ${usage.supplier.name}`}
+                        {part.quantity} × {formatCurrency(part.unitCost)}
+                        {part.supplier?.name && ` · ${part.supplier.name}`}
                       </p>
+                      {part.notes && (
+                        <p className="text-xs text-muted-foreground italic">{part.notes}</p>
+                      )}
                     </div>
-                    <p className="font-medium text-foreground shrink-0">
-                      {formatCurrency((usage.quantity ?? 1) * (usage.unitCost ?? 0))}
-                    </p>
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                      <p className="text-sm font-medium text-foreground">
+                        {formatCurrency((part.quantity ?? 1) * (part.unitCost ?? 0))}
+                      </p>
+                      {canEditParts && (
+                        <button
+                          onClick={() => setDeletePartId(part._id)}
+                          className="text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <div className="flex justify-between items-center pt-2 border-t border-border px-1">
                   <p className="text-xs font-medium text-muted-foreground">Total Parts Cost</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {formatCurrency(repair.sparePartUsage.reduce((sum, u) => sum + (u.quantity ?? 1) * (u.unitCost ?? 0), 0))}
-                  </p>
+                  <p className="text-sm font-semibold text-foreground">{formatCurrency(totalPartsCost)}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </>
+            ) : (
+              !showAddPart && (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  {canEditParts ? 'No spare parts added yet' : 'No spare parts used'}
+                </p>
+              )
+            )}
+          </CardContent>
+        </Card>
 
         {/* ── Timeline ── */}
         <Card className="border-border shadow-none">
@@ -399,16 +586,16 @@ const RepairDetails = () => {
             <CardTitle className="text-sm font-semibold">Timeline</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={Calendar} label="Created"     value={formatDate(repair.createdAt)} />
-            <InfoRow icon={Calendar} label="Last Updated" value={formatDate(repair.updatedAt)} />
+            <InfoRow icon={Calendar}     label="Created"      value={formatDate(repair.createdAt)} />
+            <InfoRow icon={Calendar}     label="Last Updated" value={formatDate(repair.updatedAt)} />
             {repair.dueDate && (
-              <InfoRow icon={Calendar} label="Due Date"   value={formatDate(repair.dueDate)} />
+              <InfoRow icon={Calendar}   label="Due Date"     value={formatDate(repair.dueDate)} />
             )}
             {repair.completedAt && (
-              <InfoRow icon={CheckCircle} label="Completed" value={formatDate(repair.completedAt)} />
+              <InfoRow icon={CheckCircle} label="Completed"   value={formatDate(repair.completedAt)} />
             )}
             {repair.pickedUpAt && (
-              <InfoRow icon={PackageCheck} label="Picked Up" value={formatDate(repair.pickedUpAt)} />
+              <InfoRow icon={PackageCheck} label="Picked Up"  value={formatDate(repair.pickedUpAt)} />
             )}
           </CardContent>
         </Card>
@@ -432,7 +619,7 @@ const RepairDetails = () => {
 
       </div>
 
-      {/* ── Delete Dialog ── */}
+      {/* ── Confirm: Delete Repair ── */}
       <ConfirmDialog
         open={dialog.open && dialog.type === 'delete'}
         onClose={closeDialog}
@@ -444,7 +631,7 @@ const RepairDetails = () => {
         danger
       />
 
-      {/* ── Pickup Dialog ── */}
+      {/* ── Confirm: Pickup ── */}
       <ConfirmDialog
         open={dialog.open && dialog.type === 'pickup'}
         onClose={closeDialog}
@@ -460,6 +647,17 @@ const RepairDetails = () => {
         danger={false}
       />
 
+      {/* ── Confirm: Delete Spare Part ── */}
+      <ConfirmDialog
+        open={!!deletePartId}
+        onClose={() => setDeletePartId(null)}
+        onConfirm={handleDeletePart}
+        title="Remove Spare Part"
+        description="This spare part will be removed from the repair. This cannot be undone."
+        confirmLabel="Remove"
+        danger
+      />
+
       {/* ── Status Update Dialog ── */}
       {dialog.open && dialog.type === 'status' && (
         <>
@@ -473,14 +671,18 @@ const RepairDetails = () => {
                 </p>
               </div>
               <div className="px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">New Status</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                  New Status
+                </p>
                 <Select value={newStatus} onValueChange={setNewStatus}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Select status..." />
                   </SelectTrigger>
                   <SelectContent>
                     {allowedTransitions.map((s) => (
-                      <SelectItem key={s} value={s} className="text-sm">{STATUS_LABELS[s]}</SelectItem>
+                      <SelectItem key={s} value={s} className="text-sm">
+                        {STATUS_LABELS[s]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -511,7 +713,9 @@ const RepairDetails = () => {
                 </p>
               </div>
               <div className="px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Technician</p>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
+                  Technician
+                </p>
                 <AsyncCombobox
                   value={technicianId}
                   onChange={setTechnicianId}

@@ -8,7 +8,7 @@ const repairService = {
     updateRepair:     (id, data)    => api.patch(`/repairs/${id}`, data).then(r => r.data),
     deleteRepair:     (id)          => api.delete(`/repairs/${id}`).then(r => r.data),
     assignTechnician: (id, data)    => api.patch(`/repairs/${id}/assign`, data).then(r => r.data),
-    updateStatus:     (id, data)    => api.patch(`/repairs/${id}/status`, data).then(r => r.data),
+    updateRepairStatus:     (id, data)    => api.patch(`/repairs/${id}/status`, data).then(r => r.data),
     pickupRepair:     (id, data)    => api.patch(`/repairs/${id}/pickup`, data).then(r => r.data),
 };
 

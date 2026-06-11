@@ -1,16 +1,28 @@
 import { Search, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
-export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder, error }) => {
-  const [query, setQuery]         = useState('');
-  const [options, setOptions]     = useState([]);
-  const [open, setOpen]           = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [selected, setSelected]   = useState(null);
-  const debounceRef               = useRef(null);
-  const containerRef              = useRef(null);
+export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder, error, initialLabel }) => {
+  const [query, setQuery]       = useState('');
+  const [options, setOptions]   = useState([]);
+  const [open, setOpen]         = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [selected, setSelected] = useState(null);
+  const debounceRef             = useRef(null);
+  const containerRef            = useRef(null);
 
-  // Close on outside click
+  // ── Sync from value + initialLabel on mount (edit forms) ──────────────────
+  useEffect(() => {
+    if (value && initialLabel && !selected) {
+      setSelected({ value, label: initialLabel });
+    }
+  }, [value, initialLabel]);
+
+  // ── Clear selected when value is reset to empty externally ────────────────
+  useEffect(() => {
+    if (!value) setSelected(null);
+  }, [value]);
+
+  // ── Close on outside click ─────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -21,7 +33,7 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder, erro
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Fetch on query change
+  // ── Fetch on query change ──────────────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
     clearTimeout(debounceRef.current);
@@ -58,7 +70,9 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder, erro
         {selected ? (
           <>
             <span className="flex-1 truncate text-sm">{selected.label}</span>
-            <button type="button" onClick={handleClear} className="text-muted-foreground hover:text-foreground shrink-0">
+            <button type="button" onClick={handleClear}
+              className="text-muted-foreground hover:text-foreground shrink-0"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           </>
