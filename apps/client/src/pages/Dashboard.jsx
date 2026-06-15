@@ -1,199 +1,591 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Wrench, Users, IndianRupee, Clock, CheckCircle,
+  XCircle, AlertCircle, PackageCheck, ArrowDownLeft,
+  ArrowUpRight, TrendingUp, ClipboardList,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Smartphone, TrendingUp, Clock, CheckCircle, AlertCircle, ArrowUpRight, Plus, Phone, Mail } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import repairService from '@/api/repairService';
+import paymentService from '@/api/paymentService';
+import customerService from '@/api/customerService';
 
-const stats = [
-  { title: 'Total Repairs', value: '248', change: '+12%', icon: Smartphone, accent: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { title: 'Revenue', value: '₹15,248', change: '+8%', icon: TrendingUp, accent: 'text-green-500', bg: 'bg-green-500/10' },
-  { title: 'In Progress', value: '12', change: '+2', icon: Clock, accent: 'text-amber-500', bg: 'bg-amber-500/10' },
-  { title: 'Completed', value: '215', change: '+18', icon: CheckCircle, accent: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const recentRepairs = [
-  { id: 1, device: 'iPhone 15 Pro', issue: 'Screen Replacement', customer: 'Sarah Johnson', status: 'in-progress', date: '2024-03-05' },
-  { id: 2, device: 'Samsung Galaxy S24', issue: 'Battery Replacement', customer: 'Mike Smith', status: 'completed', date: '2024-03-04' },
-  { id: 3, device: 'Google Pixel 8', issue: 'Camera Repair', customer: 'Emily Davis', status: 'received', date: '2024-03-05' },
-  { id: 4, device: 'iPhone 14', issue: 'Water Damage', customer: 'Tom Wilson', status: 'completed', date: '2024-03-03' },
-  { id: 5, device: 'OnePlus 12', issue: 'Software Issue', customer: 'Lisa Brown', status: 'in-progress', date: '2024-03-05' },
-];
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+  }).format(amount ?? 0);
 
-const weeklyTrends = [
-  { day: 'Mon', repairs: 200 },
-  { day: 'Tue', repairs: 18 },
-  { day: 'Wed', repairs: 15 },
-  { day: 'Thu', repairs: 22 },
-  { day: 'Fri', repairs: 28 },
-  { day: 'Sat', repairs: 35 },
-  { day: 'Sun', repairs: 10 },
-];
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-const statusConfig = {
-  'in-progress': { label: 'In Progress', class: 'bg-blue-500/10 text-blue-500' },
-  'completed': { label: 'Completed', class: 'bg-green-500/10 text-green-500' },
-  'received': { label: 'Received', class: 'bg-amber-500/10 text-amber-500' },
-  'ready': { label: 'Ready', class: 'bg-indigo-500/10 text-indigo-500' },
-  'cancelled': { label: 'Cancelled', class: 'bg-red-500/10 text-red-500' },
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+const StatCard = ({ icon: Icon, label, value, sub, color = 'text-foreground', iconBg = 'bg-muted' }) => (
+  <Card className="border-border shadow-none">
+    <CardContent className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className={`text-xl font-bold mt-0.5 ${color}`}>{value}</p>
+          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+        </div>
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+          <Icon className="w-4 h-4 text-muted-foreground" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// ─── Section Header ───────────────────────────────────────────────────────────
+
+const SectionTitle = ({ children }) => (
+  <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+    {children}
+  </h2>
+);
+
+// ─── Status Badge (reused from RepairList) ────────────────────────────────────
+
+const STATUS_META = {
+  'received':       { label: 'Received',       color: 'bg-yellow-500/10 text-yellow-500',  icon: Clock        },
+  'in-progress':    { label: 'In Progress',     color: 'bg-blue-500/10 text-blue-500',      icon: Wrench       },
+  'ready':          { label: 'Ready',           color: 'bg-purple-500/10 text-purple-500',  icon: PackageCheck },
+  'not-repairable': { label: 'Not Repairable',  color: 'bg-orange-500/10 text-orange-500',  icon: AlertCircle  },
+  'completed':      { label: 'Completed',       color: 'bg-green-500/10 text-green-500',    icon: CheckCircle  },
+  'cancelled':      { label: 'Cancelled',       color: 'bg-red-500/10 text-red-500',        icon: XCircle      },
 };
+
+const StatusBadge = ({ status }) => {
+  const meta = STATUS_META[status] ?? { label: status, color: 'bg-muted text-muted-foreground', icon: AlertCircle };
+  const Icon = meta.icon;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${meta.color}`}>
+      <Icon className="w-3 h-3" />{meta.label}
+    </span>
+  );
+};
+
+// ─── Admin Dashboard ──────────────────────────────────────────────────────────
+
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [repairStats, setRepairStats]   = useState(null);
+  const [paymentStats, setPaymentStats] = useState(null);
+  const [customerStats, setCustomerStats] = useState(null);
+  const [recentRepairs, setRecentRepairs]   = useState([]);
+  const [recentPayments, setRecentPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [rs, ps, cs, rr, rp] = await Promise.all([
+          repairService.getRepairStats(),
+          paymentService.getPaymentStats(),
+          customerService.getCustomerStats(),
+          repairService.getRepairs({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
+          paymentService.getPayments({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
+        ]);
+        setRepairStats(rs.data);
+        setPaymentStats(ps.data);
+        setCustomerStats(cs.data);
+        setRecentRepairs(rr.data || []);
+        setRecentPayments(rp.data || []);
+      } catch (err) {
+        console.error('Dashboard fetch error', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+      Loading dashboard...
+    </div>
+  );
+
+  const net = (paymentStats?.totalReceivable ?? 0) - (paymentStats?.totalPayable ?? 0);
+
+  return (
+    <div className="space-y-6 p-4 pb-24 md:pb-6">
+
+      {/* ── Repairs ── */}
+      <div className="space-y-3">
+        <SectionTitle>Repairs</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <StatCard icon={ClipboardList} label="Total"          value={repairStats?.total ?? 0}         iconBg="bg-muted" />
+          <StatCard icon={Clock}         label="Received"       value={repairStats?.received ?? 0}      iconBg="bg-yellow-500/10" color="text-yellow-500" />
+          <StatCard icon={Wrench}        label="In Progress"    value={repairStats?.inProgress ?? 0}    iconBg="bg-blue-500/10"   color="text-blue-500" />
+          <StatCard icon={PackageCheck}  label="Ready"          value={repairStats?.ready ?? 0}         iconBg="bg-purple-500/10" color="text-purple-500" />
+          <StatCard icon={CheckCircle}   label="Completed"      value={repairStats?.completed ?? 0}     iconBg="bg-green-500/10"  color="text-green-500" />
+          <StatCard icon={XCircle}       label="Cancelled"      value={repairStats?.cancelled ?? 0}     iconBg="bg-red-500/10"    color="text-red-500" />
+        </div>
+      </div>
+
+      {/* ── Payments ── */}
+      <div className="space-y-3">
+        <SectionTitle>Payments</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <StatCard
+            icon={ArrowDownLeft}
+            label="Total Received"
+            value={formatCurrency(paymentStats?.totalReceivable)}
+            sub={`${paymentStats?.receivableCount ?? 0} payments`}
+            color="text-green-500"
+            iconBg="bg-green-500/10"
+          />
+          <StatCard
+            icon={ArrowUpRight}
+            label="Total Paid Out"
+            value={formatCurrency(paymentStats?.totalPayable)}
+            sub={`${paymentStats?.payableCount ?? 0} payments`}
+            color="text-orange-500"
+            iconBg="bg-orange-500/10"
+          />
+          <StatCard
+            icon={TrendingUp}
+            label="Net"
+            value={formatCurrency(net)}
+            sub="Received minus paid out"
+            color={net >= 0 ? 'text-green-500' : 'text-red-500'}
+            iconBg={net >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}
+          />
+        </div>
+      </div>
+
+      {/* ── Customers ── */}
+      <div className="space-y-3">
+        <SectionTitle>Customers</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard icon={Users}    label="Total"      value={customerStats?.total ?? 0}      iconBg="bg-muted" />
+          <StatCard icon={Users}    label="Active"     value={customerStats?.active ?? 0}     iconBg="bg-green-500/10"  color="text-green-500" />
+          <StatCard icon={Users}    label="Business"   value={customerStats?.business ?? 0}   iconBg="bg-blue-500/10"   color="text-blue-500" />
+          <StatCard icon={Users}    label="Individual" value={customerStats?.individual ?? 0} iconBg="bg-muted" />
+        </div>
+      </div>
+
+      {/* ── Recent Repairs ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <SectionTitle>Recent Repairs</SectionTitle>
+          <button
+            onClick={() => navigate('/app/repairs')}
+            className="text-xs text-primary hover:underline"
+          >
+            View all
+          </button>
+        </div>
+        <Card className="border-border shadow-none">
+          <CardContent className="p-0">
+            {/* Desktop */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    {['Repair ID', 'Device', 'Customer', 'Status', 'Charge', 'Date'].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentRepairs.length === 0 ? (
+                    <tr><td colSpan="6" className="text-center py-8 text-sm text-muted-foreground">No repairs yet</td></tr>
+                  ) : recentRepairs.map((r) => (
+                    <tr key={r._id}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/app/repairs/${r._id}`)}
+                    >
+                      <td className="py-2.5 px-4 text-sm font-medium text-foreground">{r.repairId}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground">{r.deviceModel}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground">{r.customer?.name || '—'}</td>
+                      <td className="py-2.5 px-4"><StatusBadge status={r.status} /></td>
+                      <td className="py-2.5 px-4 text-sm text-foreground">{formatCurrency(r.serviceCharge)}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground whitespace-nowrap">{formatDate(r.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile */}
+            <div className="md:hidden divide-y divide-border">
+              {recentRepairs.length === 0 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">No repairs yet</p>
+              ) : recentRepairs.map((r) => (
+                <div key={r._id}
+                  className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-muted/30 cursor-pointer"
+                  onClick={() => navigate(`/app/repairs/${r._id}`)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{r.repairId}</p>
+                    <p className="text-xs text-muted-foreground truncate">{r.deviceModel} · {r.customer?.name}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={r.status} />
+                    <p className="text-xs font-medium text-foreground">{formatCurrency(r.serviceCharge)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Recent Payments ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <SectionTitle>Recent Payments</SectionTitle>
+          <button
+            onClick={() => navigate('/app/payments')}
+            className="text-xs text-primary hover:underline"
+          >
+            View all
+          </button>
+        </div>
+        <Card className="border-border shadow-none">
+          <CardContent className="p-0">
+            {/* Desktop */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    {['Party', 'Type', 'Method', 'Amount', 'Date'].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentPayments.length === 0 ? (
+                    <tr><td colSpan="5" className="text-center py-8 text-sm text-muted-foreground">No payments yet</td></tr>
+                  ) : recentPayments.map((p) => (
+                    <tr key={p._id}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/app/payments/${p._id}`)}
+                    >
+                      <td className="py-2.5 px-4 text-sm text-foreground">
+                        {p.type === 'receivable' ? p.customer?.name : p.supplier?.name || '—'}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
+                          p.type === 'receivable' ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
+                        }`}>
+                          {p.type === 'receivable' ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
+                          {p.type === 'receivable' ? 'Receivable' : 'Payable'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground capitalize">{p.paymentMethod?.replace('_', ' ')}</td>
+                      <td className="py-2.5 px-4">
+                        <span className={`text-sm font-semibold ${p.type === 'receivable' ? 'text-green-500' : 'text-orange-500'}`}>
+                          {p.type === 'receivable' ? '+' : '-'}{formatCurrency(p.totalAmount)}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground whitespace-nowrap">{formatDate(p.paidAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile */}
+            <div className="md:hidden divide-y divide-border">
+              {recentPayments.length === 0 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">No payments yet</p>
+              ) : recentPayments.map((p) => (
+                <div key={p._id}
+                  className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-muted/30 cursor-pointer"
+                  onClick={() => navigate(`/app/payments/${p._id}`)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {p.type === 'receivable' ? p.customer?.name : p.supplier?.name || '—'}
+                    </p>
+                    <p className="text-xs text-muted-foreground capitalize">{p.paymentMethod?.replace('_', ' ')}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`text-sm font-semibold ${p.type === 'receivable' ? 'text-green-500' : 'text-orange-500'}`}>
+                      {p.type === 'receivable' ? '+' : '-'}{formatCurrency(p.totalAmount)}
+                    </span>
+                    <p className="text-xs text-muted-foreground">{formatDate(p.paidAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+    </div>
+  );
+};
+
+// ─── Manager Dashboard ────────────────────────────────────────────────────────
+
+const ManagerDashboard = () => {
+  const navigate = useNavigate();
+  const [repairStats, setRepairStats]   = useState(null);
+  const [paymentStats, setPaymentStats] = useState(null);
+  const [recentRepairs, setRecentRepairs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [rs, ps, rr] = await Promise.all([
+          repairService.getRepairStats(),
+          paymentService.getPaymentStats(),
+          repairService.getRepairs({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
+        ]);
+        console.log(rs, ps, rr)
+        setRepairStats(rs.data);
+        setPaymentStats(ps.data);
+        setRecentRepairs(rr.data || []);
+      } catch (err) {
+        console.error('Dashboard fetch error', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+      Loading dashboard...
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 p-4 pb-24 md:pb-6">
+
+      {/* ── Repairs ── */}
+      <div className="space-y-3">
+        <SectionTitle>Repairs</SectionTitle>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <StatCard icon={ClipboardList} label="Total"       value={repairStats?.total ?? 0}      iconBg="bg-muted" />
+          <StatCard icon={Clock}         label="Received"    value={repairStats?.received ?? 0}   iconBg="bg-yellow-500/10" color="text-yellow-500" />
+          <StatCard icon={Wrench}        label="In Progress" value={repairStats?.inProgress ?? 0} iconBg="bg-blue-500/10"   color="text-blue-500" />
+          <StatCard icon={PackageCheck}  label="Ready"       value={repairStats?.ready ?? 0}      iconBg="bg-purple-500/10" color="text-purple-500" />
+          <StatCard icon={CheckCircle}   label="Completed"   value={repairStats?.completed ?? 0}  iconBg="bg-green-500/10"  color="text-green-500" />
+          <StatCard icon={XCircle}       label="Cancelled"   value={repairStats?.cancelled ?? 0}  iconBg="bg-red-500/10"    color="text-red-500" />
+        </div>
+      </div>
+
+      {/* ── Payments (no net — manager doesn't need full financial picture) ── */}
+      <div className="space-y-3">
+        <SectionTitle>Payments</SectionTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <StatCard
+            icon={ArrowDownLeft}
+            label="Total Received"
+            value={formatCurrency(paymentStats?.totalReceivable)}
+            sub={`${paymentStats?.receivableCount ?? 0} payments`}
+            color="text-green-500"
+            iconBg="bg-green-500/10"
+          />
+          <StatCard
+            icon={ArrowUpRight}
+            label="Total Paid Out"
+            value={formatCurrency(paymentStats?.totalPayable)}
+            sub={`${paymentStats?.payableCount ?? 0} payments`}
+            color="text-orange-500"
+            iconBg="bg-orange-500/10"
+          />
+        </div>
+      </div>
+
+      {/* ── Recent Repairs ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <SectionTitle>Recent Repairs</SectionTitle>
+          <button onClick={() => navigate('/app/repairs')} className="text-xs text-primary hover:underline">
+            View all
+          </button>
+        </div>
+        <Card className="border-border shadow-none">
+          <CardContent className="p-0">
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    {['Repair ID', 'Device', 'Customer', 'Status', 'Charge', 'Date'].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentRepairs.length === 0 ? (
+                    <tr><td colSpan="6" className="text-center py-8 text-sm text-muted-foreground">No repairs yet</td></tr>
+                  ) : recentRepairs.map((r) => (
+                    <tr key={r._id}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/app/repairs/${r._id}`)}
+                    >
+                      <td className="py-2.5 px-4 text-sm font-medium text-foreground">{r.repairId}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground">{r.deviceModel}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground">{r.customer?.name || '—'}</td>
+                      <td className="py-2.5 px-4"><StatusBadge status={r.status} /></td>
+                      <td className="py-2.5 px-4 text-sm text-foreground">{formatCurrency(r.serviceCharge)}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground whitespace-nowrap">{formatDate(r.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden divide-y divide-border">
+              {recentRepairs.map((r) => (
+                <div key={r._id}
+                  className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-muted/30 cursor-pointer"
+                  onClick={() => navigate(`/repairs/${r._id}`)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{r.repairId}</p>
+                    <p className="text-xs text-muted-foreground truncate">{r.deviceModel} · {r.customer?.name}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <StatusBadge status={r.status} />
+                    <p className="text-xs font-medium text-foreground">{formatCurrency(r.serviceCharge)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+    </div>
+  );
+};
+
+// ─── Staff Dashboard ──────────────────────────────────────────────────────────
+
+const StaffDashboard = ({ userId }) => {
+  const navigate = useNavigate();
+  const [myRepairs, setMyRepairs]   = useState([]);
+  const [counts, setCounts]         = useState({ inProgress: 0, ready: 0, total: 0 });
+  const [loading, setLoading]       = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const response = await repairService.getRepairs({
+          technician: userId,
+          limit: 50,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+        const repairs = response.data || [];
+        setMyRepairs(repairs.slice(0, 10));
+        setCounts({
+          total:      repairs.length,
+          inProgress: repairs.filter((r) => r.status === 'in-progress').length,
+          ready:      repairs.filter((r) => r.status === 'ready').length,
+        });
+      } catch (err) {
+        console.error('Staff dashboard error', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, [userId]);
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+      Loading dashboard...
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 p-4 pb-24 md:pb-6">
+
+      {/* ── My Stats ── */}
+      <div className="space-y-3">
+        <SectionTitle>My Repairs</SectionTitle>
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard icon={ClipboardList} label="Assigned"    value={counts.total}      iconBg="bg-muted" />
+          <StatCard icon={Wrench}        label="In Progress" value={counts.inProgress}  iconBg="bg-blue-500/10"   color="text-blue-500" />
+          <StatCard icon={PackageCheck}  label="Ready"       value={counts.ready}       iconBg="bg-purple-500/10" color="text-purple-500" />
+        </div>
+      </div>
+
+      {/* ── My Repair List ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <SectionTitle>Assigned to Me</SectionTitle>
+          <button onClick={() => navigate('/app/repairs')} className="text-xs text-primary hover:underline">
+            View all
+          </button>
+        </div>
+        <Card className="border-border shadow-none">
+          <CardContent className="p-0">
+            {/* Desktop */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    {['Repair ID', 'Device', 'Customer', 'Status', 'Date'].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {myRepairs.length === 0 ? (
+                    <tr><td colSpan="5" className="text-center py-8 text-sm text-muted-foreground">No repairs assigned to you</td></tr>
+                  ) : myRepairs.map((r) => (
+                    <tr key={r._id}
+                      className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/app/repairs/${r._id}`)}
+                    >
+                      <td className="py-2.5 px-4 text-sm font-medium text-foreground">{r.repairId}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground">{r.deviceModel}</td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground">{r.customer?.name || '—'}</td>
+                      <td className="py-2.5 px-4"><StatusBadge status={r.status} /></td>
+                      <td className="py-2.5 px-4 text-sm text-muted-foreground whitespace-nowrap">{formatDate(r.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile */}
+            <div className="md:hidden divide-y divide-border">
+              {myRepairs.length === 0 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">No repairs assigned to you</p>
+              ) : myRepairs.map((r) => (
+                <div key={r._id}
+                  className="px-4 py-3 flex items-center justify-between gap-3 hover:bg-muted/30 cursor-pointer"
+                  onClick={() => navigate(`/app/repairs/${r._id}`)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{r.repairId}</p>
+                    <p className="text-xs text-muted-foreground truncate">{r.deviceModel} · {r.customer?.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
+                  </div>
+                  <StatusBadge status={r.status} />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+    </div>
+  );
+};
+
+// ─── Dashboard (role switcher) ────────────────────────────────────────────────
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const maxRepairs = Math.max(...weeklyTrends.map(t => t.repairs));
 
-  return (
-    <>
-      {/* Header */}
-      <div className="relative overflow-hidden border-b border-border bg-gradient-to-r from-background via-muted/20 to-background p-6">
+  if (!user) return null;
 
-        {/* Tech Blueprint Pattern Overlay */}
-        <div className="absolute inset-0 opacity-30 dark:opacity-20 pointer-events-none"
-          style={{
-            backgroundImage: `url("/dashboard-pattern.svg")`,
-            backgroundSize: '100px 100px'
-          }}
-        />
-
-        {/* Ambient Glows */}
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-
-        {/* Header Content */}
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              Good morning, {user?.name?.split(' ')[0]}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Here's what's happening today.
-            </p>
-          </div>
-          <div className="flex flex-col items-end text-right text-xs sm:text-sm bg-muted/40 sm:bg-transparent p-2 sm:p-0 rounded-lg border border-border/40 sm:border-none">
-            <span className="font-medium text-muted-foreground mb-1 text-[11px] uppercase tracking-wider">
-              Need Support?
-            </span>
-            <div className="flex flex-col gap-1 text-foreground/80">
-              <Link
-                to="mailto:support@yourdomain.com"
-                className="flex items-center gap-1.5 hover:text-primary transition-colors justify-end"
-              >
-                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                support@yourdomain.com
-              </Link>
-              <Link
-                to="tel:+1234567890"
-                className="flex items-center gap-1.5 hover:text-primary transition-colors justify-end"
-              >
-                <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                +1 (234) 567-890
-              </Link>
-              <p>Mon - Fri • 9:00 AM - 7:00 PM</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="space-y-6 p-4">
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, i) => (
-            <Card key={i} className="border-border shadow-none">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-semibold text-foreground mt-1">{stat.value}</p>
-                    <p className={`text-xs mt-1 flex items-center gap-1 ${stat.accent}`}>
-                      <ArrowUpRight className="w-3 h-3" />
-                      {stat.change}
-                    </p>
-                  </div>
-                  <div className={`p-2 rounded-lg ${stat.bg}`}>
-                    <stat.icon className={`w-4 h-4 ${stat.accent}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Recent Repairs + Weekly Trend */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Recent Repairs */}
-          <Card className="lg:col-span-2 border-border shadow-none">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">Recent Repairs</CardTitle>
-                <button
-                  onClick={() => navigate('/repairs')}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                >
-                  View all <ArrowUpRight className="w-3 h-3" />
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Device</th>
-                      <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Customer</th>
-                      <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Status</th>
-                      <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentRepairs.map((repair) => {
-                      const s = statusConfig[repair.status] || statusConfig['received'];
-                      return (
-                        <tr
-                          key={repair.id}
-                          onClick={() => navigate(`/repairs/${repair.id}`)}
-                          className="border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          <td className="py-3 px-4">
-                            <p className="text-sm font-medium text-foreground">{repair.device}</p>
-                            <p className="text-xs text-muted-foreground">{repair.issue}</p>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-muted-foreground">{repair.customer}</td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 text-xs rounded-md font-medium ${s.class}`}>
-                              {s.label}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-xs text-muted-foreground">{repair.date}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Weekly Trend */}
-          <Card className="border-border shadow-none">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Weekly Repairs</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {weeklyTrends.map((trend, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-7">{trend.day}</span>
-                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${(trend.repairs / maxRepairs) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium text-foreground w-6 text-right">{trend.repairs}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </>
-  );
+  if (user.role === 'staff') return <StaffDashboard userId={user._id} />;
+  if (user.role === 'manager') return <ManagerDashboard />;
+  return <AdminDashboard />; // admin + superadmin
 };
 
 export default Dashboard;

@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.use(protect);
 
-router.get('/stats', authorize('admin'), getPaymentStats);
+router.get('/stats', authorize('manager'), getPaymentStats);
 
 router.post('/full-and-final', authorize('manager'), createFullAndFinalPayment);
 

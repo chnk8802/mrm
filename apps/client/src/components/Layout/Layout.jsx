@@ -2,17 +2,20 @@ import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, Users, Wrench, Settings, Menu } from "lucide-react";
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
+import Sidebar from "@/components/Layout/Sidebar";
+import Topbar from "@/components/Layout/Topbar";
+import { useTheme } from "@/context/ThemeContext";
 
 const mobileNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Users, label: "Customers", path: "/customers" },
-  { icon: Wrench, label: "Repairs", path: "/repairs" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
+  { icon: Users, label: "Customers", path: "/app/customers" },
+  { icon: Wrench, label: "Repairs", path: "/app/repairs" },
+  { icon: Settings, label: "Settings", path: "/app/settings" },
 ];
 
 const Layout = () => {
+  const { theme, appTheme } = useTheme();
+
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const stored = localStorage.getItem("sidebarOpen");
     return stored === null ? true : stored === "true";
@@ -24,7 +27,10 @@ const Layout = () => {
   }, [sidebarOpen]);
 
   return (
-    <div className="h-screen flex flex-col">
+    <div
+      className={`${theme} h-screen flex flex-col bg-background text-foreground transition-colors duration-200`}
+      data-app-theme={appTheme}
+    >
       <Topbar
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
@@ -63,10 +69,9 @@ const Layout = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === "/"}
+              end={item.path === "/app"}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                `flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium ${isActive ? "text-primary" : "text-muted-foreground"
                 }`
               }
             >

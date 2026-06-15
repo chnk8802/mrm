@@ -12,9 +12,10 @@ const ConfirmDialog = ({
     danger = true,
     loading = false,
 }) => {
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-sm">
+            <DialogContent>
                 <DialogHeader>
                     <DialogTitle className="text-base">{title}</DialogTitle>
                 </DialogHeader>
@@ -22,9 +23,9 @@ const ConfirmDialog = ({
                     <p className="text-sm text-muted-foreground">{description}</p>
                 )}
                 <div className="flex justify-end gap-2 mt-2">
-                    <Button variant="outline" size="sm" onClick={onClose} disabled={loading}>
-                        {cancelLabel}
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={onClose} disabled={loading} className="text-foreground border-border hover:text-foreground">
+    {cancelLabel}
+</Button>
                     <Button
                         size="sm"
                         disabled={loading}

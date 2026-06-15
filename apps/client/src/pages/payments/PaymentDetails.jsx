@@ -72,7 +72,7 @@ const PaymentDetails = () => {
 
   if (error) return (
     <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/payments')} className="gap-1.5">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/app/payments')} className="gap-1.5">
         <ArrowLeft className="w-4 h-4" /> Back
       </Button>
       <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
@@ -91,7 +91,7 @@ const PaymentDetails = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/payments')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/payments')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Payments

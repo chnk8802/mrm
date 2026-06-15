@@ -9,16 +9,16 @@ import {
 } from 'lucide-react';
 
 const allMenuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: null },
-    { icon: Wrench, label: 'Repairs', path: '/repairs', roles: null },
-    { icon: CreditCard, label: 'Payments', path: '/payments', roles: null },
-    { icon: Users, label: 'Customers', path: '/customers', roles: null },
-    { icon: Truck, label: 'Suppliers', path: '/suppliers', roles: null },
-    { icon: HardHat, label: 'Technicians', path: '/technicians', roles: null },
-    { icon: UserCog, label: 'Users', path: '/users', roles: ['superadmin', 'admin'] },
-    { icon: ChartArea, label: 'Reports', path: '/reports', roles: null },
-    { icon: Settings, label: 'Settings', path: '/settings', roles: null },
-    { icon: Plug, label: 'Integrations', path: '/integrations', roles: null },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/app', roles: null },
+    { icon: Wrench, label: 'Repairs', path: '/app/repairs', roles: null },
+    { icon: CreditCard, label: 'Payments', path: '/app/payments', roles: ['superadmin', 'admin'] },
+    { icon: Users, label: 'Customers', path: '/app/customers', roles: ['superadmin', 'admin'] },
+    { icon: Truck, label: 'Suppliers', path: '/app/suppliers', roles: ['superadmin', 'admin'] },
+    { icon: HardHat, label: 'Technicians', path: '/app/technicians', roles: ['superadmin', 'admin'] },
+    { icon: UserCog, label: 'Users', path: '/app/users', roles: ['superadmin', 'admin'] },
+    { icon: ChartArea, label: 'Reports', path: '/app/reports', roles: ['superadmin', 'admin'] },
+    { icon: Settings, label: 'Settings', path: '/app/settings', roles: null },
+    { icon: Plug, label: 'Integrations', path: '/app/integrations', roles: ['superadmin', 'admin'] },
 ];
 
 const Sidebar = ({ isMobile = false, onClose = null }) => {
@@ -47,7 +47,7 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
                         <NavLink
                             key={item.path}
                             to={item.path}
-                            end={item.path === '/'}
+                            end={item.path === '/app'}
                             onClick={isMobile ? onClose : undefined}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${isActive

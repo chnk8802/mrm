@@ -21,25 +21,26 @@ import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { AsyncCombobox } from '@/components/AsyncComboBox';
 import toast from 'react-hot-toast';
+import StatusUpdateDialog from './components/StatusUpdateDialog';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALLOWED_TRANSITIONS = {
-  'received':       ['in-progress', 'cancelled'],
-  'in-progress':    ['ready', 'not-repairable', 'cancelled'],
-  'ready':          [],
+  'received': ['in-progress', 'cancelled'],
+  'in-progress': ['ready', 'not-repairable', 'cancelled'],
+  'ready': [],
   'not-repairable': [],
-  'completed':      [],
-  'cancelled':      [],
+  'completed': [],
+  'cancelled': [],
 };
 
 const STATUS_LABELS = {
-  'received':       'Received',
-  'in-progress':    'In Progress',
-  'ready':          'Ready',
+  'received': 'Received',
+  'in-progress': 'In Progress',
+  'ready': 'Ready',
   'not-repairable': 'Not Repairable',
-  'completed':      'Completed',
-  'cancelled':      'Cancelled',
+  'completed': 'Completed',
+  'cancelled': 'Cancelled',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,23 +63,23 @@ const formatCurrency = (amount) =>
 
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'received':       return { icon: Clock,        color: 'bg-yellow-500/10 text-yellow-500'  };
-    case 'in-progress':    return { icon: Wrench,       color: 'bg-blue-500/10 text-blue-500'      };
-    case 'ready':          return { icon: PackageCheck, color: 'bg-purple-500/10 text-purple-500'  };
-    case 'not-repairable': return { icon: AlertCircle,  color: 'bg-orange-500/10 text-orange-500'  };
-    case 'completed':      return { icon: CheckCircle,  color: 'bg-green-500/10 text-green-500'    };
-    case 'cancelled':      return { icon: XCircle,      color: 'bg-red-500/10 text-red-500'        };
-    default:               return { icon: CircleDot,    color: 'bg-muted text-muted-foreground'    };
+    case 'received': return { icon: Clock, color: 'bg-yellow-500/10 text-yellow-500' };
+    case 'in-progress': return { icon: Wrench, color: 'bg-blue-500/10 text-blue-500' };
+    case 'ready': return { icon: PackageCheck, color: 'bg-purple-500/10 text-purple-500' };
+    case 'not-repairable': return { icon: AlertCircle, color: 'bg-orange-500/10 text-orange-500' };
+    case 'completed': return { icon: CheckCircle, color: 'bg-green-500/10 text-green-500' };
+    case 'cancelled': return { icon: XCircle, color: 'bg-red-500/10 text-red-500' };
+    default: return { icon: CircleDot, color: 'bg-muted text-muted-foreground' };
   }
 };
 
 const getPaymentBadge = (status) => {
   switch (status) {
-    case 'paid':         return 'bg-green-500/10 text-green-500';
+    case 'paid': return 'bg-green-500/10 text-green-500';
     case 'partial-paid': return 'bg-yellow-500/10 text-yellow-500';
-    case 'unpaid':       return 'bg-red-500/10 text-red-500';
-    case 'waived':       return 'bg-muted text-muted-foreground';
-    default:             return 'bg-muted text-muted-foreground';
+    case 'unpaid': return 'bg-red-500/10 text-red-500';
+    case 'waived': return 'bg-muted text-muted-foreground';
+    default: return 'bg-muted text-muted-foreground';
   }
 };
 
@@ -100,16 +101,16 @@ const fetchSuppliers = async (search) => {
 const defaultPartForm = { sparePart: '', quantity: 1, unitCost: '', supplier: '', notes: '' };
 
 const SparePartForm = ({ repairId, onAdded, onCancel }) => {
-  const [form, setForm]         = useState(defaultPartForm);
+  const [form, setForm] = useState(defaultPartForm);
   const [supplierId, setSupplierId] = useState('');
-  const [errors, setErrors]     = useState({});
-  const [saving, setSaving]     = useState(false);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const validate = () => {
     const e = {};
     if (!form.sparePart || form.sparePart.length < 3) e.sparePart = 'Min 3 characters';
-    if (!form.quantity || form.quantity < 1)          e.quantity  = 'Min 1';
-    if (form.unitCost === '' || form.unitCost < 0)    e.unitCost  = 'Required, min 0';
+    if (!form.quantity || form.quantity < 1) e.quantity = 'Min 1';
+    if (form.unitCost === '' || form.unitCost < 0) e.unitCost = 'Required, min 0';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -119,12 +120,12 @@ const SparePartForm = ({ repairId, onAdded, onCancel }) => {
     try {
       setSaving(true);
       const payload = {
-        repair:    repairId,
+        repair: repairId,
         sparePart: form.sparePart,
-        quantity:  Number(form.quantity),
-        unitCost:  Number(form.unitCost),
+        quantity: Number(form.quantity),
+        unitCost: Number(form.unitCost),
         ...(supplierId ? { supplier: supplierId } : {}),
-        ...(form.notes ? { notes: form.notes }    : {}),
+        ...(form.notes ? { notes: form.notes } : {}),
       };
       const response = await sparePartUsageService.createSparePartUsage(payload);
       toast.success('Spare part added');
@@ -222,19 +223,19 @@ const SparePartForm = ({ repairId, onAdded, onCancel }) => {
 
 const RepairDetails = () => {
   const navigate = useNavigate();
-  const { id }   = useParams();
+  const { id } = useParams();
 
-  const [repair, setRepair]               = useState(null);
-  const [spareParts, setSpareParts]       = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
+  const [repair, setRepair] = useState(null);
+  const [spareParts, setSpareParts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [showAddPart, setShowAddPart]     = useState(false);
+  const [showAddPart, setShowAddPart] = useState(false);
 
-  const [dialog, setDialog]               = useState({ open: false, type: null });
-  const [newStatus, setNewStatus]         = useState('');
-  const [technicianId, setTechnicianId]   = useState('');
-  const [deletePartId, setDeletePartId]   = useState(null);
+  const [dialog, setDialog] = useState({ open: false, type: null });
+  const [newStatus, setNewStatus] = useState('');
+  const [technicianId, setTechnicianId] = useState('');
+  const [deletePartId, setDeletePartId] = useState(null);
 
   const closeDialog = () => setDialog({ open: false, type: null });
 
@@ -264,7 +265,7 @@ const RepairDetails = () => {
       setActionLoading(true);
       await repairService.deleteRepair(id);
       toast.success('Repair deleted');
-      navigate('/repairs');
+      navigate('/app/repairs');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete repair');
     } finally {
@@ -343,7 +344,7 @@ const RepairDetails = () => {
 
   if (error) return (
     <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/repairs')} className="gap-1.5">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/app/repairs')} className="gap-1.5">
         <ArrowLeft className="w-4 h-4" /> Back
       </Button>
       <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">{error}</div>
@@ -354,8 +355,8 @@ const RepairDetails = () => {
 
   const { icon: StatusIcon, color: statusColor } = getStatusBadge(repair.status);
   const allowedTransitions = ALLOWED_TRANSITIONS[repair.status] || [];
-  const netAmount  = (repair.serviceCharge ?? 0) - (repair.discount ?? 0);
-  const balance    = netAmount - (repair.amountPaid ?? 0);
+  const netAmount = (repair.serviceCharge ?? 0) - (repair.discount ?? 0);
+  const balance = netAmount - (repair.amountPaid ?? 0);
   const canEditParts = repair.status === 'in-progress';
   const totalPartsCost = spareParts.reduce((sum, p) => sum + (p.quantity ?? 1) * (p.unitCost ?? 0), 0);
 
@@ -364,13 +365,13 @@ const RepairDetails = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/repairs')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/repairs')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Repairs
         </Button>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => navigate(`/repairs/${id}/edit`)} className="h-8 gap-1.5">
+          <Button size="sm" onClick={() => navigate(`/app/repairs/${id}/edit`)} className="h-8 gap-1.5">
             <Edit className="w-3.5 h-3.5" /> Edit
           </Button>
           <RowActions
@@ -439,11 +440,11 @@ const RepairDetails = () => {
             <CardTitle className="text-sm font-semibold">Device Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={Wrench}      label="Device Model"  value={repair.deviceModel} />
-            <InfoRow icon={CircleDot}   label="IMEI"          value={repair.imei} />
-            <InfoRow icon={AlertCircle} label="Problem"       value={repair.problem} />
+            <InfoRow icon={Wrench} label="Device Model" value={repair.deviceModel} />
+            <InfoRow icon={CircleDot} label="IMEI" value={repair.imei} />
+            <InfoRow icon={AlertCircle} label="Problem" value={repair.problem} />
             {repair.accessories && (
-              <InfoRow icon={Package}   label="Accessories"   value={repair.accessories} />
+              <InfoRow icon={Package} label="Accessories" value={repair.accessories} />
             )}
           </CardContent>
         </Card>
@@ -490,9 +491,9 @@ const RepairDetails = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <InfoRow icon={IndianRupee} label="Service Charge" value={formatCurrency(repair.serviceCharge)} />
-            <InfoRow icon={IndianRupee} label="Discount"       value={formatCurrency(repair.discount)} />
-            <InfoRow icon={IndianRupee} label="Net Amount"     value={formatCurrency(netAmount)} />
-            <InfoRow icon={IndianRupee} label="Amount Paid"    value={formatCurrency(repair.amountPaid)} />
+            <InfoRow icon={IndianRupee} label="Discount" value={formatCurrency(repair.discount)} />
+            <InfoRow icon={IndianRupee} label="Net Amount" value={formatCurrency(netAmount)} />
+            <InfoRow icon={IndianRupee} label="Amount Paid" value={formatCurrency(repair.amountPaid)} />
             <div className="flex items-start gap-3">
               <IndianRupee className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
               <div>
@@ -586,16 +587,16 @@ const RepairDetails = () => {
             <CardTitle className="text-sm font-semibold">Timeline</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={Calendar}     label="Created"      value={formatDate(repair.createdAt)} />
-            <InfoRow icon={Calendar}     label="Last Updated" value={formatDate(repair.updatedAt)} />
+            <InfoRow icon={Calendar} label="Created" value={formatDate(repair.createdAt)} />
+            <InfoRow icon={Calendar} label="Last Updated" value={formatDate(repair.updatedAt)} />
             {repair.dueDate && (
-              <InfoRow icon={Calendar}   label="Due Date"     value={formatDate(repair.dueDate)} />
+              <InfoRow icon={Calendar} label="Due Date" value={formatDate(repair.dueDate)} />
             )}
             {repair.completedAt && (
-              <InfoRow icon={CheckCircle} label="Completed"   value={formatDate(repair.completedAt)} />
+              <InfoRow icon={CheckCircle} label="Completed" value={formatDate(repair.completedAt)} />
             )}
             {repair.pickedUpAt && (
-              <InfoRow icon={PackageCheck} label="Picked Up"  value={formatDate(repair.pickedUpAt)} />
+              <InfoRow icon={PackageCheck} label="Picked Up" value={formatDate(repair.pickedUpAt)} />
             )}
           </CardContent>
         </Card>
@@ -660,80 +661,27 @@ const RepairDetails = () => {
 
       {/* ── Status Update Dialog ── */}
       {dialog.open && dialog.type === 'status' && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={closeDialog} />
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm px-4">
-            <div className="bg-card border border-border rounded-xl shadow-xl">
-              <div className="px-5 py-3.5 border-b border-border">
-                <h2 className="text-sm font-semibold">Update Status</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Current: <span className="font-medium">{STATUS_LABELS[repair.status]}</span>
-                </p>
-              </div>
-              <div className="px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-                  New Status
-                </p>
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select status..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allowedTransitions.map((s) => (
-                      <SelectItem key={s} value={s} className="text-sm">
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2 px-5 pb-4">
-                <Button variant="outline" size="sm" onClick={closeDialog} className="flex-1">Cancel</Button>
-                <Button size="sm" onClick={handleStatusUpdate}
-                  disabled={!newStatus || actionLoading} className="flex-1"
-                >
-                  {actionLoading ? 'Updating...' : 'Update'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
+        <StatusUpdateDialog
+          open={dialog.open && dialog.type === 'status'}
+          onClose={closeDialog}
+          repair={repair}
+          statusLabels={STATUS_LABELS}
+          allowedTransitions={allowedTransitions}
+          onUpdate={handleStatusUpdate}
+          loading={actionLoading}
+        />
       )}
 
       {/* ── Assign Technician Dialog ── */}
       {dialog.open && dialog.type === 'assign' && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={closeDialog} />
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm px-4">
-            <div className="bg-card border border-border rounded-xl shadow-xl">
-              <div className="px-5 py-3.5 border-b border-border">
-                <h2 className="text-sm font-semibold">Assign Technician</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Status will move to <span className="font-medium">In Progress</span>
-                </p>
-              </div>
-              <div className="px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
-                  Technician
-                </p>
-                <AsyncCombobox
-                  value={technicianId}
-                  onChange={setTechnicianId}
-                  fetchOptions={fetchTechnicians}
-                  placeholder="Search technicians..."
-                />
-              </div>
-              <div className="flex gap-2 px-5 pb-4">
-                <Button variant="outline" size="sm" onClick={closeDialog} className="flex-1">Cancel</Button>
-                <Button size="sm" onClick={handleAssignTechnician}
-                  disabled={!technicianId || actionLoading} className="flex-1"
-                >
-                  {actionLoading ? 'Assigning...' : 'Assign'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
+        <AssignTechnicianDialog
+          open={dialog.open && dialog.type === 'assign'}
+          onClose={closeDialog}
+          repair={repair}
+          fetchTechnicians={fetchTechnicians}
+          onAssign={handleAssignTechnician}
+          loading={actionLoading}
+        />
       )}
     </div>
   );

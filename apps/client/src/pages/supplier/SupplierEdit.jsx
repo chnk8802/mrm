@@ -62,7 +62,7 @@ const SupplierEdit = () => {
         });
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to fetch supplier');
-        navigate('/suppliers');
+        navigate('/app/suppliers');
       } finally {
         setLoading(false);
       }
@@ -89,7 +89,7 @@ const SupplierEdit = () => {
 
       await supplierService.updateSupplier(id, payload);
       toast.success('Supplier updated successfully');
-      navigate(`/suppliers/${id}`);
+      navigate(`/app/suppliers/${id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update supplier');
     }
@@ -110,7 +110,7 @@ const SupplierEdit = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate(`/suppliers/${id}`)}
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/app/suppliers/${id}`)}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Back
@@ -219,7 +219,7 @@ const SupplierEdit = () => {
 
         {/* ── Actions ── */}
         <div className="flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/suppliers/${id}`)}>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/app/suppliers/${id}`)}>
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

@@ -24,6 +24,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import customerService from '@/api/customerService';
@@ -37,16 +38,16 @@ import ConfirmDialog from '@/components/common/ConfirmDialog';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const customerTypeOptions = [
-  { value: 'business',   label: 'Business'    },
-  { value: 'individual', label: 'Individual'  },
+  { value: 'business', label: 'Business' },
+  { value: 'individual', label: 'Individual' },
 ];
 
 const columns = [
-  { label: 'Name',    col: 'name'         },
-  { label: 'Type',    col: 'customerType' },
-  { label: 'Phone',   col: 'phone'        },
-  { label: 'Email',   col: 'email'        },
-  { label: 'Created', col: 'createdAt'    },
+  { label: 'Name', col: 'name' },
+  { label: 'Type', col: 'customerType' },
+  { label: 'Phone', col: 'phone' },
+  { label: 'Email', col: 'email' },
+  { label: 'Created', col: 'createdAt' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -138,28 +139,28 @@ const BulkUpdateModal = ({ count, onClose, onSubmit, loading }) => {
 const CustomerList = () => {
   const navigate = useNavigate();
 
-  const [customers, setCustomers]           = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [selectedCustomers, setSelectedCustomers] = useState([]);
-  const [selectAll, setSelectAll]           = useState(false);
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState(null);
+  const [selectAll, setSelectAll] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [searchOpen, setSearchOpen]         = useState(false);
-  const [searchQuery, setSearchQuery]       = useState('');
-  const [showFilters, setShowFilters]       = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [customerTypeFilter, setCustomerTypeFilter] = useState('');
-  const [typeOpen, setTypeOpen]             = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
 
   const [bulkUpdateOpen, setBulkUpdateOpen] = useState(false);
-  const [bulkUpdating, setBulkUpdating]     = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
-  const [deleteDialog, setDeleteDialog]     = useState({ open: false, id: null, label: '' });
-  const [bulkDeleteDialog, setBulkDeleteDialog]   = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, label: '' });
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
   const [bulkUpdateConfirm, setBulkUpdateConfirm] = useState({ open: false, data: null });
 
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
-  const [sortBy, setSortBy]         = useState('createdAt');
-  const [sortOrder, setSortOrder]   = useState('desc');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   // ── Fetch ────────────────────────────────────────────────────────────────
 
@@ -168,8 +169,8 @@ const CustomerList = () => {
       setLoading(true);
       setError(null);
       const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
-      if (searchQuery)         params.search       = searchQuery;
-      if (customerTypeFilter)  params.customerType = customerTypeFilter;
+      if (searchQuery) params.search = searchQuery;
+      if (customerTypeFilter) params.customerType = customerTypeFilter;
       const response = await customerService.getCustomers(params);
       setCustomers(response.data);
       setPagination((prev) => ({
@@ -373,7 +374,7 @@ const CustomerList = () => {
             setSearchQuery(val);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          onAddNew={() => navigate('/customers/new')}
+          onAddNew={() => navigate('/app/customers/new')}
           addLabel="Add Customer"
           filterCount={filterCount}
           onFilterToggle={() => setShowFilters((p) => !p)}
@@ -395,12 +396,11 @@ const CustomerList = () => {
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
             <tr className="border-b border-border">
               <th className="py-2.5 px-4 w-10">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selectAll}
-                  onChange={handleSelectAll}
-                  className="w-3.5 h-3.5 rounded border-border"
+                  onCheckedChange={handleSelectAll}
                 />
+
               </th>
               {columns.map(({ label, col }) => (
                 <th
@@ -438,14 +438,12 @@ const CustomerList = () => {
                 <tr
                   key={customer._id}
                   className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/customers/${customer._id}`)}
+                  onClick={() => navigate(`/app/customers/${customer._id}`)}
                 >
                   <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selectedCustomers.includes(customer._id)}
-                      onChange={() => handleSelectCustomer(customer._id)}
-                      className="w-3.5 h-3.5 rounded border-border"
+                      onCheckedChange={() => handleSelectCustomer(customer._id)}
                     />
                   </td>
                   <td className="py-1 px-4">
@@ -475,7 +473,7 @@ const CustomerList = () => {
                         {
                           label: 'Edit',
                           icon: Edit,
-                          onClick: () => navigate(`/customers/${customer._id}/edit`),
+                          onClick: () => navigate(`/app/customers/${customer._id}/edit`),
                         },
                         {
                           label: 'Delete',
@@ -506,16 +504,14 @@ const CustomerList = () => {
           customers.map((customer) => (
             <div
               key={customer._id}
-              onClick={() => navigate(`/customers/${customer._id}`)}
+              onClick={() => navigate(`/app/customers/${customer._id}`)}
               className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center justify-between gap-3"
             >
               {/* Checkbox */}
               <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selectedCustomers.includes(customer._id)}
-                  onChange={() => handleSelectCustomer(customer._id)}
-                  className="w-3.5 h-3.5 rounded border-border"
+                  onCheckedChange={() => handleSelectCustomer(customer._id)}
                 />
               </div>
 
@@ -551,7 +547,7 @@ const CustomerList = () => {
                     {
                       label: 'Edit',
                       icon: Edit,
-                      onClick: () => navigate(`/customers/${customer._id}/edit`),
+                      onClick: () => navigate(`/app/customers/${customer._id}/edit`),
                     },
                     {
                       label: 'Delete',

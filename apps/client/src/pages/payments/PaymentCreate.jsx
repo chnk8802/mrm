@@ -211,7 +211,7 @@ const PaymentCreate = () => {
       }
 
       toast.success('Payment recorded successfully');
-      navigate('/payments');
+      navigate('/app/payments');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to record payment');
     } finally {
@@ -226,7 +226,7 @@ const PaymentCreate = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/payments')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/payments')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Payments
@@ -488,7 +488,7 @@ const PaymentCreate = () => {
 
       {/* ── Actions ── */}
       <div className="flex justify-end gap-2 mt-4">
-        <Button type="button" variant="outline" size="sm" onClick={() => navigate('/payments')}>
+        <Button type="button" variant="outline" size="sm" onClick={() => navigate('/app/payments')}>
           Cancel
         </Button>
         <Button

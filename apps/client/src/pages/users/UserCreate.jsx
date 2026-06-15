@@ -79,7 +79,7 @@ const UserCreate = () => {
             const { confirmPassword, ...userData } = data;
             await userService.createUser(userData);
             toast.success("User created successfully");
-            navigate("/users");
+            navigate("/app/users");
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to create user");
         }
@@ -90,7 +90,7 @@ const UserCreate = () => {
 
             {/* Header */}
             <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={() => navigate("/users")}
+                <Button variant="ghost" size="sm" onClick={() => navigate("/app/users")}
                     className="gap-1.5 text-muted-foreground"
                 >
                     <ArrowLeft className="w-4 h-4" /> Users
@@ -238,7 +238,7 @@ const UserCreate = () => {
                 {/* Actions */}
                 <div className="flex justify-end gap-2 mt-4">
                     <Button type="button" variant="outline" size="sm"
-                        onClick={() => navigate("/users")}
+                        onClick={() => navigate("/app/users")}
                     >
                         Cancel
                     </Button>

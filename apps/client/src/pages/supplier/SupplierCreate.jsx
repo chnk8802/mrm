@@ -59,7 +59,7 @@ const SupplierCreate = () => {
 
       await supplierService.createSupplier(payload);
       toast.success('Supplier created successfully');
-      navigate('/suppliers');
+      navigate('/app/suppliers');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create supplier');
     }
@@ -70,7 +70,7 @@ const SupplierCreate = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/suppliers')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/suppliers')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Suppliers
@@ -166,7 +166,7 @@ const SupplierCreate = () => {
 
         {/* ── Actions ── */}
         <div className="flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/suppliers')}>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/app/suppliers')}>
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

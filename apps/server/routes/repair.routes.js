@@ -17,10 +17,8 @@ const router = express.Router();
 
 router.use(protect);
 
-// Stats — must be before /:id
-router.get('/stats', authorize('admin'), getRepairStats);
+router.get('/stats', authorize('manager'), getRepairStats);
 
-// CRUD
 router.route('/')
     .get(authorize('staff'), getRepairs)
     .post(authorize('manager'), createRepair);
@@ -30,7 +28,6 @@ router.route('/:id')
     .patch(authorize('manager'), updateRepair)
     .delete(authorize('superadmin'), deleteRepair);
 
-// Actions
 router.patch('/:id/assign',   authorize('manager'),  assignTechnician);
 router.patch('/:id/status',   authorize('staff'),  updateRepairStatus);
 router.patch('/:id/pickup',   authorize('staff'),  pickupRepair);

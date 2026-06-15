@@ -105,7 +105,7 @@ const UserDetails = () => {
             setActionLoading(true);
             await userService.deleteUser(id);
             toast.success("User deleted");
-            navigate("/users");
+            navigate("/app/users");
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to delete user");
         } finally {
@@ -124,7 +124,7 @@ const UserDetails = () => {
 
     if (error) return (
         <div className="p-4 space-y-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/users")} className="gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/app/users")} className="gap-1.5">
                 <ArrowLeft className="w-4 h-4" /> Back
             </Button>
             <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">{error}</div>
@@ -133,7 +133,7 @@ const UserDetails = () => {
 
     if (!user) return (
         <div className="p-4 space-y-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/users")} className="gap-1.5">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/app/users")} className="gap-1.5">
                 <ArrowLeft className="w-4 h-4" /> Back
             </Button>
             <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 px-3 py-2 rounded-lg text-sm">User not found</div>
@@ -145,11 +145,11 @@ const UserDetails = () => {
 
             {/* Header */}
             <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={() => navigate("/users")} className="gap-1.5 text-muted-foreground">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/app/users")} className="gap-1.5 text-muted-foreground">
                     <ArrowLeft className="w-4 h-4" /> Users
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={() => navigate(`/users/${id}/edit`)} className="h-8 gap-1.5">
+                    <Button size="sm" onClick={() => navigate(`/app/users/${id}/edit`)} className="h-8 gap-1.5">
                         <Edit className="w-3.5 h-3.5" /> Edit
                     </Button>
                     <RowActions actions={[

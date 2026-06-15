@@ -12,6 +12,9 @@ import {
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from '@/components/ui/command';
+
+import { useTheme } from '@/context/ThemeContext';
+
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import repairService from '@/api/repairService';
@@ -21,25 +24,26 @@ import TableFooter from '@/components/common/TableFooter';
 import RowActions from '@/components/common/RowActions';
 import FilterPopover from '@/components/common/FilterPopover';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { value: 'received',       label: 'Received'       },
-  { value: 'in-progress',    label: 'In Progress'    },
-  { value: 'ready',          label: 'Ready'          },
+  { value: 'received', label: 'Received' },
+  { value: 'in-progress', label: 'In Progress' },
+  { value: 'ready', label: 'Ready' },
   { value: 'not-repairable', label: 'Not Repairable' },
-  { value: 'completed',      label: 'Completed'      },
-  { value: 'cancelled',      label: 'Cancelled'      },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const columns = [
-  { label: 'Repair ID',   col: 'repairId'      },
-  { label: 'Device',      col: 'deviceModel'   },
-  { label: 'Customer',    col: null            }, // populated, not sortable
-  { label: 'Status',      col: 'status'        },
-  { label: 'Charge',      col: 'serviceCharge' },
-  { label: 'Created',     col: 'createdAt'     },
+  { label: 'Repair ID', col: 'repairId' },
+  { label: 'Device', col: 'deviceModel' },
+  { label: 'Customer', col: null }, // populated, not sortable
+  { label: 'Status', col: 'status' },
+  { label: 'Charge', col: 'serviceCharge' },
+  { label: 'Created', col: 'createdAt' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -52,39 +56,40 @@ const formatCurrency = (amount) =>
 
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'received':       return { icon: Clock,        color: 'bg-yellow-500/10 text-yellow-500',  label: 'Received'        };
-    case 'in-progress':    return { icon: Wrench,       color: 'bg-blue-500/10 text-blue-500',      label: 'In Progress'     };
-    case 'ready':          return { icon: PackageCheck, color: 'bg-purple-500/10 text-purple-500',  label: 'Ready'           };
-    case 'not-repairable': return { icon: AlertCircle,  color: 'bg-orange-500/10 text-orange-500',  label: 'Not Repairable'  };
-    case 'completed':      return { icon: CheckCircle,  color: 'bg-green-500/10 text-green-500',    label: 'Completed'       };
-    case 'cancelled':      return { icon: XCircle,      color: 'bg-red-500/10 text-red-500',        label: 'Cancelled'       };
-    default:               return { icon: AlertCircle,  color: 'bg-muted text-muted-foreground',    label: status            };
+    case 'received': return { icon: Clock, color: 'bg-yellow-500/10 text-yellow-500', label: 'Received' };
+    case 'in-progress': return { icon: Wrench, color: 'bg-blue-500/10 text-blue-500', label: 'In Progress' };
+    case 'ready': return { icon: PackageCheck, color: 'bg-purple-500/10 text-purple-500', label: 'Ready' };
+    case 'not-repairable': return { icon: AlertCircle, color: 'bg-orange-500/10 text-orange-500', label: 'Not Repairable' };
+    case 'completed': return { icon: CheckCircle, color: 'bg-green-500/10 text-green-500', label: 'Completed' };
+    case 'cancelled': return { icon: XCircle, color: 'bg-red-500/10 text-red-500', label: 'Cancelled' };
+    default: return { icon: AlertCircle, color: 'bg-muted text-muted-foreground', label: status };
   }
 };
 
 // ─── RepairList ───────────────────────────────────────────────────────────────
 
 const RepairList = () => {
+  const { theme, appTheme } = useTheme();
   const navigate = useNavigate();
 
-  const [repairs, setRepairs]                 = useState([]);
-  const [loading, setLoading]                 = useState(true);
-  const [error, setError]                     = useState(null);
+  const [repairs, setRepairs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [selectedRepairs, setSelectedRepairs] = useState([]);
-  const [selectAll, setSelectAll]             = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
 
-  const [searchOpen, setSearchOpen]           = useState(false);
-  const [searchQuery, setSearchQuery]         = useState('');
-  const [showFilters, setShowFilters]         = useState(false);
-  const [statusFilter, setStatusFilter]       = useState('');
-  const [statusOpen, setStatusOpen]           = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [statusOpen, setStatusOpen] = useState(false);
 
-  const [pagination, setPagination]           = useState({ page: 1, limit: 10, total: 0, pages: 0 });
-  const [sortBy, setSortBy]                   = useState('createdAt');
-  const [sortOrder, setSortOrder]             = useState('desc');
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
-  const [deleteDialog, setDeleteDialog]       = useState({ open: false, id: null, label: '' });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, label: '' });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -94,7 +99,7 @@ const RepairList = () => {
       setLoading(true);
       setError(null);
       const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
-      if (searchQuery)  params.search = searchQuery;
+      if (searchQuery) params.search = searchQuery;
       if (statusFilter) params.status = statusFilter;
 
       const response = await repairService.getRepairs(params);
@@ -196,7 +201,8 @@ const RepairList = () => {
             <ChevronsUpDown className="ml-2 h-3 w-3 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-44 p-0">
+        <PopoverContent className={`w-44 p-0 ${theme} bg-popover text-popover-foreground border-border`}
+          data-app-theme={appTheme}>
           <Command>
             <CommandInput placeholder="Search status..." />
             <CommandList>
@@ -250,7 +256,7 @@ const RepairList = () => {
           searchQuery={searchQuery}
           onSearchToggle={() => { setSearchOpen((p) => !p); if (searchOpen) setSearchQuery(''); }}
           onSearchChange={(val) => { setSearchQuery(val); setPagination((p) => ({ ...p, page: 1 })); }}
-          onAddNew={() => navigate('/repairs/new')}
+          onAddNew={() => navigate('/app/repairs/new')}
           addLabel="New Repair"
           filterCount={filterCount}
           onFilterToggle={() => setShowFilters((p) => !p)}
@@ -272,8 +278,9 @@ const RepairList = () => {
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
             <tr className="border-b border-border">
               <th className="py-2.5 px-4 w-10">
-                <input type="checkbox" checked={selectAll} onChange={handleSelectAll}
-                  className="w-3.5 h-3.5 rounded border-border"
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
                 />
               </th>
               {columns.map(({ label, col }) => (
@@ -303,13 +310,13 @@ const RepairList = () => {
                 return (
                   <tr key={repair._id}
                     className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/repairs/${repair._id}`)}
+                    onClick={() => navigate(`/app/repairs/${repair._id}`)}
                   >
                     <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={selectedRepairs.includes(repair._id)}
-                        onChange={() => handleSelectRepair(repair._id)}
-                        className="w-3.5 h-3.5 rounded border-border"
-                      />
+                      <Checkbox
+                  checked={selectedRepairs.includes(repair._id)}
+                  onCheckedChange={() => handleSelectRepair(repair._id)}
+                />
                     </td>
                     <td className="py-1 px-4 text-sm font-medium text-foreground">{repair.repairId}</td>
                     <td className="py-1 px-4">
@@ -337,9 +344,11 @@ const RepairList = () => {
                     <td className="py-1 px-4" onClick={(e) => e.stopPropagation()}>
                       <RowActions
                         actions={[
-                          { label: 'Edit',   icon: Edit,   onClick: () => navigate(`/repairs/${repair._id}/edit`) },
-                          { label: 'Delete', icon: Trash2, danger: true, divider: true,
-                            onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId }) },
+                          { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
+                          {
+                            label: 'Delete', icon: Trash2, danger: true, divider: true,
+                            onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
+                          },
                         ]}
                       />
                     </td>
@@ -365,15 +374,14 @@ const RepairList = () => {
             const { icon: Icon, color, label } = getStatusBadge(repair.status);
             return (
               <div key={repair._id}
-                onClick={() => navigate(`/repairs/${repair._id}`)}
+                onClick={() => navigate(`/app/repairs/${repair._id}`)}
                 className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3"
               >
                 {/* Checkbox */}
                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                  <input type="checkbox" checked={selectedRepairs.includes(repair._id)}
-                    onChange={() => handleSelectRepair(repair._id)}
-                    className="w-3.5 h-3.5 rounded border-border"
-                  />
+                   <Checkbox
+                  checked={selectedRepairs.includes(repair._id)}
+                  onCheckedChange={() => handleSelectRepair(repair._id)} />
                 </div>
 
                 {/* Left */}
@@ -396,9 +404,11 @@ const RepairList = () => {
                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                   <RowActions
                     actions={[
-                      { label: 'Edit',   icon: Edit,   onClick: () => navigate(`/repairs/${repair._id}/edit`) },
-                      { label: 'Delete', icon: Trash2, danger: true, divider: true,
-                        onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId }) },
+                      { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
+                      {
+                        label: 'Delete', icon: Trash2, danger: true, divider: true,
+                        onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
+                      },
                     ]}
                   />
                 </div>

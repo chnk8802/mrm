@@ -129,7 +129,7 @@ const TechnicianList = () => {
                         ) : filtered.map(tech => (
                             <tr key={tech._id}
                                 className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                                onClick={() => navigate(`/users/${tech._id}`)}
+                                onClick={() => navigate(`/app/users/${tech._id}`)}
                             >
                                 <td className="py-1 px-4">
                                     <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ const TechnicianList = () => {
                 ) : filtered.length === 0 ? (
                     <p className="text-center py-16 text-sm text-muted-foreground">No technicians found</p>
                 ) : filtered.map(tech => (
-                    <div key={tech._id} onClick={() => navigate(`/users/${tech._id}`)}
+                    <div key={tech._id} onClick={() => navigate(`/app/users/${tech._id}`)}
                         className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center justify-between"
                     >
                         <div className="flex items-center gap-3">

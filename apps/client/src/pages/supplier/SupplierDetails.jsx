@@ -79,7 +79,7 @@ const SupplierDetails = () => {
       setActionLoading(true);
       await supplierService.deleteSupplier(id);
       toast.success('Supplier deleted');
-      navigate('/suppliers');
+      navigate('/app/suppliers');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete supplier');
     } finally {
@@ -112,7 +112,7 @@ const SupplierDetails = () => {
 
   if (error) return (
     <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/suppliers')} className="gap-1.5">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/app/suppliers')} className="gap-1.5">
         <ArrowLeft className="w-4 h-4" /> Back
       </Button>
       <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
@@ -130,13 +130,13 @@ const SupplierDetails = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/suppliers')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/suppliers')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Suppliers
         </Button>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => navigate(`/suppliers/${id}/edit`)} className="h-8 gap-1.5">
+          <Button size="sm" onClick={() => navigate(`/app/suppliers/${id}/edit`)} className="h-8 gap-1.5">
             <Edit className="w-3.5 h-3.5" /> Edit
           </Button>
           <RowActions

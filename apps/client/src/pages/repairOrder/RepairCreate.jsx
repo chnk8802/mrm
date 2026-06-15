@@ -84,7 +84,7 @@ const RepairCreate = () => {
 
       await repairService.createRepair(payload);
       toast.success('Repair order created');
-      navigate('/repairs');
+      navigate('/app/repairs');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create repair');
     }
@@ -95,7 +95,7 @@ const RepairCreate = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/repairs')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/repairs')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Repairs
@@ -304,7 +304,7 @@ const RepairCreate = () => {
 
         {/* ── Actions ── */}
         <div className="flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/repairs')}>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/app/repairs')}>
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

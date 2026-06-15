@@ -9,15 +9,33 @@ export const ThemeProvider = ({ children }) => {
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
 
+    const [appTheme, setAppTheme] = useState(() => {
+        // Aligned to match the 'mrm-design-preset' key used in your settings component
+        return localStorage.getItem('mrm-design-preset') || 'default';
+    });
+
     useEffect(() => {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        localStorage.setItem('theme', theme);
-    }, [theme]);
+    localStorage.setItem('theme', theme);
+    localStorage.setItem('mrm-design-preset', appTheme);
+}, [theme, appTheme]);
+
+    // Handle system preference modifications if user changes operating system schemes mid-session
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = (e) => {
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, []);
 
     const toggle = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
     return (
-        <ThemeContext.Provider value={{ theme, toggle }}>
+        <ThemeContext.Provider value={{ theme, toggle, setTheme, appTheme, setAppTheme }}>
             {children}
         </ThemeContext.Provider>
     );

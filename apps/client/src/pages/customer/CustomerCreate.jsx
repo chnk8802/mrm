@@ -52,7 +52,7 @@ const CustomerCreate = () => {
 
       await customerService.createCustomer(payload);
       toast.success('Customer created successfully');
-      navigate('/customers');
+      navigate('/app/customers');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create customer');
     }
@@ -63,7 +63,7 @@ const CustomerCreate = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/customers')}
+        <Button variant="ghost" size="sm" onClick={() => navigate('/app/customers')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Customers
@@ -175,7 +175,7 @@ const CustomerCreate = () => {
 
         {/* ── Actions ── */}
         <div className="flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/customers')}>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/app/customers')}>
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

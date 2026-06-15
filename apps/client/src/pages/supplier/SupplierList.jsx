@@ -10,6 +10,7 @@ import PageHeader from '@/components/common/PageHeader';
 import TableFooter from '@/components/common/TableFooter';
 import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -254,7 +255,7 @@ const SupplierList = () => {
             setSearchQuery(val);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          onAddNew={() => navigate('/suppliers/new')}
+          onAddNew={() => navigate('/app/suppliers/new')}
           addLabel="Add Supplier"
         />
       )}
@@ -272,11 +273,9 @@ const SupplierList = () => {
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
             <tr className="border-b border-border">
               <th className="py-2.5 px-4 w-10">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selectAll}
-                  onChange={handleSelectAll}
-                  className="w-3.5 h-3.5 rounded border-border"
+                  onCheckedChange={handleSelectAll}
                 />
               </th>
               {columns.map(({ label, col }) => (
@@ -314,15 +313,13 @@ const SupplierList = () => {
                 <tr
                   key={supplier._id}
                   className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/suppliers/${supplier._id}`)}
+                  onClick={() => navigate(`/app/suppliers/${supplier._id}`)}
                 >
                   <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selectedSuppliers.includes(supplier._id)}
-                      onChange={() => handleSelectSupplier(supplier._id)}
-                      className="w-3.5 h-3.5 rounded border-border"
-                    />
+                    <Checkbox
+                  checked={selectedSuppliers.includes(supplier._id)}
+                  onCheckedChange={() =>  handleSelectSupplier(supplier._id)}
+                />
                   </td>
                   <td className="py-1 px-4">
                     <p className="text-sm font-medium text-foreground">{supplier.name}</p>
@@ -351,7 +348,7 @@ const SupplierList = () => {
                         {
                           label: 'Edit',
                           icon: Edit,
-                          onClick: () => navigate(`/suppliers/${supplier._id}/edit`),
+                          onClick: () => navigate(`/app/suppliers/${supplier._id}/edit`),
                         },
                         {
                           label: 'Delete',
@@ -383,16 +380,14 @@ const SupplierList = () => {
           suppliers.map((supplier) => (
             <div
               key={supplier._id}
-              onClick={() => navigate(`/suppliers/${supplier._id}`)}
+              onClick={() => navigate(`/app/suppliers/${supplier._id}`)}
               className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3"
             >
               {/* Checkbox */}
               <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selectedSuppliers.includes(supplier._id)}
-                  onChange={() => handleSelectSupplier(supplier._id)}
-                  className="w-3.5 h-3.5 rounded border-border"
+                  onCheckedChange={() =>  handleSelectSupplier(supplier._id)}
                 />
               </div>
 
@@ -428,7 +423,7 @@ const SupplierList = () => {
                     {
                       label: 'Edit',
                       icon: Edit,
-                      onClick: () => navigate(`/suppliers/${supplier._id}/edit`),
+                      onClick: () => navigate(`/app/suppliers/${supplier._id}/edit`),
                     },
                     {
                       label: 'Delete',

@@ -49,7 +49,7 @@ const UserEdit = () => {
                 });
             } catch (err) {
                 toast.error(err.response?.data?.message || "Failed to fetch user");
-                navigate('/users');
+                navigate('/app/users');
             } finally {
                 setLoading(false);
             }
@@ -61,7 +61,7 @@ const UserEdit = () => {
         try {
             await userService.updateUser(id, data);
             toast.success("User updated successfully");
-            navigate(`/users/${id}`);
+            navigate(`/app/users/${id}`);
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to update user");
         }
@@ -95,7 +95,7 @@ const UserEdit = () => {
 
             {/* Header */}
             <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={() => navigate(`/users/${id}`)}
+                <Button variant="ghost" size="sm" onClick={() => navigate(`/app/users/${id}`)}
                     className="gap-1.5 text-muted-foreground"
                 >
                     <ArrowLeft className="w-4 h-4" /> Back
@@ -147,7 +147,7 @@ const UserEdit = () => {
                 </div>
 
                 <div className="flex justify-end gap-2 mt-4">
-                    <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/users/${id}`)}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/app/users/${id}`)}>
                         Cancel
                     </Button>
                     <Button type="submit" size="sm" disabled={isSubmitting}>

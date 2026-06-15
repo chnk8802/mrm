@@ -88,7 +88,7 @@ const CustomerDetails = () => {
       setActionLoading(true);
       await customerService.deleteCustomer(id);
       toast.success('Customer deleted');
-      navigate('/customers');
+      navigate('/app/customers');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete customer');
     } finally {
@@ -107,7 +107,7 @@ const CustomerDetails = () => {
 
   if (error) return (
     <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/customers')} className="gap-1.5">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/app/customers')} className="gap-1.5">
         <ArrowLeft className="w-4 h-4" /> Back
       </Button>
       <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
@@ -118,7 +118,7 @@ const CustomerDetails = () => {
 
   if (!customer) return (
     <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/customers')} className="gap-1.5">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/app/customers')} className="gap-1.5">
         <ArrowLeft className="w-4 h-4" /> Back
       </Button>
       <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 px-3 py-2 rounded-lg text-sm">
@@ -137,7 +137,7 @@ const CustomerDetails = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate('/customers')}
+          onClick={() => navigate('/app/customers')}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Customers
@@ -145,7 +145,7 @@ const CustomerDetails = () => {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            onClick={() => navigate(`/customers/${id}/edit`)}
+            onClick={() => navigate(`/app/customers/${id}/edit`)}
             className="h-8 gap-1.5"
           >
             <Edit className="w-3.5 h-3.5" /> Edit

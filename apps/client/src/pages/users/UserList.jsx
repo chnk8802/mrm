@@ -302,7 +302,7 @@ const UserList = () => {
           setSearchQuery(val);
           setPagination((p) => ({ ...p, page: 1 }));
         }}
-        onAddNew={() => navigate("/users/new")}
+        onAddNew={() => navigate("/app/users/new")}
         addLabel="Add User"
         filterCount={roleFilter ? 1 : 0}
         onFilterToggle={() => setShowFilters((p) => !p)}
@@ -363,7 +363,7 @@ const UserList = () => {
                 <tr
                   key={user._id}
                   className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/users/${user._id}`)}
+                  onClick={() => navigate(`/app/users/${user._id}`)}
                 >
                   <td className="py-1 px-4 text-sm font-medium text-foreground">
                     {user.name}
@@ -398,7 +398,7 @@ const UserList = () => {
                         {
                           label: "Edit",
                           icon: Edit,
-                          onClick: () => navigate(`/users/${user._id}/edit`),
+                          onClick: () => navigate(`/app/users/${user._id}/edit`),
                         },
                         {
                           label: "Delete",
@@ -433,7 +433,7 @@ const UserList = () => {
           users.map((user) => (
             <div
               key={user._id}
-              onClick={() => navigate(`/users/${user._id}`)}
+              onClick={() => navigate(`/app/users/${user._id}`)}
               className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center justify-between"
             >
               <div>

@@ -260,7 +260,7 @@ const PaymentList = () => {
         searchQuery={searchQuery}
         onSearchToggle={() => { setSearchOpen((p) => !p); if (searchOpen) setSearchQuery(''); }}
         onSearchChange={(val) => setSearchQuery(val)}
-        onAddNew={() => navigate('/payments/new')}
+        onAddNew={() => navigate('/app/payments/new')}
         addLabel="New Payment"
         filterCount={filterCount}
         onFilterToggle={() => setShowFilters((p) => !p)}
@@ -303,7 +303,7 @@ const PaymentList = () => {
               payments.map((payment) => (
                 <tr key={payment._id}
                   className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/payments/${payment._id}`)}
+                  onClick={() => navigate(`/app/payments/${payment._id}`)}
                 >
                   {/* Date */}
                   <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
@@ -379,7 +379,7 @@ const PaymentList = () => {
         ) : (
           payments.map((payment) => (
             <div key={payment._id}
-              onClick={() => navigate(`/payments/${payment._id}`)}
+              onClick={() => navigate(`/app/payments/${payment._id}`)}
               className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center justify-between gap-3"
             >
               {/* Left */}

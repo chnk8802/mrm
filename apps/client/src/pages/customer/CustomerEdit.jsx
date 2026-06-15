@@ -64,7 +64,7 @@ const CustomerEdit = () => {
         });
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to fetch customer');
-        navigate('/customers');
+        navigate('/app/customers');
       } finally {
         setLoading(false);
       }
@@ -86,7 +86,7 @@ const CustomerEdit = () => {
       };
       await customerService.updateCustomer(id, payload);
       toast.success('Customer updated successfully');
-      navigate(`/customers/${id}`);
+      navigate(`/app/customers/${id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update customer');
     }
@@ -107,7 +107,7 @@ const CustomerEdit = () => {
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate(`/customers/${id}`)}
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/app/customers/${id}`)}
           className="gap-1.5 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Back
@@ -219,7 +219,7 @@ const CustomerEdit = () => {
 
         {/* ── Actions ── */}
         <div className="flex justify-end gap-2 mt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/customers/${id}`)}>
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/app/customers/${id}`)}>
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>
