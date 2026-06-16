@@ -158,7 +158,13 @@ const RepairList = () => {
       setDeleteDialog({ open: false, id: null, label: '' });
       fetchRepairs();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete repair');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete repair');
+      }
     }
   };
 
@@ -171,7 +177,13 @@ const RepairList = () => {
       setBulkDeleteDialog(false);
       fetchRepairs();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete repairs');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete repairs');
+      }
     }
   };
 
@@ -314,9 +326,9 @@ const RepairList = () => {
                   >
                     <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                       <Checkbox
-                  checked={selectedRepairs.includes(repair._id)}
-                  onCheckedChange={() => handleSelectRepair(repair._id)}
-                />
+                        checked={selectedRepairs.includes(repair._id)}
+                        onCheckedChange={() => handleSelectRepair(repair._id)}
+                      />
                     </td>
                     <td className="py-1 px-4 text-sm font-medium text-foreground">{repair.repairId}</td>
                     <td className="py-1 px-4">
@@ -379,9 +391,9 @@ const RepairList = () => {
               >
                 {/* Checkbox */}
                 <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                   <Checkbox
-                  checked={selectedRepairs.includes(repair._id)}
-                  onCheckedChange={() => handleSelectRepair(repair._id)} />
+                  <Checkbox
+                    checked={selectedRepairs.includes(repair._id)}
+                    onCheckedChange={() => handleSelectRepair(repair._id)} />
                 </div>
 
                 {/* Left */}

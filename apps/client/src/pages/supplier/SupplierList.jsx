@@ -15,11 +15,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const columns = [
-  { label: 'Name',           col: 'name'         },
-  { label: 'Phone',          col: 'phone'         },
-  { label: 'Email',          col: 'email'         },
-  { label: 'Status',         col: 'isActive'      },
-  { label: 'Created',        col: 'createdAt'     },
+  { label: 'Name', col: 'name' },
+  { label: 'Phone', col: 'phone' },
+  { label: 'Email', col: 'email' },
+  { label: 'Status', col: 'isActive' },
+  { label: 'Created', col: 'createdAt' },
 ];
 
 const formatDate = (d) =>
@@ -91,24 +91,24 @@ const BulkUpdateModal = ({ count, onClose, onSubmit, loading }) => {
 const SupplierList = () => {
   const navigate = useNavigate();
 
-  const [suppliers, setSuppliers]               = useState([]);
-  const [loading, setLoading]                   = useState(true);
-  const [error, setError]                       = useState(null);
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [selectedSuppliers, setSelectedSuppliers] = useState([]);
-  const [selectAll, setSelectAll]               = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
 
-  const [searchOpen, setSearchOpen]             = useState(false);
-  const [searchQuery, setSearchQuery]           = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [pagination, setPagination]             = useState({ page: 1, limit: 10, total: 0, pages: 0 });
-  const [sortBy, setSortBy]                     = useState('createdAt');
-  const [sortOrder, setSortOrder]               = useState('desc');
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
-  const [bulkUpdateOpen, setBulkUpdateOpen]     = useState(false);
-  const [bulkUpdating, setBulkUpdating]         = useState(false);
+  const [bulkUpdateOpen, setBulkUpdateOpen] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
-  const [deleteDialog, setDeleteDialog]         = useState({ open: false, id: null, label: '' });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, label: '' });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
   const [bulkUpdateConfirm, setBulkUpdateConfirm] = useState({ open: false, data: null });
 
@@ -178,20 +178,32 @@ const SupplierList = () => {
       setDeleteDialog({ open: false, id: null, label: '' });
       fetchSuppliers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete supplier');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete supplier');
+      }
     }
   };
 
   const handleBulkDelete = async () => {
     try {
-      await supplierService.bulkDeleteSuppliers({ids: selectedSuppliers});
+      await supplierService.bulkDeleteSuppliers({ ids: selectedSuppliers });
       toast.success(`${selectedSuppliers.length} suppliers deleted`);
       setSelectedSuppliers([]);
       setSelectAll(false);
       setBulkDeleteDialog(false);
       fetchSuppliers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete');
+      }
     }
   };
 
@@ -212,7 +224,13 @@ const SupplierList = () => {
       setSelectAll(false);
       fetchSuppliers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to update');
+      }
     } finally {
       setBulkUpdating(false);
     }
@@ -317,9 +335,9 @@ const SupplierList = () => {
                 >
                   <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
-                  checked={selectedSuppliers.includes(supplier._id)}
-                  onCheckedChange={() =>  handleSelectSupplier(supplier._id)}
-                />
+                      checked={selectedSuppliers.includes(supplier._id)}
+                      onCheckedChange={() => handleSelectSupplier(supplier._id)}
+                    />
                   </td>
                   <td className="py-1 px-4">
                     <p className="text-sm font-medium text-foreground">{supplier.name}</p>
@@ -331,11 +349,10 @@ const SupplierList = () => {
                     {supplier.email || '—'}
                   </td>
                   <td className="py-1 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
-                      supplier.isActive
-                        ? 'bg-green-500/10 text-green-500'
-                        : 'bg-red-500/10 text-red-500'
-                    }`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${supplier.isActive
+                      ? 'bg-green-500/10 text-green-500'
+                      : 'bg-red-500/10 text-red-500'
+                      }`}>
                       {supplier.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -387,7 +404,7 @@ const SupplierList = () => {
               <div onClick={(e) => e.stopPropagation()} className="shrink-0">
                 <Checkbox
                   checked={selectedSuppliers.includes(supplier._id)}
-                  onCheckedChange={() =>  handleSelectSupplier(supplier._id)}
+                  onCheckedChange={() => handleSelectSupplier(supplier._id)}
                 />
               </div>
 
@@ -404,11 +421,10 @@ const SupplierList = () => {
 
               {/* Right: date */}
               <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                  supplier.isActive
-                    ? 'bg-green-500/10 text-green-500'
-                    : 'bg-red-500/10 text-red-500'
-                }`}>
+                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${supplier.isActive
+                  ? 'bg-green-500/10 text-green-500'
+                  : 'bg-red-500/10 text-red-500'
+                  }`}>
                   {supplier.isActive ? 'Active' : 'Inactive'}
                 </span>
                 <span className="text-xs text-muted-foreground">

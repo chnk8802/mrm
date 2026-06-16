@@ -213,7 +213,13 @@ const PaymentCreate = () => {
       toast.success('Payment recorded successfully');
       navigate('/app/payments');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to record payment');
+      const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to record payment');
+        }
     } finally {
       setSubmitting(false);
     }

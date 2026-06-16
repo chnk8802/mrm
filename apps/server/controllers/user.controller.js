@@ -146,6 +146,32 @@ export const updateUser = async (req, res, next) => {
     }
 };
 
+
+/**
+ * @desc    Update own password (verifies current password)
+ * @route   PUT /api/users/me/password
+ * @access  Private
+ */
+export const updatePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) throw createError(404, 'User not found');
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) throw createError(400, 'Current password is incorrect');
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * @desc    Soft delete a user
  * @route   DELETE /api/users/:id

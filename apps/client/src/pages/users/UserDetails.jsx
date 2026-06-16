@@ -16,20 +16,20 @@ import toast from "react-hot-toast";
 const getRoleIcon = (role) => {
     switch (role) {
         case "superadmin": return <ShieldCheck className="w-4 h-4" />;
-        case "admin":      return <Shield className="w-4 h-4" />;
-        case "manager":    return <ClipboardList className="w-4 h-4" />;
-        case "staff":      return <Wrench className="w-4 h-4" />;
-        default:           return <UserCog className="w-4 h-4" />;
+        case "admin": return <Shield className="w-4 h-4" />;
+        case "manager": return <ClipboardList className="w-4 h-4" />;
+        case "staff": return <Wrench className="w-4 h-4" />;
+        default: return <UserCog className="w-4 h-4" />;
     }
 };
 
 const getRoleBadge = (role) => {
     switch (role) {
         case "superadmin": return "bg-purple-500/10 text-purple-500";
-        case "admin":      return "bg-blue-500/10 text-blue-500";
-        case "manager":    return "bg-amber-500/10 text-amber-500";
-        case "staff":      return "bg-green-500/10 text-green-500";
-        default:           return "bg-muted text-muted-foreground";
+        case "admin": return "bg-blue-500/10 text-blue-500";
+        case "manager": return "bg-amber-500/10 text-amber-500";
+        case "staff": return "bg-green-500/10 text-green-500";
+        default: return "bg-muted text-muted-foreground";
     }
 };
 
@@ -93,7 +93,13 @@ const UserDetails = () => {
             }
             setUser(prev => ({ ...prev, isActive: !prev.isActive }));
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to update status');
+            const errorData = err.response?.data;
+
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Failed to update status');
+            }
         } finally {
             setActionLoading(false);
             setConfirmDialog({ open: false, type: null });
@@ -107,7 +113,13 @@ const UserDetails = () => {
             toast.success("User deleted");
             navigate("/app/users");
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to delete user");
+            const errorData = err.response?.data;
+
+if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+  toast.error(errorData.errors[0].message);
+} else {
+  toast.error(errorData?.message || 'Failed to delete user');
+}
         } finally {
             setActionLoading(false);
             setConfirmDialog({ open: false, type: null });
@@ -201,8 +213,8 @@ const UserDetails = () => {
                         <CardTitle className="text-sm font-semibold">Contact Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <InfoRow icon={Phone} label="Phone"   value={user.phone} />
-                        <InfoRow icon={Mail}  label="Email"   value={user.email} />
+                        <InfoRow icon={Phone} label="Phone" value={user.phone} />
+                        <InfoRow icon={Mail} label="Email" value={user.email} />
                         <InfoRow icon={MapPin} label="Address" value={formatAddress(user.address)} />
                     </CardContent>
                 </Card>
@@ -213,9 +225,9 @@ const UserDetails = () => {
                         <CardTitle className="text-sm font-semibold">Record Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <InfoRow icon={Calendar} label="Created"      value={formatDate(user.createdAt)} />
+                        <InfoRow icon={Calendar} label="Created" value={formatDate(user.createdAt)} />
                         <InfoRow icon={Calendar} label="Last Updated" value={formatDate(user.updatedAt)} />
-                        <InfoRow icon={User}     label="User ID"      value={user._id} />
+                        <InfoRow icon={User} label="User ID" value={user._id} />
                     </CardContent>
                 </Card>
             </div>

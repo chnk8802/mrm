@@ -16,6 +16,7 @@ import customerService from '@/api/customerService';
 import userService from '@/api/userService';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
+import CreateCustomerDialog from './components/Createcustomerdialog';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ const FieldError = ({ message }) =>
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
 const fetchCustomers = async (search) => {
-  const res = await customerService.getCustomers({ search, limit: 5});
+  const res = await customerService.getCustomers({ search, limit: 5 });
   return (res.data || []).map((c) => ({
     value: c._id,
     label: `${c.name} — ${c.phone || c.email || c.customerType}`,
@@ -33,7 +34,7 @@ const fetchCustomers = async (search) => {
 };
 
 const fetchTechnicians = async (search) => {
-  const res = await userService.getUsers({ role: 'staff', search, limit: 5, isActive: true});
+  const res = await userService.getUsers({ role: 'staff', search, limit: 5, isActive: true });
   return (res.data || []).map((t) => ({
     value: t._id,
     label: t.name,
@@ -43,16 +44,16 @@ const fetchTechnicians = async (search) => {
 // ─── Priority / Status badge helpers (reused across module) ──────────────────
 
 const PRIORITY_OPTIONS = [
-  { value: 'low',    label: 'Low'    },
+  { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
-  { value: 'high',   label: 'High'   },
+  { value: 'high', label: 'High' },
 ];
 
 // ─── RepairCreate ─────────────────────────────────────────────────────────────
 
 const RepairCreate = () => {
   const navigate = useNavigate();
-
+  const [createCustomerDialog, setCreateCustomerDialog] = useState({ open: false, name: '' });
   const [dueDate, setDueDate] = useState(null);
 
   const {
@@ -70,23 +71,29 @@ const RepairCreate = () => {
     try {
       // Build clean payload — omit empty optionals
       const payload = {
-        customer:      data.customer,
-        deviceModel:   data.deviceModel,
-        problem:       data.problem,
+        customer: data.customer,
+        deviceModel: data.deviceModel,
+        problem: data.problem,
         serviceCharge: Number(data.serviceCharge),
-        ...(data.technician  ? { technician:  data.technician          } : {}),
-        ...(data.imei        ? { imei:        data.imei                } : {}),
-        ...(data.accessories ? { accessories: data.accessories         } : {}),
-        ...(data.notes       ? { notes:       data.notes               } : {}),
-        ...(data.dueDate     ? { dueDate:     data.dueDate             } : {}),
-        ...(data.discount    ? { discount:    Number(data.discount)    } : {}),
+        ...(data.technician ? { technician: data.technician } : {}),
+        ...(data.imei ? { imei: data.imei } : {}),
+        ...(data.accessories ? { accessories: data.accessories } : {}),
+        ...(data.notes ? { notes: data.notes } : {}),
+        ...(data.dueDate ? { dueDate: data.dueDate } : {}),
+        ...(data.discount ? { discount: Number(data.discount) } : {}),
       };
 
       await repairService.createRepair(payload);
       toast.success('Repair order created');
       navigate('/app/repairs');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create repair');
+      const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to create repair');
+        }
     }
   };
 
@@ -128,6 +135,10 @@ const RepairCreate = () => {
                         fetchOptions={fetchCustomers}
                         placeholder="Search customers..."
                         error={!!errors.customer}
+                        onCreateNew={(prefillName) => {
+                          setCreateCustomerDialog({ open: true, name: prefillName });
+                        }}
+                        createLabel="Create customer"
                       />
                     )}
                   />
@@ -176,7 +187,7 @@ const RepairCreate = () => {
                         setDueDate(date);
                         setValue('dueDate', date);
                       }}
-                      disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
                     />
                   </PopoverContent>
@@ -312,6 +323,17 @@ const RepairCreate = () => {
           </Button>
         </div>
       </form>
+      <CreateCustomerDialog
+        open={createCustomerDialog.open}
+        defaultName={createCustomerDialog.name}
+        onClose={() => setCreateCustomerDialog({ open: false, name: '' })}
+        onCreated={(newCustomer) => {
+          form.setValue('customerId', newCustomer._id);
+          // also update the combobox label so it shows the name, not the ID
+          form.setValue('customerName', newCustomer.name); // only if you track this
+          setCreateCustomerDialog({ open: false, name: '' });
+        }}
+      />
     </div>
   );
 };

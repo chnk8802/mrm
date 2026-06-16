@@ -81,7 +81,13 @@ const UserCreate = () => {
             toast.success("User created successfully");
             navigate("/app/users");
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to create user");
+            const errorData = err.response?.data;
+
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Failed to create user');
+            }
         }
     };
 
@@ -109,11 +115,10 @@ const UserCreate = () => {
                         <CardContent className="space-y-2">
                             {roles.map(({ value, icon: Icon, description }) => (
                                 <label key={value}
-                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                                        selectedRole === value
+                                    className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${selectedRole === value
                                             ? 'border-primary bg-primary/5'
                                             : 'border-border hover:bg-muted/50'
-                                    }`}
+                                        }`}
                                 >
                                     <input
                                         type="radio"
@@ -173,10 +178,10 @@ const UserCreate = () => {
                                             className="h-8 text-sm"
                                         />
                                     </div>
-                                    <Input {...register('address.city')}       placeholder="City"         className="h-8 text-sm" />
-                                    <Input {...register('address.state')}      placeholder="State"        className="h-8 text-sm" />
-                                    <Input {...register('address.postalCode')} placeholder="Postal code"  className="h-8 text-sm" />
-                                    <Input {...register('address.country')}    placeholder="Country"      className="h-8 text-sm" />
+                                    <Input {...register('address.city')} placeholder="City" className="h-8 text-sm" />
+                                    <Input {...register('address.state')} placeholder="State" className="h-8 text-sm" />
+                                    <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
+                                    <Input {...register('address.country')} placeholder="Country" className="h-8 text-sm" />
                                 </div>
                             </div>
                         </CardContent>

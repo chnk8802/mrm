@@ -51,9 +51,9 @@ const SupplierCreate = () => {
       // Build clean payload — omit empty optional strings
       const payload = {
         name: data.name,
-        ...(data.phone  ? { phone:  data.phone  } : {}),
-        ...(data.email  ? { email:  data.email  } : {}),
-        ...(data.notes  ? { notes:  data.notes  } : {}),
+        ...(data.phone ? { phone: data.phone } : {}),
+        ...(data.email ? { email: data.email } : {}),
+        ...(data.notes ? { notes: data.notes } : {}),
         ...(Object.keys(address).length > 0 ? { address } : {}),
       };
 
@@ -61,7 +61,13 @@ const SupplierCreate = () => {
       toast.success('Supplier created successfully');
       navigate('/app/suppliers');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create supplier');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to create supplier');
+      }
     }
   };
 
@@ -138,10 +144,10 @@ const SupplierCreate = () => {
                 className="h-8 text-sm"
               />
               <div className="grid grid-cols-2 gap-3">
-                <Input {...register('address.city')}       placeholder="City"        className="h-8 text-sm" />
-                <Input {...register('address.state')}      placeholder="State"       className="h-8 text-sm" />
+                <Input {...register('address.city')} placeholder="City" className="h-8 text-sm" />
+                <Input {...register('address.state')} placeholder="State" className="h-8 text-sm" />
                 <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
-                <Input {...register('address.country')}    placeholder="Country"     className="h-8 text-sm" />
+                <Input {...register('address.country')} placeholder="Country" className="h-8 text-sm" />
               </div>
             </CardContent>
           </Card>

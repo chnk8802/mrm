@@ -27,7 +27,13 @@ function Login() {
             await login(data.email, data.password);
             navigate('/');
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Login failed');
+            const errorData = err.response?.data;
+
+            if (errorData?.errors && Array.isArray(errorData.errors)) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Login failed');
+            }
         } finally {
             setIsLoading(false);
         }

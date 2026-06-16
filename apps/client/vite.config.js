@@ -8,6 +8,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
   },
   server: {
+    host: true,
     hmr: {
       overlay: true,
     },

@@ -41,13 +41,13 @@ const fetchTechnicians = async (search) => {
 
 const RepairEdit = () => {
   const navigate = useNavigate();
-  const { id }   = useParams();
+  const { id } = useParams();
 
-  const [loading, setLoading]   = useState(true);
-  const [dueDate, setDueDate]   = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dueDate, setDueDate] = useState(null);
 
   // Pre-fill labels for AsyncCombobox (so selected value shows name, not just ID)
-  const [customerLabel, setCustomerLabel]     = useState('');
+  const [customerLabel, setCustomerLabel] = useState('');
   const [technicianLabel, setTechnicianLabel] = useState('');
 
   const {
@@ -75,19 +75,25 @@ const RepairEdit = () => {
         if (r.dueDate) setDueDate(new Date(r.dueDate));
 
         reset({
-          customer:      r.customer?._id  || '',
-          technician:    r.technician?._id || '',
-          deviceModel:   r.deviceModel    || '',
-          imei:          r.imei           || '',
-          problem:       r.problem        || '',
-          accessories:   r.accessories    || '',
-          serviceCharge: r.serviceCharge  ?? undefined,
-          discount:      r.discount       ?? undefined,
-          notes:         r.notes          || '',
-          dueDate:       r.dueDate ? new Date(r.dueDate) : undefined,
+          customer: r.customer?._id || '',
+          technician: r.technician?._id || '',
+          deviceModel: r.deviceModel || '',
+          imei: r.imei || '',
+          problem: r.problem || '',
+          accessories: r.accessories || '',
+          serviceCharge: r.serviceCharge ?? undefined,
+          discount: r.discount ?? undefined,
+          notes: r.notes || '',
+          dueDate: r.dueDate ? new Date(r.dueDate) : undefined,
         });
       } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to fetch repair');
+        const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to fetch repair');
+        }
         navigate('/app/repairs');
       } finally {
         setLoading(false);
@@ -101,23 +107,29 @@ const RepairEdit = () => {
   const onSubmit = async (data) => {
     try {
       const payload = {
-        customer:    data.customer,
+        customer: data.customer,
         deviceModel: data.deviceModel,
-        problem:     data.problem,
+        problem: data.problem,
         serviceCharge: Number(data.serviceCharge),
-        ...(data.technician  ? { technician:  data.technician       } : {}),
-        ...(data.imei        ? { imei:        data.imei             } : {}),
-        ...(data.accessories ? { accessories: data.accessories      } : {}),
-        ...(data.notes       ? { notes:       data.notes            } : {}),
-        ...(data.dueDate     ? { dueDate:     data.dueDate          } : {}),
-        ...(data.discount    ? { discount:    Number(data.discount) } : {}),
+        ...(data.technician ? { technician: data.technician } : {}),
+        ...(data.imei ? { imei: data.imei } : {}),
+        ...(data.accessories ? { accessories: data.accessories } : {}),
+        ...(data.notes ? { notes: data.notes } : {}),
+        ...(data.dueDate ? { dueDate: data.dueDate } : {}),
+        ...(data.discount ? { discount: Number(data.discount) } : {}),
       };
 
       await repairService.updateRepair(id, payload);
       toast.success('Repair updated successfully');
       navigate(`/app/repairs/${id}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update repair');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to update repair');
+      }
     }
   };
 

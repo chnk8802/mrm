@@ -13,8 +13,8 @@ import toast from 'react-hot-toast';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const customerTypes = [
-  { value: 'individual', icon: Users,    label: 'Individual', description: 'Personal customer'            },
-  { value: 'business',   icon: Building, label: 'Business',   description: 'Corporate / business customer' },
+  { value: 'individual', icon: Users, label: 'Individual', description: 'Personal customer' },
+  { value: 'business', icon: Building, label: 'Business', description: 'Corporate / business customer' },
 ];
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
@@ -54,7 +54,13 @@ const CustomerCreate = () => {
       toast.success('Customer created successfully');
       navigate('/app/customers');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create customer');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to create customer');
+      }
     }
   };
 
@@ -82,11 +88,10 @@ const CustomerCreate = () => {
             <CardContent className="space-y-2">
               {customerTypes.map(({ value, icon: Icon, label, description }) => (
                 <label key={value}
-                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    selectedType === value
+                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${selectedType === value
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:bg-muted/50'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -147,10 +152,10 @@ const CustomerCreate = () => {
                   <div className="md:col-span-2">
                     <Input {...register('address.street')} placeholder="Street address" className="h-8 text-sm" />
                   </div>
-                  <Input {...register('address.city')}       placeholder="City"        className="h-8 text-sm" />
-                  <Input {...register('address.state')}      placeholder="State"       className="h-8 text-sm" />
+                  <Input {...register('address.city')} placeholder="City" className="h-8 text-sm" />
+                  <Input {...register('address.state')} placeholder="State" className="h-8 text-sm" />
                   <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
-                  <Input {...register('address.country')}    placeholder="Country"     className="h-8 text-sm" />
+                  <Input {...register('address.country')} placeholder="Country" className="h-8 text-sm" />
                 </div>
               </div>
             </CardContent>

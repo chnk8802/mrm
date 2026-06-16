@@ -48,20 +48,26 @@ const SupplierEdit = () => {
         const s = response.data;
         setIsActive(s.isActive !== false ? 'true' : 'false');
         reset({
-          name:  s.name  || '',
+          name: s.name || '',
           phone: s.phone || '',
           email: s.email || '',
           notes: s.notes || '',
           address: {
-            street:     s.address?.street     || '',
-            city:       s.address?.city       || '',
-            state:      s.address?.state      || '',
+            street: s.address?.street || '',
+            city: s.address?.city || '',
+            state: s.address?.state || '',
             postalCode: s.address?.postalCode || '',
-            country:    s.address?.country    || '',
+            country: s.address?.country || '',
           },
         });
       } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to fetch supplier');
+        const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to fetch supplier');
+        }
         navigate('/app/suppliers');
       } finally {
         setLoading(false);
@@ -91,7 +97,13 @@ const SupplierEdit = () => {
       toast.success('Supplier updated successfully');
       navigate(`/app/suppliers/${id}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update supplier');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to update supplier');
+      }
     }
   };
 
@@ -170,7 +182,7 @@ const SupplierEdit = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="true"  className="text-sm">Active</SelectItem>
+                    <SelectItem value="true" className="text-sm">Active</SelectItem>
                     <SelectItem value="false" className="text-sm">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
@@ -191,10 +203,10 @@ const SupplierEdit = () => {
                 className="h-8 text-sm"
               />
               <div className="grid grid-cols-2 gap-3">
-                <Input {...register('address.city')}       placeholder="City"        className="h-8 text-sm" />
-                <Input {...register('address.state')}      placeholder="State"       className="h-8 text-sm" />
+                <Input {...register('address.city')} placeholder="City" className="h-8 text-sm" />
+                <Input {...register('address.state')} placeholder="State" className="h-8 text-sm" />
                 <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
-                <Input {...register('address.country')}    placeholder="Country"     className="h-8 text-sm" />
+                <Input {...register('address.country')} placeholder="Country" className="h-8 text-sm" />
               </div>
             </CardContent>
           </Card>

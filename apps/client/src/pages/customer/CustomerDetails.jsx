@@ -90,7 +90,13 @@ const CustomerDetails = () => {
       toast.success('Customer deleted');
       navigate('/app/customers');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete customer');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete customer');
+      }
     } finally {
       setActionLoading(false);
       setConfirmDialog({ open: false });

@@ -53,9 +53,9 @@ const SupplierDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const [supplier, setSupplier]           = useState(null);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
+  const [supplier, setSupplier] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null });
 
@@ -81,7 +81,13 @@ const SupplierDetails = () => {
       toast.success('Supplier deleted');
       navigate('/app/suppliers');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete supplier');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete supplier');
+      }
     } finally {
       setActionLoading(false);
       setConfirmDialog({ open: false, type: null });
@@ -95,7 +101,13 @@ const SupplierDetails = () => {
       toast.success(`Supplier ${supplier.isActive ? 'deactivated' : 'activated'}`);
       setSupplier((prev) => ({ ...prev, isActive: !prev.isActive }));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update status');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to update status');
+      }
     } finally {
       setActionLoading(false);
       setConfirmDialog({ open: false, type: null });
@@ -170,11 +182,10 @@ const SupplierDetails = () => {
                 {supplier.name}
               </h2>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                  supplier.isActive
-                    ? 'bg-green-500/10 text-green-500'
-                    : 'bg-red-500/10 text-red-500'
-                }`}>
+                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${supplier.isActive
+                  ? 'bg-green-500/10 text-green-500'
+                  : 'bg-red-500/10 text-red-500'
+                  }`}>
                   {supplier.isActive ? 'Active' : 'Inactive'}
                 </span>
                 {supplier.address?.city && (
@@ -197,9 +208,9 @@ const SupplierDetails = () => {
             <CardTitle className="text-sm font-semibold">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={Phone} label="Phone"           value={supplier.phone} />
-            <InfoRow icon={Mail}  label="Email"           value={supplier.email} />
-            <InfoRow icon={MapPin} label="Address"        value={address} />
+            <InfoRow icon={Phone} label="Phone" value={supplier.phone} />
+            <InfoRow icon={Mail} label="Email" value={supplier.email} />
+            <InfoRow icon={MapPin} label="Address" value={address} />
           </CardContent>
         </Card>
 
@@ -219,7 +230,7 @@ const SupplierDetails = () => {
             <CardTitle className="text-sm font-semibold">Record Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow icon={Calendar} label="Created"      value={formatDate(supplier.createdAt)} />
+            <InfoRow icon={Calendar} label="Created" value={formatDate(supplier.createdAt)} />
             <InfoRow icon={Calendar} label="Last Updated" value={formatDate(supplier.updatedAt)} />
           </CardContent>
         </Card>

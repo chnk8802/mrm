@@ -22,6 +22,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { AsyncCombobox } from '@/components/AsyncComboBox';
 import toast from 'react-hot-toast';
 import StatusUpdateDialog from './components/StatusUpdateDialog';
+import AssignTechnicianDialog from './components/AssignTechnicianDialog';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -133,7 +134,13 @@ const SparePartForm = ({ repairId, onAdded, onCancel }) => {
       setForm(defaultPartForm);
       setSupplierId('');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to add spare part');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to add spare part');
+      }
     } finally {
       setSaving(false);
     }
@@ -233,8 +240,6 @@ const RepairDetails = () => {
   const [showAddPart, setShowAddPart] = useState(false);
 
   const [dialog, setDialog] = useState({ open: false, type: null });
-  const [newStatus, setNewStatus] = useState('');
-  const [technicianId, setTechnicianId] = useState('');
   const [deletePartId, setDeletePartId] = useState(null);
 
   const closeDialog = () => setDialog({ open: false, type: null });
@@ -267,38 +272,56 @@ const RepairDetails = () => {
       toast.success('Repair deleted');
       navigate('/app/repairs');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete repair');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete repair');
+      }
     } finally {
       setActionLoading(false);
       closeDialog();
     }
   };
 
-  const handleStatusUpdate = async () => {
+  const handleStatusUpdate = async (status) => {
     try {
       setActionLoading(true);
-      const response = await repairService.updateRepairStatus(id, { status: newStatus });
+      const response = await repairService.updateRepairStatus(id, { status });
       setRepair(response.data);
-      toast.success(`Status updated to "${STATUS_LABELS[newStatus]}"`);
-      setNewStatus('');
+      toast.success(`Status updated to "${STATUS_LABELS[status]}"`);
       closeDialog();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update status');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to update status');
+      }
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleAssignTechnician = async () => {
+
+  // parent
+  const handleAssignTechnician = async (technicianId) => {
     try {
       setActionLoading(true);
       const response = await repairService.assignTechnician(id, { technicianId });
       setRepair(response.data);
       toast.success('Technician assigned');
-      setTechnicianId('');
       closeDialog();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to assign technician');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to assign technician');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -312,7 +335,13 @@ const RepairDetails = () => {
       toast.success('Device marked as picked up');
       closeDialog();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to mark pickup');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to mark pickup');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -330,7 +359,13 @@ const RepairDetails = () => {
       toast.success('Spare part removed');
       setDeletePartId(null);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to remove spare part');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to remove spare part');
+      }
     }
   };
 

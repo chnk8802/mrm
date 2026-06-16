@@ -228,7 +228,13 @@ const CustomerList = () => {
       setDeleteDialog({ open: false, id: null, label: '' });
       fetchCustomers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete customer');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete customer');
+      }
     }
   };
 
@@ -241,7 +247,13 @@ const CustomerList = () => {
       setBulkDeleteDialog(false);
       fetchCustomers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete');
+      const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to delete');
+        }
     }
   };
 
@@ -262,7 +274,13 @@ const CustomerList = () => {
       setSelectAll(false);
       fetchCustomers();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update');
+      const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to update customer');
+        }
     } finally {
       setBulkUpdating(false);
     }

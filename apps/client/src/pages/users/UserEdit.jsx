@@ -37,18 +37,24 @@ const UserEdit = () => {
                 const response = await userService.getUserById(id);
                 const user = response.data;
                 reset({
-                    name:    user.name    || '',
-                    phone:   user.phone   || '',
+                    name: user.name || '',
+                    phone: user.phone || '',
                     address: {
-                        street:     user.address?.street     || '',
-                        city:       user.address?.city       || '',
-                        state:      user.address?.state      || '',
+                        street: user.address?.street || '',
+                        city: user.address?.city || '',
+                        state: user.address?.state || '',
                         postalCode: user.address?.postalCode || '',
-                        country:    user.address?.country    || '',
+                        country: user.address?.country || '',
                     }
                 });
             } catch (err) {
-                toast.error(err.response?.data?.message || "Failed to fetch user");
+                const errorData = err.response?.data;
+
+                if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                    toast.error(errorData.errors[0].message);
+                } else {
+                    toast.error(errorData?.message || 'Failed to fetch user');
+                }
                 navigate('/app/users');
             } finally {
                 setLoading(false);
@@ -63,7 +69,13 @@ const UserEdit = () => {
             toast.success("User updated successfully");
             navigate(`/app/users/${id}`);
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to update user");
+            const errorData = err.response?.data;
+
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Failed to update user');
+            }
         }
     };
 
@@ -78,7 +90,13 @@ const UserEdit = () => {
             toast.success("Password updated successfully");
             setNewPassword('');
         } catch (err) {
-            toast.error(err.response?.data?.message || "Failed to update password");
+            const errorData = err.response?.data;
+
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Failed to update password');
+            }
         } finally {
             setPasswordLoading(false);
         }
@@ -137,10 +155,10 @@ const UserEdit = () => {
                         <CardContent className="space-y-3">
                             <Input {...register('address.street')} placeholder="Street address" className="h-8 text-sm" />
                             <div className="grid grid-cols-2 gap-3">
-                                <Input {...register('address.city')}       placeholder="City"        className="h-8 text-sm" />
-                                <Input {...register('address.state')}      placeholder="State"       className="h-8 text-sm" />
+                                <Input {...register('address.city')} placeholder="City" className="h-8 text-sm" />
+                                <Input {...register('address.state')} placeholder="State" className="h-8 text-sm" />
                                 <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
-                                <Input {...register('address.country')}    placeholder="Country"     className="h-8 text-sm" />
+                                <Input {...register('address.country')} placeholder="Country" className="h-8 text-sm" />
                             </div>
                         </CardContent>
                     </Card>

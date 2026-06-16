@@ -14,8 +14,8 @@ import toast from 'react-hot-toast';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const customerTypes = [
-  { value: 'individual', icon: Users,    label: 'Individual', description: 'Personal customer'            },
-  { value: 'business',   icon: Building, label: 'Business',   description: 'Corporate / business customer' },
+  { value: 'individual', icon: Users, label: 'Individual', description: 'Personal customer' },
+  { value: 'business', icon: Building, label: 'Business', description: 'Corporate / business customer' },
 ];
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
@@ -50,20 +50,26 @@ const CustomerEdit = () => {
         const c = response.data;
         reset({
           customerType: c.customerType || 'individual',
-          name:         c.name         || '',
-          phone:        c.phone        || '',
-          email:        c.email        || '',
-          notes:        c.notes        || '',
+          name: c.name || '',
+          phone: c.phone || '',
+          email: c.email || '',
+          notes: c.notes || '',
           address: {
-            street:     c.address?.street     || '',
-            city:       c.address?.city       || '',
-            state:      c.address?.state      || '',
+            street: c.address?.street || '',
+            city: c.address?.city || '',
+            state: c.address?.state || '',
             postalCode: c.address?.postalCode || '',
-            country:    c.address?.country    || '',
+            country: c.address?.country || '',
           },
         });
       } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to fetch customer');
+        const errorData = err.response?.data;
+
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to fetch customer');
+        }
         navigate('/app/customers');
       } finally {
         setLoading(false);
@@ -88,7 +94,13 @@ const CustomerEdit = () => {
       toast.success('Customer updated successfully');
       navigate(`/app/customers/${id}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update customer');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to update customer');
+      }
     }
   };
 
@@ -126,11 +138,10 @@ const CustomerEdit = () => {
             <CardContent className="space-y-2">
               {customerTypes.map(({ value, icon: Icon, label, description }) => (
                 <label key={value}
-                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    selectedType === value
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:bg-muted/50'
-                  }`}
+                  className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${selectedType === value
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:bg-muted/50'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -191,10 +202,10 @@ const CustomerEdit = () => {
                   <div className="md:col-span-2">
                     <Input {...register('address.street')} placeholder="Street address" className="h-8 text-sm" />
                   </div>
-                  <Input {...register('address.city')}       placeholder="City"        className="h-8 text-sm" />
-                  <Input {...register('address.state')}      placeholder="State"       className="h-8 text-sm" />
+                  <Input {...register('address.city')} placeholder="City" className="h-8 text-sm" />
+                  <Input {...register('address.state')} placeholder="State" className="h-8 text-sm" />
                   <Input {...register('address.postalCode')} placeholder="Postal code" className="h-8 text-sm" />
-                  <Input {...register('address.country')}    placeholder="Country"     className="h-8 text-sm" />
+                  <Input {...register('address.country')} placeholder="Country" className="h-8 text-sm" />
                 </div>
               </div>
             </CardContent>
