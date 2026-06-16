@@ -35,12 +35,12 @@ import Settings from './pages/settings/Settings';
 import AccessDenied from './pages/common/AccessDenied';
 import Home from './pages/website/Home';
 
-const ProtectedRoute = ({ roles }) => {
+const ProtectedRoute = ({children, roles }) => {
     const { user, loading } = useAuth();
     if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
     if (!user) return <Navigate to="/login" replace />;
     if (roles && !roles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
-    return <Outlet />;;
+    return children;;
 };
 
 export default function App() {
