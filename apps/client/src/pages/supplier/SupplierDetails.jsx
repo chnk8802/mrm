@@ -55,7 +55,6 @@ const SupplierDetails = () => {
 
   const [supplier, setSupplier] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null });
 
@@ -66,7 +65,13 @@ const SupplierDetails = () => {
         const response = await supplierService.getSupplierById(id);
         setSupplier(response.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch supplier');
+        const errorData = err.response?.data;
+        if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to fetch supplier');
+        }
+        navigate('/app/suppliers');
       } finally {
         setLoading(false);
       }

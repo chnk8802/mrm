@@ -10,7 +10,6 @@ import { getInitials } from '@/utils/getInitials';
 const Profile = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -21,7 +20,12 @@ const Profile = () => {
 
         setUserData(response.data.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch profile');
+        const errorData = err.response?.data;
+  if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+    toast.error(errorData.errors[0].message);
+  } else {
+    toast.error(errorData?.message || 'Failed to fetch profle');
+  }
       } finally {
         setLoading(false);
       }

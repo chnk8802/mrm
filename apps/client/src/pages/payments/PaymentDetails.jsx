@@ -31,21 +31,20 @@ const formatCurrency = (amount) =>
   }).format(amount ?? 0);
 
 const formatMethod = (method) => ({
-  cash:          'Cash',
-  upi:           'UPI',
-  card:          'Card',
+  cash: 'Cash',
+  upi: 'UPI',
+  card: 'Card',
   bank_transfer: 'Bank Transfer',
 }[method] ?? method);
 
 // ─── PaymentDetails ───────────────────────────────────────────────────────────
 
 const PaymentDetails = () => {
-  const navigate  = useNavigate();
-  const { id }    = useParams();
+  const navigate = useNavigate();
+  const { id } = useParams();
 
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
 
   useEffect(() => {
     const fetchPayment = async () => {
@@ -54,7 +53,13 @@ const PaymentDetails = () => {
         const response = await paymentService.getPaymentById(id);
         setPayment(response.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch payment');
+        const errorData = err.response?.data;
+        if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to fetch payments');
+        }
+        navigate('/app/payments');
       } finally {
         setLoading(false);
       }
@@ -69,19 +74,6 @@ const PaymentDetails = () => {
       Loading payment details...
     </div>
   );
-
-  if (error) return (
-    <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/app/payments')} className="gap-1.5">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Button>
-      <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
-        {error}
-      </div>
-    </div>
-  );
-
-  if (!payment) return null;
 
   const isReceivable = payment.type === 'receivable';
   const party = isReceivable ? payment.customer : payment.supplier;
@@ -102,9 +94,8 @@ const PaymentDetails = () => {
       <Card className="border-border shadow-none">
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
-              isReceivable ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
-            }`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isReceivable ? 'bg-green-500/10 text-green-500' : 'bg-orange-500/10 text-orange-500'
+              }`}>
               {isReceivable
                 ? <ArrowDownLeft className="w-5 h-5" />
                 : <ArrowUpRight className="w-5 h-5" />}
@@ -115,11 +106,10 @@ const PaymentDetails = () => {
               </h2>
               <p className="text-sm text-muted-foreground">{party?.phone || ''}</p>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${
-                  isReceivable
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${isReceivable
                     ? 'bg-green-500/10 text-green-500'
                     : 'bg-orange-500/10 text-orange-500'
-                }`}>
+                  }`}>
                   {isReceivable
                     ? <ArrowDownLeft className="w-3 h-3" />
                     : <ArrowUpRight className="w-3 h-3" />}
@@ -203,11 +193,11 @@ const PaymentDetails = () => {
             {payment.lineItems?.length > 0 ? (
               <div className="space-y-2">
                 {payment.lineItems.map((item, i) => {
-                  const ref   = isReceivable ? item.repair : item.sparePartUsage;
+                  const ref = isReceivable ? item.repair : item.sparePartUsage;
                   const label = isReceivable
                     ? `${ref?.repairId || '—'} — ${ref?.deviceModel || ''}`
                     : (ref?.sparePart || '—');
-                  const sub   = isReceivable
+                  const sub = isReceivable
                     ? `Charge: ${formatCurrency(ref?.serviceCharge)} · Paid so far: ${formatCurrency(ref?.amountPaid)}`
                     : `${ref?.quantity ?? 1} × ${formatCurrency(ref?.unitCost)}`;
 

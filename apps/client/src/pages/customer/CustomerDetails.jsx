@@ -64,7 +64,6 @@ const CustomerDetails = () => {
 
   const [customer, setCustomer]       = useState(null);
   const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
 
@@ -75,7 +74,14 @@ const CustomerDetails = () => {
         const response = await customerService.getCustomerById(id);
         setCustomer(response.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch customer');
+        const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to fetch customer');
+      }
+      navigate('/app/customers');
       } finally {
         setLoading(false);
       }
@@ -108,28 +114,6 @@ const CustomerDetails = () => {
   if (loading) return (
     <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
       Loading customer details...
-    </div>
-  );
-
-  if (error) return (
-    <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/app/customers')} className="gap-1.5">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Button>
-      <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
-        {error}
-      </div>
-    </div>
-  );
-
-  if (!customer) return (
-    <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/app/customers')} className="gap-1.5">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Button>
-      <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 px-3 py-2 rounded-lg text-sm">
-        Customer not found
-      </div>
     </div>
   );
 

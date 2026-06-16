@@ -235,7 +235,6 @@ const RepairDetails = () => {
   const [repair, setRepair] = useState(null);
   const [spareParts, setSpareParts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showAddPart, setShowAddPart] = useState(false);
 
@@ -255,7 +254,13 @@ const RepairDetails = () => {
         setRepair(r);
         setSpareParts(r.sparePartUsage || []);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch repair');
+        const errorData = err.response?.data;
+        if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          toast.error(errorData.errors[0].message);
+        } else {
+          toast.error(errorData?.message || 'Failed to fetch repair');
+        }
+        navigate('/app/customers');
       } finally {
         setLoading(false);
       }

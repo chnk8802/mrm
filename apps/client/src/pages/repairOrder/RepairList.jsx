@@ -74,7 +74,6 @@ const RepairList = () => {
 
   const [repairs, setRepairs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const [selectedRepairs, setSelectedRepairs] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -97,7 +96,6 @@ const RepairList = () => {
   const fetchRepairs = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
       if (searchQuery) params.search = searchQuery;
       if (statusFilter) params.status = statusFilter;
@@ -110,7 +108,14 @@ const RepairList = () => {
         pages: response.pagination.pages,
       }));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch repairs');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to delete repair');
+      }
+      toast.error(err.response?.data?.message || 'Failed to fetch repairs');
     } finally {
       setLoading(false);
     }
@@ -275,13 +280,6 @@ const RepairList = () => {
         >
           {filterPanel}
         </PageHeader>
-      )}
-
-      {/* ── Error ── */}
-      {error && (
-        <div className="mx-4 mt-3 bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
-          {error}
-        </div>
       )}
 
       {/* ── Desktop Table ── */}

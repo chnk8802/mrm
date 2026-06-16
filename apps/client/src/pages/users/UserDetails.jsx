@@ -73,7 +73,13 @@ const UserDetails = () => {
                 const response = await userService.getUserById(id);
                 setUser(response.data);
             } catch (err) {
-                setError(err.response?.data?.message || "Failed to fetch user");
+                const errorData = err.response?.data;
+                if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                    toast.error(errorData.errors[0].message);
+                } else {
+                    toast.error(errorData?.message || 'Failed to fetch user');
+                }
+                navigate('/app/users');
             } finally {
                 setLoading(false);
             }
@@ -115,11 +121,11 @@ const UserDetails = () => {
         } catch (err) {
             const errorData = err.response?.data;
 
-if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-  toast.error(errorData.errors[0].message);
-} else {
-  toast.error(errorData?.message || 'Failed to delete user');
-}
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Failed to delete user');
+            }
         } finally {
             setActionLoading(false);
             setConfirmDialog({ open: false, type: null });

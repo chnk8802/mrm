@@ -93,7 +93,6 @@ const SupplierList = () => {
 
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const [selectedSuppliers, setSelectedSuppliers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -117,7 +116,6 @@ const SupplierList = () => {
   const fetchSuppliers = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
       if (searchQuery) params.search = searchQuery;
 
@@ -129,7 +127,13 @@ const SupplierList = () => {
         pages: response.pagination.pages,
       }));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch suppliers');
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to fetch suppliers');
+      }
     } finally {
       setLoading(false);
     }
@@ -276,13 +280,6 @@ const SupplierList = () => {
           onAddNew={() => navigate('/app/suppliers/new')}
           addLabel="Add Supplier"
         />
-      )}
-
-      {/* ── Error ── */}
-      {error && (
-        <div className="mx-4 mt-3 bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
-          {error}
-        </div>
       )}
 
       {/* ── Desktop Table ── */}

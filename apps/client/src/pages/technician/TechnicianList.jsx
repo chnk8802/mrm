@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import technicianService from '@/api/technicianService';
 
 const columns = [
-    { label: 'Name',   col: 'name' },
-    { label: 'Phone',  col: 'phone' },
-    { label: 'Email',  col: 'email' },
+    { label: 'Name', col: 'name' },
+    { label: 'Phone', col: 'phone' },
+    { label: 'Email', col: 'email' },
     { label: 'Joined', col: 'createdAt' },
     { label: 'Status', col: 'isActive' },
 ];
@@ -19,7 +19,6 @@ const TechnicianList = () => {
     const [technicians, setTechnicians] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('name');
@@ -32,7 +31,13 @@ const TechnicianList = () => {
                 const response = await technicianService.getTechnicians();
                 setTechnicians(response.data);
             } catch (err) {
-                setError(err.response?.data?.message || 'Failed to fetch technicians');
+                const errorData = err.response?.data;
+
+                if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                    toast.error(errorData.errors[0].message);
+                } else {
+                    toast.error(errorData?.message || 'Failed to fetch technicians');
+                }
             } finally {
                 setLoading(false);
             }
@@ -96,13 +101,6 @@ const TechnicianList = () => {
                     </Button>
                 </div>
             </div>
-
-            {/* Error */}
-            {error && (
-                <div className="mx-4 mt-3 bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm shrink-0">
-                    {error}
-                </div>
-            )}
 
             {/* Desktop Table */}
             <div className="hidden md:block flex-1 overflow-y-auto">

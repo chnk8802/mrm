@@ -89,7 +89,6 @@ const UserList = () => {
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -111,7 +110,6 @@ const UserList = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       const params = {
         page: pagination.page,
         limit: pagination.limit,
@@ -128,7 +126,13 @@ const UserList = () => {
         pages: response.pagination.pages,
       }));
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch users");
+      const errorData = err.response?.data;
+
+      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to fetch techncians');
+      }
     } finally {
       setLoading(false);
     }
@@ -315,12 +319,6 @@ const UserList = () => {
       >
         {filterPanel}
       </PageHeader>
-
-      {error && (
-        <div className="mx-4 mt-3 bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
 
       {/* Desktop Table */}
       <div className="hidden md:block flex-1 overflow-y-auto">
