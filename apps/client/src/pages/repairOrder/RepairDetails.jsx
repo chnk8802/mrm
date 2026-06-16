@@ -382,17 +382,6 @@ const RepairDetails = () => {
     </div>
   );
 
-  if (error) return (
-    <div className="p-4 space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/app/repairs')} className="gap-1.5">
-        <ArrowLeft className="w-4 h-4" /> Back
-      </Button>
-      <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-2 rounded-lg text-sm">{error}</div>
-    </div>
-  );
-
-  if (!repair) return null;
-
   const { icon: StatusIcon, color: statusColor } = getStatusBadge(repair.status);
   const allowedTransitions = ALLOWED_TRANSITIONS[repair.status] || [];
   const netAmount = (repair.serviceCharge ?? 0) - (repair.discount ?? 0);
