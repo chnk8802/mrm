@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { repairUpdateSchema } from '@repo/validators';
-import { ArrowLeft, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, User, Wrench } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -11,9 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AsyncCombobox } from '@/components/AsyncComboBox';
-import customerService from '@/api/customerService';
-import userService from '@/api/userService';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
 
@@ -22,20 +20,18 @@ import toast from 'react-hot-toast';
 const FieldError = ({ message }) =>
   message ? <p className="text-xs text-red-500 mt-1">{message}</p> : null;
 
-// ─── Fetch helpers ────────────────────────────────────────────────────────────
+// ─── ReadOnlyRow (for customer/technician display) ─────────────────────────────
 
-const fetchCustomers = async (search) => {
-  const res = await customerService.getCustomers({ search, limit: 5 });
-  return (res.data || []).map((c) => ({
-    value: c._id,
-    label: `${c.name} — ${c.phone || c.email || c.customerType}`,
-  }));
-};
-
-const fetchTechnicians = async (search) => {
-  const res = await userService.getUsers({ role: 'staff', search, limit: 5, isActive: true });
-  return (res.data || []).map((t) => ({ value: t._id, label: t.name }));
-};
+const ReadOnlyRow = ({ icon: Icon, label, value, sub }) => (
+  <div>
+    <Label className="text-xs">{label}</Label>
+    <div className="mt-1 flex items-center gap-2 h-8 px-3 rounded-md border border-input bg-muted/30 text-sm">
+      <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      <span className="text-foreground truncate">{value || '—'}</span>
+      {sub && <span className="text-xs text-muted-foreground ml-auto shrink-0">{sub}</span>}
+    </div>
+  </div>
+);
 
 // ─── RepairEdit ───────────────────────────────────────────────────────────────
 
@@ -46,14 +42,15 @@ const RepairEdit = () => {
   const [loading, setLoading] = useState(true);
   const [dueDate, setDueDate] = useState(null);
 
-  // Pre-fill labels for AsyncCombobox (so selected value shows name, not just ID)
-  const [customerLabel, setCustomerLabel] = useState('');
-  const [technicianLabel, setTechnicianLabel] = useState('');
+  // Read-only display info — not part of the editable form
+  const [customerInfo, setCustomerInfo] = useState(null);
+  const [technicianInfo, setTechnicianInfo] = useState(null);
+
+  const [isLocked, setIsLocked] = useState(false);
 
   const {
     register,
     handleSubmit,
-    control,
     setValue,
     reset,
     formState: { errors, isSubmitting },
@@ -67,16 +64,15 @@ const RepairEdit = () => {
         const response = await repairService.getRepairById(id);
         const r = response.data;
 
-        // Store labels so AsyncCombobox shows the name
-        if (r.customer) setCustomerLabel(`${r.customer.name} — ${r.customer.phone || r.customer.customerType}`);
-        if (r.technician) setTechnicianLabel(r.technician.name);
+        const locked = ['completed', 'cancelled', 'not-repairable'].includes(r.status);
+        setIsLocked(locked);
 
-        // Pre-fill dueDate state for the calendar
+        setCustomerInfo(r.customer || null);
+        setTechnicianInfo(r.technician || null);
+
         if (r.dueDate) setDueDate(new Date(r.dueDate));
 
         reset({
-          customer: r.customer?._id || '',
-          technician: r.technician?._id || '',
           deviceModel: r.deviceModel || '',
           imei: r.imei || '',
           problem: r.problem || '',
@@ -105,13 +101,18 @@ const RepairEdit = () => {
   // ── Submit ─────────────────────────────────────────────────────────────────
 
   const onSubmit = async (data) => {
+    const finalServiceCharge = Number(data.serviceCharge);
+    const finalDiscount = data.discount ? Number(data.discount) : 0;
+
+    if (finalDiscount > finalServiceCharge) {
+      toast.error('Discount cannot be greater than service charge');
+      return;
+    }
     try {
       const payload = {
-        customer: data.customer,
         deviceModel: data.deviceModel,
         problem: data.problem,
         serviceCharge: Number(data.serviceCharge),
-        ...(data.technician ? { technician: data.technician } : {}),
         ...(data.imei ? { imei: data.imei } : {}),
         ...(data.accessories ? { accessories: data.accessories } : {}),
         ...(data.notes ? { notes: data.notes } : {}),
@@ -156,59 +157,35 @@ const RepairEdit = () => {
         <h1 className="text-base font-semibold text-foreground">Edit Repair</h1>
       </div>
 
+      {isLocked && (
+        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 px-3 py-2 rounded-lg text-sm">
+          This repair is closed and cannot be edited.
+        </div>
+      )}
+
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-          {/* ── Assignment ── */}
+          {/* ── Assignment (read-only) ── */}
           <Card className="border-border shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold">Assignment</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
 
-              <div>
-                <Label className="text-xs">
-                  Customer <span className="text-red-500">*</span>
-                </Label>
-                <div className="mt-1">
-                  <Controller
-                    name="customer"
-                    control={control}
-                    render={({ field }) => (
-                      <AsyncCombobox
-                        value={field.value}
-                        onChange={field.onChange}
-                        fetchOptions={fetchCustomers}
-                        placeholder="Search customers..."
-                        initialLabel={customerLabel}
-                        error={!!errors.customer}
-                      />
-                    )}
-                  />
-                </div>
-                <FieldError message={errors.customer?.message} />
-              </div>
+              <ReadOnlyRow
+                icon={User}
+                label="Customer"
+                value={customerInfo?.name}
+                sub={customerInfo?.phone || customerInfo?.customerType}
+              />
 
-              <div>
-                <Label className="text-xs">Technician</Label>
-                <div className="mt-1">
-                  <Controller
-                    name="technician"
-                    control={control}
-                    render={({ field }) => (
-                      <AsyncCombobox
-                        value={field.value}
-                        onChange={field.onChange}
-                        fetchOptions={fetchTechnicians}
-                        placeholder="Search technicians..."
-                        initialLabel={technicianLabel}
-                        error={!!errors.technician}
-                      />
-                    )}
-                  />
-                </div>
-                <FieldError message={errors.technician?.message} />
-              </div>
+              <ReadOnlyRow
+                icon={Wrench}
+                label="Technician"
+                value={technicianInfo?.name || 'Not assigned'}
+              />
 
               <div>
                 <Label className="text-xs">Due Date</Label>
@@ -227,10 +204,12 @@ const RepairEdit = () => {
                     <Calendar
                       mode="single"
                       selected={dueDate}
+                      defaultMonth={dueDate}
                       onSelect={(date) => {
                         setDueDate(date);
                         setValue('dueDate', date);
                       }}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       initialFocus
                     />
                   </PopoverContent>
@@ -361,7 +340,7 @@ const RepairEdit = () => {
           <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/app/repairs/${id}`)}>
             Cancel
           </Button>
-          <Button type="submit" size="sm" disabled={isSubmitting}>
+          <Button type="submit" size="sm" disabled={isSubmitting || isLocked}>
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>

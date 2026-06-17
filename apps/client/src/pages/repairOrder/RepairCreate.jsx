@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { repairSchema } from '@repo/validators';
-import { ArrowLeft, Search, X, CalendarIcon } from 'lucide-react';
+import { ArrowLeft, CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -41,19 +41,12 @@ const fetchTechnicians = async (search) => {
   }));
 };
 
-// ─── Priority / Status badge helpers (reused across module) ──────────────────
-
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-];
-
 // ─── RepairCreate ─────────────────────────────────────────────────────────────
 
 const RepairCreate = () => {
   const navigate = useNavigate();
   const [createCustomerDialog, setCreateCustomerDialog] = useState({ open: false, name: '' });
+  const [newCustomerLabel, setNewCustomerLabel] = useState('');
   const [dueDate, setDueDate] = useState(null);
 
   const {
@@ -68,8 +61,14 @@ const RepairCreate = () => {
   });
 
   const onSubmit = async (data) => {
+    const finalServiceCharge = Number(data.serviceCharge);
+    const finalDiscount = data.discount ? Number(data.discount) : 0;
+
+    if (finalDiscount > finalServiceCharge) {
+      toast.error('Discount cannot be greater than service charge');
+      return;
+    }
     try {
-      // Build clean payload — omit empty optionals
       const payload = {
         customer: data.customer,
         deviceModel: data.deviceModel,
@@ -89,11 +88,11 @@ const RepairCreate = () => {
     } catch (err) {
       const errorData = err.response?.data;
 
-        if (errorData?.errors && Array.isArray(errorData.errors)) {
-          toast.error(errorData.errors[0].message);
-        } else {
-          toast.error(errorData?.message || 'Failed to create repair');
-        }
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to create repair');
+      }
     }
   };
 
@@ -133,6 +132,7 @@ const RepairCreate = () => {
                         value={field.value}
                         onChange={field.onChange}
                         fetchOptions={fetchCustomers}
+                        initialLabel={newCustomerLabel}
                         placeholder="Search customers..."
                         error={!!errors.customer}
                         onCreateNew={(prefillName) => {
@@ -328,9 +328,8 @@ const RepairCreate = () => {
         defaultName={createCustomerDialog.name}
         onClose={() => setCreateCustomerDialog({ open: false, name: '' })}
         onCreated={(newCustomer) => {
-          form.setValue('customerId', newCustomer._id);
-          // also update the combobox label so it shows the name, not the ID
-          form.setValue('customerName', newCustomer.name); // only if you track this
+          setValue('customer', newCustomer._id);
+          setNewCustomerLabel(`${newCustomer.name} — ${newCustomer.phone || newCustomer.customerType}`);
           setCreateCustomerDialog({ open: false, name: '' });
         }}
       />

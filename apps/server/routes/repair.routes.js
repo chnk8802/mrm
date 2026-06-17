@@ -11,7 +11,7 @@ import {
     getRepairStats
 } from '../controllers/repair.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
-import authorize from '../middleware/rbac.middleware.js.js';
+import authorize from '../middleware/rbac.middleware.js';
 
 const router = express.Router();
 

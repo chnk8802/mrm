@@ -14,6 +14,7 @@ import supplierRoutes from './routes/supplier.routes.js';
 import repairRoutes from './routes/repair.routes.js';
 import sparePartUsageRoutes from './routes/sparePartUsage.routes.js';
 import paymentRoutes from './routes/payment.routes.js'
+import reportRoutes from './routes/report.routes.js';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/repairs', repairRoutes);
 app.use('/api/spare-part-usage', sparePartUsageRoutes)
 app.use('/api/payments', paymentRoutes);
+app.use('/api/reports', reportRoutes);
 
 /*----Error Handler----*/
 app.use(handleError);

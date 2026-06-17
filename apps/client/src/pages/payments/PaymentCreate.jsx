@@ -28,7 +28,7 @@ const METHOD_OPTIONS = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
     .format(amount ?? 0);
 
 const FieldError = ({ message }) =>

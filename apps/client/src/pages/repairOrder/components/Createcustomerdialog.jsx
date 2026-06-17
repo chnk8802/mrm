@@ -8,16 +8,18 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import customerService from '@/api/customerService';
 import toast from 'react-hot-toast';
+import { useEffect } from 'react';
+import { customerSchema } from '@repo/validators';
 
-// Minimal schema — only what's needed for a walk-in
-const quickCustomerSchema = z.object({
-    customerType: z.enum(['individual', 'business']),
-    name: z.string().min(1, 'Name is required'),
-    phone: z.string().optional(),
+const quickCustomerSchema = customerSchema.pick({
+    customerType: true,
+    name: true,
+    phone: true,
+    address: true,
 });
 
-const FieldError = ({ errors }) =>
-    errors ? <p className="text-xs text-red-500 mt-1">{errors?.message}</p> : null;
+const FieldError = ({ message }) =>
+    message ? <p className="text-xs text-red-500 mt-1">{message}</p> : null;
 
 const customerTypes = [
     { value: 'individual', icon: Users, label: 'Individual' },
@@ -27,23 +29,41 @@ const customerTypes = [
 const CreateCustomerDialog = ({ open, onClose, onCreated, defaultName = '' }) => {
     const form = useForm({
         resolver: zodResolver(quickCustomerSchema),
-        defaultValues: { customerType: 'individual', name: defaultName, phone: '' },
-        values: { customerType: 'individual', name: defaultName, phone: '' }, // sync when defaultName changes
-    })
-    const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = form;
+        defaultValues: { customerType: 'individual', name: defaultName, phone: '', address: {} },
+        });
+
+    const { register, handleSubmit, watch, reset, setValue, formState: { errors, isSubmitting } } = form;
+
+    useEffect(() => {
+    setValue('name', defaultName);
+}, [defaultName]);
 
     const selectedType = watch('customerType');
 
     const onSubmit = async (data) => {
         try {
-            const res = await customerService.createCustomer(data);
-            const newCustomer = res.data.data;
+            // Drop empty phone/address fields so we don't send blank strings
+            const payload = {
+                customerType: data.customerType,
+                name: data.name,
+                ...(data.phone ? { phone: data.phone } : {}),
+                ...(Object.values(data.address || {}).some(Boolean) ? { address: data.address } : {}),
+            };
+
+            const res = await customerService.createCustomer(payload);
+            const newCustomer = res.data;
             toast.success('Customer created');
-            onCreated(newCustomer);   // pass back to RepairForm to set the combobox value
+            onCreated(newCustomer);
             reset();
             onClose();
         } catch (err) {
-            handleApiError(err, 'Failed to create customer');
+            const errorData = err.response?.data;
+            console.error('CreateCustomerDialog error:', err);
+            if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                toast.error(errorData.errors[0].message);
+            } else {
+                toast.error(errorData?.message || 'Failed to create customer');
+            }
         }
     };
 
@@ -98,6 +118,63 @@ const CreateCustomerDialog = ({ open, onClose, onCreated, defaultName = '' }) =>
                             className={`mt-1 h-8 text-sm ${errors.phone ? 'border-red-500' : ''}`}
                         />
                         <FieldError message={errors.phone?.message} />
+                    </div>
+
+                    {/* Address */}
+                    <div className="space-y-3 pt-1 border-t border-border">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-2">Address</p>
+
+                        <div>
+                            <Label className="text-xs">Street</Label>
+                            <Input
+                                {...register('address.street')}
+                                placeholder="Street address"
+                                className="mt-1 h-8 text-sm"
+                            />
+                            <FieldError message={errors.address?.street?.message} />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <Label className="text-xs">City</Label>
+                                <Input
+                                    {...register('address.city')}
+                                    placeholder="City"
+                                    className="mt-1 h-8 text-sm"
+                                />
+                                <FieldError message={errors.address?.city?.message} />
+                            </div>
+                            <div>
+                                <Label className="text-xs">State</Label>
+                                <Input
+                                    {...register('address.state')}
+                                    placeholder="State"
+                                    className="mt-1 h-8 text-sm"
+                                />
+                                <FieldError message={errors.address?.state?.message} />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <Label className="text-xs">Postal Code</Label>
+                                <Input
+                                    {...register('address.postalCode')}
+                                    placeholder="Postal code"
+                                    className="mt-1 h-8 text-sm"
+                                />
+                                <FieldError message={errors.address?.postalCode?.message} />
+                            </div>
+                            <div>
+                                <Label className="text-xs">Country</Label>
+                                <Input
+                                    {...register('address.country')}
+                                    placeholder="Country"
+                                    className="mt-1 h-8 text-sm"
+                                />
+                                <FieldError message={errors.address?.country?.message} />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Actions */}

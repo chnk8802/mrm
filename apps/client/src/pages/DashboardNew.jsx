@@ -15,7 +15,7 @@ import customerService from '@/api/customerService';
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+    style: 'currency', currency: 'INR', maximumFractionDigits: 2,
   }).format(amount ?? 0);
 
 const formatDate = (d) =>

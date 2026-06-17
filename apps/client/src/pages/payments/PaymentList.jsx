@@ -49,7 +49,7 @@ const formatDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
     .format(amount ?? 0);
 
 const formatMethod = (method) => ({

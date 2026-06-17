@@ -8,3 +8,4 @@ export * from './schemas/supplier.schema.js';
 export * from './schemas/repair.schema.js';
 export * from './schemas/sparePartUsage.schema.js'
 export * from './schemas/payment.schema.js'
+export * from './schemas/report.schema.js'

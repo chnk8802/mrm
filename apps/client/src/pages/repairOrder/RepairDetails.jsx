@@ -23,6 +23,8 @@ import { AsyncCombobox } from '@/components/AsyncComboBox';
 import toast from 'react-hot-toast';
 import StatusUpdateDialog from './components/StatusUpdateDialog';
 import AssignTechnicianDialog from './components/AssignTechnicianDialog';
+import Can from '@/components/common/Can';
+import { usePermission } from '@/hooks/usePermission';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -59,7 +61,7 @@ const InfoRow = ({ icon: Icon, label, value }) => (
 const formatDate = (d) => d ? format(new Date(d), 'dd MMM yyyy, hh:mm a') : null;
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 })
     .format(amount ?? 0);
 
 const getStatusBadge = (status) => {
@@ -232,6 +234,8 @@ const RepairDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
 
+  const { hasRole } = usePermission();
+
   const [repair, setRepair] = useState(null);
   const [spareParts, setSpareParts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -260,7 +264,7 @@ const RepairDetails = () => {
         } else {
           toast.error(errorData?.message || 'Failed to fetch repair');
         }
-        navigate('/app/customers');
+        navigate('/app/repairs');
       } finally {
         setLoading(false);
       }
@@ -382,6 +386,8 @@ const RepairDetails = () => {
     </div>
   );
 
+  if (!repair) return null;
+
   const { icon: StatusIcon, color: statusColor } = getStatusBadge(repair.status);
   const allowedTransitions = ALLOWED_TRANSITIONS[repair.status] || [];
   const netAmount = (repair.serviceCharge ?? 0) - (repair.discount ?? 0);
@@ -400,12 +406,14 @@ const RepairDetails = () => {
           <ArrowLeft className="w-4 h-4" /> Repairs
         </Button>
         <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => navigate(`/app/repairs/${id}/edit`)} className="h-8 gap-1.5">
-            <Edit className="w-3.5 h-3.5" /> Edit
-          </Button>
+          <Can role="manager">
+            <Button size="sm" onClick={() => navigate(`/app/repairs/${id}/edit`)} className="h-8 gap-1.5">
+              <Edit className="w-3.5 h-3.5" /> Edit
+            </Button>
+          </Can>
           <RowActions
             actions={[
-              ...(repair.status === 'received' ? [{
+              ...(hasRole('manager') && repair.status === 'received' && !repair.technician ? [{
                 label: 'Assign Technician',
                 icon: User,
                 onClick: () => setDialog({ open: true, type: 'assign' }),
@@ -420,13 +428,13 @@ const RepairDetails = () => {
                 icon: PackageCheck,
                 onClick: () => setDialog({ open: true, type: 'pickup' }),
               }] : []),
-              {
+              ...(hasRole('superadmin') ? [{
                 label: 'Delete',
                 icon: Trash2,
                 danger: true,
                 divider: true,
                 onClick: () => setDialog({ open: true, type: 'delete' }),
-              },
+              }] : []),
             ]}
           />
         </div>
@@ -447,9 +455,11 @@ const RepairDetails = () => {
                   <StatusIcon className="w-3 h-3" />
                   {STATUS_LABELS[repair.status]}
                 </span>
-                <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${getPaymentBadge(repair.paymentStatus)}`}>
-                  {repair.paymentStatus?.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                </span>
+                <Can role="manager">
+                  <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${getPaymentBadge(repair.paymentStatus)}`}>
+                    {repair.paymentStatus?.replace('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </span>
+                </Can>
                 {repair.isPickedUp && (
                   <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-green-500/10 text-green-500">
                     Picked Up
@@ -514,26 +524,28 @@ const RepairDetails = () => {
         </Card>
 
         {/* ── Pricing ── */}
-        <Card className="border-border shadow-none">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Pricing</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <InfoRow icon={IndianRupee} label="Service Charge" value={formatCurrency(repair.serviceCharge)} />
-            <InfoRow icon={IndianRupee} label="Discount" value={formatCurrency(repair.discount)} />
-            <InfoRow icon={IndianRupee} label="Net Amount" value={formatCurrency(netAmount)} />
-            <InfoRow icon={IndianRupee} label="Amount Paid" value={formatCurrency(repair.amountPaid)} />
-            <div className="flex items-start gap-3">
-              <IndianRupee className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Balance Due</p>
-                <p className={`text-sm font-semibold ${balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                  {formatCurrency(balance)}
-                </p>
+        <Can role="manager">
+          <Card className="border-border shadow-none">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Pricing</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InfoRow icon={IndianRupee} label="Service Charge" value={formatCurrency(repair.serviceCharge)} />
+              <InfoRow icon={IndianRupee} label="Discount" value={formatCurrency(repair.discount)} />
+              <InfoRow icon={IndianRupee} label="Net Amount" value={formatCurrency(netAmount)} />
+              <InfoRow icon={IndianRupee} label="Amount Paid" value={formatCurrency(repair.amountPaid)} />
+              <div className="flex items-start gap-3">
+                <IndianRupee className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Balance Due</p>
+                  <p className={`text-sm font-semibold ${balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    {formatCurrency(balance)}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </Can>
 
         {/* ── Spare Parts ── */}
         <Card className="border-border shadow-none lg:col-span-2">

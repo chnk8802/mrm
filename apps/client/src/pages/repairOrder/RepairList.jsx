@@ -25,6 +25,7 @@ import RowActions from '@/components/common/RowActions';
 import FilterPopover from '@/components/common/FilterPopover';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { usePermission } from '@/hooks/usePermission';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -37,22 +38,13 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const columns = [
-  { label: 'Repair ID', col: 'repairId' },
-  { label: 'Device', col: 'deviceModel' },
-  { label: 'Customer', col: null }, // populated, not sortable
-  { label: 'Status', col: 'status' },
-  { label: 'Charge', col: 'serviceCharge' },
-  { label: 'Created', col: 'createdAt' },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const formatDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount ?? 0);
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount ?? 0);
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -72,6 +64,8 @@ const RepairList = () => {
   const { theme, appTheme } = useTheme();
   const navigate = useNavigate();
 
+  const { hasRole } = usePermission();
+
   const [repairs, setRepairs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,6 +84,16 @@ const RepairList = () => {
 
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, label: '' });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
+
+  const columns = [
+    { label: 'Repair ID', col: 'repairId' },
+    { label: 'Device', col: 'deviceModel' },
+    { label: 'Customer', col: null }, // populated, not sortable
+    { label: 'Status', col: 'status' },
+    { label: 'Problem', col: 'problem' },
+    ...(hasRole('manager') ? [{ label: 'Charge', col: 'serviceCharge' }] : []),
+    { label: 'Created', col: 'createdAt' },
+  ];
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
@@ -113,9 +117,8 @@ const RepairList = () => {
       if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
         toast.error(errorData.errors[0].message);
       } else {
-        toast.error(errorData?.message || 'Failed to delete repair');
+        toast.error(errorData?.message || 'Failed to fetch repair');
       }
-      toast.error(err.response?.data?.message || 'Failed to fetch repairs');
     } finally {
       setLoading(false);
     }
@@ -273,8 +276,7 @@ const RepairList = () => {
           searchQuery={searchQuery}
           onSearchToggle={() => { setSearchOpen((p) => !p); if (searchOpen) setSearchQuery(''); }}
           onSearchChange={(val) => { setSearchQuery(val); setPagination((p) => ({ ...p, page: 1 })); }}
-          onAddNew={() => navigate('/app/repairs/new')}
-          addLabel="New Repair"
+          {...(hasRole('manager') ? { onAddNew: () => navigate('/app/repairs/new'), addLabel: 'New Repair' } : {})}
           filterCount={filterCount}
           onFilterToggle={() => setShowFilters((p) => !p)}
         >
@@ -287,12 +289,11 @@ const RepairList = () => {
         <table className="w-full">
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
             <tr className="border-b border-border">
-              <th className="py-2.5 px-4 w-10">
-                <Checkbox
-                  checked={selectAll}
-                  onCheckedChange={handleSelectAll}
-                />
-              </th>
+              {hasRole('manager') && (
+                <th className="py-2.5 px-4 w-10">
+                  <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
+                </th>
+              )}
               {columns.map(({ label, col }) => (
                 <th key={label}
                   className={`text-left py-2.5 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap ${col ? 'cursor-pointer hover:text-foreground transition-colors' : ''}`}
@@ -301,15 +302,17 @@ const RepairList = () => {
                   <div className="flex items-center gap-1">{label}{renderSortIcon(col)}</div>
                 </th>
               ))}
-              <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Actions</th>
+              {hasRole('manager') && (
+                <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="8" className="text-center py-16 text-sm text-muted-foreground">Loading repairs...</td></tr>
+              <tr><td colSpan={1 + columns.length + (hasRole('manager') ? 1 : 0)} className="text-center py-16 text-sm text-muted-foreground">Loading repairs...</td></tr>
             ) : repairs.length === 0 ? (
               <tr>
-                <td colSpan="8" className="text-center py-16 text-sm text-muted-foreground">
+                <td colSpan={1 + columns.length + (hasRole('manager') ? 1 : 0)} className="text-center py-16 text-sm text-muted-foreground">
                   <Wrench className="mx-auto w-8 h-8 mb-2 opacity-30" />
                   {searchQuery || statusFilter ? 'No repairs found matching your filters' : 'No repairs yet'}
                 </td>
@@ -322,12 +325,14 @@ const RepairList = () => {
                     className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
                     onClick={() => navigate(`/app/repairs/${repair._id}`)}
                   >
-                    <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedRepairs.includes(repair._id)}
-                        onCheckedChange={() => handleSelectRepair(repair._id)}
-                      />
-                    </td>
+                    {hasRole('manager') && (
+                      <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedRepairs.includes(repair._id)}
+                          onCheckedChange={() => handleSelectRepair(repair._id)}
+                        />
+                      </td>
+                    )}
                     <td className="py-1 px-4 text-sm font-medium text-foreground">{repair.repairId}</td>
                     <td className="py-1 px-4">
                       <p className="text-sm font-medium text-foreground">{repair.deviceModel}</p>
@@ -342,25 +347,34 @@ const RepairList = () => {
                         <Icon className="w-3 h-3" />{label}
                       </span>
                     </td>
-                    <td className="py-1 px-4 text-sm text-foreground font-medium">
-                      {formatCurrency(repair.serviceCharge)}
-                      {repair.discount > 0 && (
-                        <p className="text-xs text-muted-foreground">-{formatCurrency(repair.discount)}</p>
-                      )}
+                    <td className="py-1 px-4">
+                      {repair?.problem && <p className="text-xs text-muted-foreground">{repair.problem}</p>}
                     </td>
+                    {hasRole('manager') && (
+                      <td className="py-1 px-4 text-sm text-foreground font-medium">
+                        {formatCurrency(repair.serviceCharge)}
+                        {repair.discount > 0 && (
+                          <p className="text-xs text-muted-foreground">-{formatCurrency(repair.discount)}</p>
+                        )}
+                      </td>
+                    )}
                     <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
                       {formatDate(repair.createdAt)}
                     </td>
                     <td className="py-1 px-4" onClick={(e) => e.stopPropagation()}>
-                      <RowActions
-                        actions={[
-                          { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
-                          {
-                            label: 'Delete', icon: Trash2, danger: true, divider: true,
-                            onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
-                          },
-                        ]}
-                      />
+                      {hasRole('manager') &&
+                        <RowActions
+                          actions={[
+                            { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
+                            ...(hasRole('superadmin') ? [
+                              {
+                                label: 'Delete', icon: Trash2, danger: true, divider: true,
+                                onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
+                              },
+                            ] : []),
+                          ]}
+                        />
+                      }
                     </td>
                   </tr>
                 );
@@ -388,11 +402,13 @@ const RepairList = () => {
                 className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3"
               >
                 {/* Checkbox */}
-                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                  <Checkbox
-                    checked={selectedRepairs.includes(repair._id)}
-                    onCheckedChange={() => handleSelectRepair(repair._id)} />
-                </div>
+                {hasRole('manager') && (
+                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                    <Checkbox
+                      checked={selectedRepairs.includes(repair._id)}
+                      onCheckedChange={() => handleSelectRepair(repair._id)} />
+                  </div>
+                )}
 
                 {/* Left */}
                 <div className="flex-1 min-w-0">
@@ -406,22 +422,28 @@ const RepairList = () => {
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${color}`}>
                     <Icon className="w-3 h-3" />{label}
                   </span>
-                  <span className="text-xs font-medium text-foreground">{formatCurrency(repair.serviceCharge)}</span>
+                  {hasRole('manager') && (
+                    <span className="text-xs font-medium text-foreground">{formatCurrency(repair.serviceCharge)}</span>
+                  )}
                   <span className="text-xs text-muted-foreground">{formatDate(repair.createdAt)}</span>
                 </div>
 
                 {/* Actions */}
-                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
-                  <RowActions
-                    actions={[
-                      { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
-                      {
-                        label: 'Delete', icon: Trash2, danger: true, divider: true,
-                        onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
-                      },
-                    ]}
-                  />
-                </div>
+                {hasRole('manager') &&
+                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                    <RowActions
+                      actions={[
+                        { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
+                        ...(hasRole('superadmin') ? [
+                          {
+                            label: 'Delete', icon: Trash2, danger: true, divider: true,
+                            onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
+                          },
+                        ] : []),
+                      ]}
+                    />
+                  </div>
+                }
               </div>
             );
           })
@@ -454,7 +476,7 @@ const RepairList = () => {
         confirmLabel="Delete All"
         danger
       />
-    </div>
+    </div >
   );
 };
 

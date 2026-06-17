@@ -331,6 +331,11 @@ export const getPaymentStats = async (req, res, next) => {
                     payableCount: { $sum: { $cond: [{ $eq: ['$type', 'payable'] }, 1, 0] } },
                 }
             },
+            {
+                $addFields: {
+                    grossProfit: { $subtract: ['$totalReceivable', '$totalPayable'] }
+                }
+            },
             { $project: { _id: 0 } }
         ]);
 

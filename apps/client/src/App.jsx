@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { usePermission } from './hooks/usePermission';
 import Layout from './components/Layout/Layout';
 
 import Login from './pages/auth/Login';
@@ -34,13 +35,18 @@ import Profile from './pages/settings/Profile';
 import Settings from './pages/settings/Settings';
 import AccessDenied from './pages/common/AccessDenied';
 import Home from './pages/website/Home';
+import Reports from './pages/reports/Reports';
 
-const ProtectedRoute = ({children, roles }) => {
+// `minRole` is hierarchical — matches backend authorize() and the sidebar.
+// Omit minRole (or pass null) to allow any logged-in user.
+const ProtectedRoute = ({ minRole }) => {
     const { user, loading } = useAuth();
+    const { hasRole } = usePermission();
+
     if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
     if (!user) return <Navigate to="/login" replace />;
-    if (roles && !roles.includes(user.role)) return <Navigate to="/unauthorized" replace />;
-    return children;;
+    if (minRole && !hasRole(minRole)) return <Navigate to="/unauthorized" replace />;
+    return <Outlet />;
 };
 
 export default function App() {
@@ -52,40 +58,52 @@ export default function App() {
     return (
         <Routes>
             <Route path="/login" element={!user ? <Login /> : <Navigate to="/app" replace />} />
-            
+
             <Route path="/" element={<Home />} />
-            
+
             <Route path="/unauthorized" element={<AccessDenied />} />
-            <Route path="/app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route index element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><Dashboard /></ProtectedRoute>} />
 
-                <Route path="repairs" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><RepairList /></ProtectedRoute>} />
-                <Route path="repairs/new" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><RepairCreate /></ProtectedRoute>} />
-                <Route path="repairs/:id" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><RepairDetails /></ProtectedRoute>} />
-                <Route path="repairs/:id/edit" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><RepairEdit /></ProtectedRoute>} />
+            <Route path="/app" element={<ProtectedRoute />}>
+                <Route element={<Layout />}>
 
-                <Route path="payments" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><PaymentList /></ProtectedRoute>} />
-                <Route path="payments/new" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><PaymentCreate /></ProtectedRoute>} />
-                <Route path="payments/:id" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><PaymentDetails /></ProtectedRoute>} />
+                    {/* Everyone logged in: superadmin, admin, manager, staff */}
+                    <Route index element={<Dashboard />} />
+                    <Route path="repairs" element={<RepairList />} />
+                    <Route path="repairs/new" element={<RepairCreate />} />
+                    <Route path="repairs/:id" element={<RepairDetails />} />
+                    <Route path="repairs/:id/edit" element={<RepairEdit />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="settings/profile" element={<Profile />} />
 
-                <Route path="customers" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><CustomerList /></ProtectedRoute>} />
-                <Route path="customers/new" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><CustomerCreate /></ProtectedRoute>} />
-                <Route path="customers/:id" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><CustomerDetails /></ProtectedRoute>} />
-                <Route path="customers/:id/edit" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager']}><CustomerEdit /></ProtectedRoute>} />
+                    {/* manager and above */}
+                    <Route element={<ProtectedRoute minRole="manager" />}>
+                        <Route path="payments" element={<PaymentList />} />
+                        <Route path="payments/new" element={<PaymentCreate />} />
+                        <Route path="payments/:id" element={<PaymentDetails />} />
 
-                <Route path="suppliers" element={<ProtectedRoute roles={['superadmin', 'admin']}><SupplierList /></ProtectedRoute>} />
-                <Route path="suppliers/new" element={<ProtectedRoute roles={['superadmin', 'admin']}><SupplierCreate /></ProtectedRoute>} />
-                <Route path="suppliers/:id" element={<ProtectedRoute roles={['superadmin', 'admin']}><SupplierDetails /></ProtectedRoute>} />
-                <Route path="suppliers/:id/edit" element={<ProtectedRoute roles={['superadmin', 'admin']}><SupplierEdit /></ProtectedRoute>} />
+                        <Route path="customers" element={<CustomerList />} />
+                        <Route path="customers/new" element={<CustomerCreate />} />
+                        <Route path="customers/:id" element={<CustomerDetails />} />
+                        <Route path="customers/:id/edit" element={<CustomerEdit />} />
 
-                <Route path="users" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserList /></ProtectedRoute>} />
-                <Route path="users/new" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserCreate /></ProtectedRoute>} />
-                <Route path="users/:id" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserDetails /></ProtectedRoute>} />
-                <Route path="users/:id/edit" element={<ProtectedRoute roles={['superadmin', 'admin']}><UserEdit /></ProtectedRoute>} />
+                        <Route path="suppliers" element={<SupplierList />} />
+                        <Route path="suppliers/new" element={<SupplierCreate />} />
+                        <Route path="suppliers/:id" element={<SupplierDetails />} />
+                        <Route path="suppliers/:id/edit" element={<SupplierEdit />} />
 
-                <Route path="technicians" element={<ProtectedRoute roles={['superadmin', 'admin']}><TechnicianList /></ProtectedRoute>} />
-                <Route path="settings" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><Settings /></ProtectedRoute>} />
-                <Route path="settings/profile" element={<ProtectedRoute roles={['superadmin', 'admin', 'manager', 'staff']}><Profile /></ProtectedRoute>} />
+                        <Route path="technicians" element={<TechnicianList />} />
+                    </Route>
+
+                    {/* admin and above */}
+                    <Route element={<ProtectedRoute minRole="admin" />}>
+                        <Route path="users" element={<UserList />} />
+                        <Route path="users/new" element={<UserCreate />} />
+                        <Route path="users/:id" element={<UserDetails />} />
+                        <Route path="users/:id/edit" element={<UserEdit />} />
+                        <Route path="reports" element={<Reports />} />
+                    </Route>
+
+                </Route>
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
