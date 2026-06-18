@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { repairSchema } from '@repo/validators';
-import { ArrowLeft, CalendarIcon } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +14,7 @@ import userService from '@/api/userService';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
 import CreateCustomerDialog from './components/Createcustomerdialog';
+import DatePicker from '@/components/common/DatePicker';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -62,7 +60,7 @@ const RepairCreate = () => {
 
   const onSubmit = async (data) => {
     const finalServiceCharge = Number(data.serviceCharge);
-    const finalDiscount = data.discount ? Number(data.discount) : 0;
+    const finalDiscount = data.discount && !isNaN(data.discount) ? Number(data.discount) : 0;
 
     if (finalDiscount > finalServiceCharge) {
       toast.error('Discount cannot be greater than service charge');
@@ -79,7 +77,7 @@ const RepairCreate = () => {
         ...(data.accessories ? { accessories: data.accessories } : {}),
         ...(data.notes ? { notes: data.notes } : {}),
         ...(data.dueDate ? { dueDate: data.dueDate } : {}),
-        ...(data.discount ? { discount: Number(data.discount) } : {}),
+        ...(finalDiscount > 0 ? { discount: finalDiscount } : {}),
       };
 
       await repairService.createRepair(payload);
@@ -167,31 +165,13 @@ const RepairCreate = () => {
               </div>
 
               <div>
-                <Label className="text-xs">Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={`mt-1 h-8 w-full justify-start text-sm font-normal ${!dueDate ? 'text-muted-foreground' : ''}`}
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5 mr-2 shrink-0" />
-                      {dueDate ? format(dueDate, 'dd MMM yyyy') : 'Pick a date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={(date) => {
-                        setDueDate(date);
-                        setValue('dueDate', date);
-                      }}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePicker
+                  className='w-full'
+                  label="Due Date"
+                  value={dueDate}
+                  onChange={(date) => { setDueDate(date); setValue('dueDate', date); }}
+                  disabledDates={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                />
                 <FieldError message={errors.dueDate?.message} />
               </div>
 
@@ -281,7 +261,9 @@ const RepairCreate = () => {
                 <div>
                   <Label className="text-xs">Discount (₹)</Label>
                   <Input
-                    {...register('discount', { valueAsNumber: true })}
+                    {...register('discount', {
+                      setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+                    })}
                     type="number"
                     step="0.01"
                     min="0"

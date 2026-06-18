@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight, IndianRupee, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ArrowDownLeft, ArrowUpRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,17 +11,15 @@ import {
 import { AsyncCombobox } from '@/components/AsyncComboBox';
 import customerService from '@/api/customerService';
 import supplierService from '@/api/supplierService';
-import repairService from '@/api/repairService';
-import sparePartUsageService from '@/api/sparePartUsageService';
 import paymentService from '@/api/paymentService';
 import toast from 'react-hot-toast';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const METHOD_OPTIONS = [
-  { value: 'cash',          label: 'Cash'          },
-  { value: 'upi',           label: 'UPI'           },
-  { value: 'card',          label: 'Card'          },
+  { value: 'cash', label: 'Cash' },
+  { value: 'upi', label: 'UPI' },
+  { value: 'card', label: 'Card' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
 ];
 
@@ -56,53 +54,59 @@ const PaymentCreate = () => {
   const navigate = useNavigate();
 
   // Step 1 — type + party
-  const [type, setType]             = useState('');
-  const [partyId, setPartyId]       = useState('');
+  const [type, setType] = useState('');
+  const [partyId, setPartyId] = useState('');
 
   // Step 2 — unpaid items
-  const [items, setItems]           = useState([]);
+  const [items, setItems] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState({}); // { id: amountPaid }
 
   // Step 3 — payment details
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [paidAt, setPaidAt]         = useState('');
-  const [notes, setNotes]           = useState('');
+  const [paidAt, setPaidAt] = useState('');
+  const [notes, setNotes] = useState('');
+  const [fnfSummary, setFnfSummary] = useState(null); // { count, total } | null
+  const [fnfLoading, setFnfLoading] = useState(false);
   const [isFullAndFinal, setIsFullAndFinal] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors]         = useState({});
+  const [errors, setErrors] = useState({});
 
   // ── Fetch unpaid items when party is selected ─────────────────────────────
 
-  const fetchUnpaidItems = async (selectedPartyId) => {
-    if (!selectedPartyId || !type) return;
-    try {
-      setItemsLoading(true);
-      setItems([]);
-      setSelectedItems({});
+const fetchUnpaidItems = async (selectedPartyId) => {
+  if (!selectedPartyId || !type) return;
+  try {
+    setItemsLoading(true);
+    setItems([]);
+    setSelectedItems({});
 
-      if (type === 'receivable') {
-        // Fetch unpaid repairs
-        const [unpaid, partial] = await Promise.all([
-          repairService.getRepairs({ customer: selectedPartyId, paymentStatus: 'unpaid',  limit: 100 }),
-          repairService.getRepairs({ customer: selectedPartyId, paymentStatus: 'partial', limit: 100 }),
-        ]);
-        const all = [...(unpaid.data || []), ...(partial.data || [])];
-        setItems(all);
-      } else {
-        // Fetch unpaid spare part usages
-        const [unpaid, partial] = await Promise.all([
-          sparePartUsageService.getSparePartUsages({ supplier: selectedPartyId, paymentStatus: 'unpaid',  limit: 100 }),
-          sparePartUsageService.getSparePartUsages({ supplier: selectedPartyId, paymentStatus: 'partial', limit: 100 }),
-        ]);
-        const all = [...(unpaid.data || []), ...(partial.data || [])];
-        setItems(all);
-      }
+    const res = await paymentService.getOutstandingItems({
+      type,
+      ...(type === 'receivable' ? { customer: selectedPartyId } : { supplier: selectedPartyId }),
+    });
+    setItems(res.data || []);
+  } catch (err) {
+    toast.error('Failed to fetch outstanding items');
+  } finally {
+    setItemsLoading(false);
+  }
+};
+
+  const fetchFnfSummary = async (selectedPartyId, selectedType) => {
+    if (!selectedPartyId || !selectedType) return;
+    try {
+      setFnfLoading(true);
+      const res = await paymentService.getOutstandingSummary({
+        type: selectedType,
+        ...(selectedType === 'receivable' ? { customer: selectedPartyId } : { supplier: selectedPartyId }),
+      });
+      setFnfSummary(res.data);
     } catch (err) {
-      toast.error('Failed to fetch outstanding items');
+      setFnfSummary(null);
     } finally {
-      setItemsLoading(false);
+      setFnfLoading(false);
     }
   };
 
@@ -110,7 +114,11 @@ const PaymentCreate = () => {
     setPartyId(id);
     setItems([]);
     setSelectedItems({});
-    if (id) fetchUnpaidItems(id);
+    setFnfSummary(null);
+    if (id) {
+      fetchUnpaidItems(id);
+      fetchFnfSummary(id, type);
+    }
   };
 
   const handleTypeChange = (val) => {
@@ -118,6 +126,7 @@ const PaymentCreate = () => {
     setPartyId('');
     setItems([]);
     setSelectedItems({});
+    setFnfSummary(null);
     setIsFullAndFinal(false);
   };
 
@@ -168,8 +177,8 @@ const PaymentCreate = () => {
 
   const validate = () => {
     const e = {};
-    if (!type)          e.type   = 'Required';
-    if (!partyId)       e.party  = 'Required';
+    if (!type) e.type = 'Required';
+    if (!partyId) e.party = 'Required';
     if (!paymentMethod) e.method = 'Required';
     if (!isFullAndFinal && Object.keys(selectedItems).length === 0)
       e.items = 'Select at least one item';
@@ -189,8 +198,8 @@ const PaymentCreate = () => {
           type,
           paymentMethod,
           ...(type === 'receivable' ? { customer: partyId } : { supplier: partyId }),
-          ...(notes   ? { notes }   : {}),
-          ...(paidAt  ? { paidAt }  : {}),
+          ...(notes ? { notes } : {}),
+          ...(paidAt ? { paidAt } : {}),
         };
         await paymentService.createFullAndFinal(payload);
       } else {
@@ -204,8 +213,8 @@ const PaymentCreate = () => {
           paymentMethod,
           lineItems,
           ...(type === 'receivable' ? { customer: partyId } : { supplier: partyId }),
-          ...(notes   ? { notes }   : {}),
-          ...(paidAt  ? { paidAt }  : {}),
+          ...(notes ? { notes } : {}),
+          ...(paidAt ? { paidAt } : {}),
         };
         await paymentService.createPayment(payload);
       }
@@ -215,11 +224,11 @@ const PaymentCreate = () => {
     } catch (err) {
       const errorData = err.response?.data;
 
-        if (errorData?.errors && Array.isArray(errorData.errors)) {
-          toast.error(errorData.errors[0].message);
-        } else {
-          toast.error(errorData?.message || 'Failed to record payment');
-        }
+      if (errorData?.errors && Array.isArray(errorData.errors)) {
+        toast.error(errorData.errors[0].message);
+      } else {
+        toast.error(errorData?.message || 'Failed to record payment');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -255,15 +264,14 @@ const PaymentCreate = () => {
               <div className="flex gap-2 mt-1">
                 {[
                   { value: 'receivable', label: 'Receivable', icon: ArrowDownLeft, color: 'text-green-500 border-green-500 bg-green-500/10' },
-                  { value: 'payable',    label: 'Payable',    icon: ArrowUpRight,  color: 'text-orange-500 border-orange-500 bg-orange-500/10' },
+                  { value: 'payable', label: 'Payable', icon: ArrowUpRight, color: 'text-orange-500 border-orange-500 bg-orange-500/10' },
                 ].map(({ value, label, icon: Icon, color }) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => handleTypeChange(value)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md border text-xs font-medium transition-colors ${
-                      type === value ? color : 'border-border text-muted-foreground hover:bg-muted/50'
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-md border text-xs font-medium transition-colors ${type === value ? color : 'border-border text-muted-foreground hover:bg-muted/50'
+                      }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     {label}
@@ -321,21 +329,19 @@ const PaymentCreate = () => {
             </div>
 
             {/* Full & Final toggle */}
-            {type && partyId && items.length > 0 && (
+            {type && partyId && fnfSummary?.count > 0 && (
               <div>
                 <button
                   type="button"
                   onClick={() => { setIsFullAndFinal((p) => !p); setSelectedItems({}); }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors ${
-                    isFullAndFinal
-                      ? 'border-purple-500 bg-purple-500/10 text-purple-500'
-                      : 'border-border text-muted-foreground hover:bg-muted/50'
-                  }`}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors ${isFullAndFinal
+                    ? 'border-purple-500 bg-purple-500/10 text-purple-500'
+                    : 'border-border text-muted-foreground hover:bg-muted/50'
+                    }`}
                 >
                   <span className="font-medium">Full & Final Settlement</span>
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                    isFullAndFinal ? 'border-purple-500 bg-purple-500' : 'border-muted-foreground'
-                  }`}>
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isFullAndFinal ? 'border-purple-500 bg-purple-500' : 'border-muted-foreground'
+                    }`}>
                     {isFullAndFinal && <CheckCircle className="w-3 h-3 text-white" />}
                   </div>
                 </button>
@@ -388,6 +394,25 @@ const PaymentCreate = () => {
               <p className="text-sm text-muted-foreground text-center py-10">
                 Select a {type === 'receivable' ? 'customer' : 'supplier'} to see outstanding items
               </p>
+            ) : isFullAndFinal ? (
+              fnfLoading ? (
+                <p className="text-sm text-muted-foreground text-center py-10">
+                  Calculating outstanding total...
+                </p>
+              ) : !fnfSummary || fnfSummary.count === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-10">
+                  No outstanding {type === 'receivable' ? 'repairs' : 'spare parts'} found
+                </p>
+              ) : (
+                <div className="text-center py-10 space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    {fnfSummary.count} outstanding item{fnfSummary.count !== 1 ? 's' : ''} will be cleared
+                  </p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {formatCurrency(fnfSummary.total)}
+                  </p>
+                </div>
+              )
             ) : itemsLoading ? (
               <p className="text-sm text-muted-foreground text-center py-10">
                 Loading outstanding items...
@@ -396,35 +421,6 @@ const PaymentCreate = () => {
               <p className="text-sm text-muted-foreground text-center py-10">
                 No outstanding {type === 'receivable' ? 'repairs' : 'spare parts'} found
               </p>
-            ) : isFullAndFinal ? (
-              // Full & Final — show all items read-only
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground mb-3">
-                  All {items.length} outstanding item{items.length !== 1 ? 's' : ''} will be cleared
-                </p>
-                {items.map((item) => {
-                  const remaining = getItemRemaining(item);
-                  const label = type === 'receivable'
-                    ? `${item.repairId} — ${item.deviceModel}`
-                    : item.sparePart;
-                  return (
-                    <div key={item._id}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/40 text-sm"
-                    >
-                      <p className="text-sm text-foreground truncate flex-1">{label}</p>
-                      <p className="text-sm font-medium text-foreground shrink-0 ml-3">
-                        {formatCurrency(remaining)}
-                      </p>
-                    </div>
-                  );
-                })}
-                <div className="flex justify-between items-center pt-2 border-t border-border px-1">
-                  <p className="text-xs font-medium text-muted-foreground">Total</p>
-                  <p className="text-sm font-bold text-foreground">
-                    {formatCurrency(items.reduce((sum, item) => sum + getItemRemaining(item), 0))}
-                  </p>
-                </div>
-              </div>
             ) : (
               // Normal — selectable items with amount input
               <div className="space-y-2">
@@ -440,9 +436,8 @@ const PaymentCreate = () => {
 
                   return (
                     <div key={item._id}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
-                        isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/30'
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/30'
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -500,9 +495,17 @@ const PaymentCreate = () => {
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={submitting || !type || !partyId || !paymentMethod}
+          disabled={
+            submitting || !type || !partyId || !paymentMethod ||
+            (isFullAndFinal && (!fnfSummary || fnfSummary.count === 0))
+          }
         >
-          {submitting ? 'Recording...' : `Record Payment${totalSelected > 0 ? ` · ${formatCurrency(totalSelected)}` : ''}`}
+          {submitting
+            ? 'Recording...'
+            : `Record Payment${isFullAndFinal
+              ? (fnfSummary?.total > 0 ? ` · ${formatCurrency(fnfSummary.total)}` : '')
+              : (totalSelected > 0 ? ` · ${formatCurrency(totalSelected)}` : '')
+            }`}
         </Button>
       </div>
 

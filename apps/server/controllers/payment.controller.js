@@ -8,6 +8,7 @@ import Supplier from '../models/supplier.model.js';
 import { createError } from '../utils/errorHandler.js';
 import withTransaction from '../utils/withTransaction.js';
 import { paymentSchema, paymentQuerySchema, paymentFNFSchema } from '@repo/validators';
+import { getOutstandingRepairFilter, getOutstandingSparePartFilter, ELIGIBLE_REPAIR_STATUSES } from '../utils/payment.filters.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,10 @@ export const createPayment = async (req, res, next) => {
                 if (validatedData.type === 'receivable') {
                     const repair = await Repair.findOne({ _id: item.repair, isDeleted: false });
                     if (!repair) throw createError(404, `Repair ${item.repair} not found`);
+
+                    if (!ELIGIBLE_REPAIR_STATUSES.includes(repair.status)) {
+                        throw createError(400, `Repair ${repair.repairId} is not ready for payment yet`);
+                    }
 
                     if (repair.paymentStatus === 'paid') {
                         throw createError(400, `Repair ${repair.repairId} is already fully paid`);
@@ -150,7 +155,6 @@ export const createFullAndFinalPayment = async (req, res, next) => {
     try {
         const { type, customer, supplier, paymentMethod, notes } = paymentFNFSchema.parse(req.body);
 
-        // Get all unpaid/partial items
         let lineItems = [];
         let totalAmount = 0;
 
@@ -158,12 +162,7 @@ export const createFullAndFinalPayment = async (req, res, next) => {
             const customer_doc = await Customer.findOne({ _id: customer, isDeleted: false });
             if (!customer_doc) throw createError(404, 'Customer not found');
 
-            const unpaidRepairs = await Repair.find({
-                customer,
-                paymentStatus: { $in: ['unpaid', 'partial'] },
-                status: { $in: ['ready', 'completed'] },
-                isDeleted: false
-            });
+            const unpaidRepairs = await Repair.find(getOutstandingRepairFilter(customer));
 
             lineItems = unpaidRepairs.map(repair => {
                 const totalOwed = repair.serviceCharge - (repair.discount || 0);
@@ -175,11 +174,7 @@ export const createFullAndFinalPayment = async (req, res, next) => {
             const supplier_doc = await Supplier.findOne({ _id: supplier, isDeleted: false });
             if (!supplier_doc) throw createError(404, 'Supplier not found');
 
-            const unpaidParts = await SparePartUsage.find({
-                supplier,
-                paymentStatus: { $in: ['unpaid', 'partial'] },
-                isDeleted: false
-            });
+            const unpaidParts = await SparePartUsage.find(getOutstandingSparePartFilter(supplier));
 
             lineItems = unpaidParts.map(part => {
                 const totalOwed = part.unitCost * part.quantity;
@@ -204,7 +199,6 @@ export const createFullAndFinalPayment = async (req, res, next) => {
                 isFullAndFinal: true
             }], { session });
 
-            // Mark all items as paid
             if (type === 'receivable') {
                 await Promise.all(
                     lineItems.map(item =>
@@ -215,11 +209,7 @@ export const createFullAndFinalPayment = async (req, res, next) => {
                         )
                     )
                 );
-                await Customer.findByIdAndUpdate(
-                    customer,
-                    { outstandingBalance: 0 },
-                    { session }
-                );
+                await Customer.findByIdAndUpdate(customer, { outstandingBalance: 0 }, { session });
             } else {
                 await Promise.all(
                     lineItems.map(item =>
@@ -230,11 +220,7 @@ export const createFullAndFinalPayment = async (req, res, next) => {
                         )
                     )
                 );
-                await Supplier.findByIdAndUpdate(
-                    supplier,
-                    { outstandingBalance: 0 },
-                    { session }
-                );
+                await Supplier.findByIdAndUpdate(supplier, { outstandingBalance: 0 }, { session });
             }
 
             return created;
@@ -243,6 +229,103 @@ export const createFullAndFinalPayment = async (req, res, next) => {
         const populated = await populate(Payment.findById(payment._id));
 
         res.status(201).json({ success: true, data: populated, message: 'Full and final payment recorded successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getOutstandingItems = async (req, res, next) => {
+    try {
+        const { type, customer, supplier } = req.query;
+
+        if (type === 'receivable') {
+            if (!customer) throw createError(400, 'customer is required');
+            const customer_doc = await Customer.findOne({ _id: customer, isDeleted: false });
+            if (!customer_doc) throw createError(404, 'Customer not found');
+
+            const items = await Repair.find(getOutstandingRepairFilter(customer)).limit(100);
+            return res.status(200).json({ success: true, data: items });
+
+        } else if (type === 'payable') {
+            if (!supplier) throw createError(400, 'supplier is required');
+            const supplier_doc = await Supplier.findOne({ _id: supplier, isDeleted: false });
+            if (!supplier_doc) throw createError(404, 'Supplier not found');
+
+            const items = await SparePartUsage.find(getOutstandingSparePartFilter(supplier)).limit(100);
+            return res.status(200).json({ success: true, data: items });
+
+        } else {
+            throw createError(400, 'Invalid type');
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get outstanding totals for full & final preview
+ * @route   GET /api/payments/outstanding-summary
+ * @access  Private
+ */
+export const getOutstandingSummary = async (req, res, next) => {
+    try {
+        const { type, customer, supplier } = req.query;
+
+        let result = { count: 0, total: 0 };
+
+        if (type === 'receivable') {
+            if (!customer) throw createError(400, 'customer is required');
+            const customer_doc = await Customer.findOne({ _id: customer, isDeleted: false });
+            if (!customer_doc) throw createError(404, 'Customer not found');
+
+            const agg = await Repair.aggregate([
+                { $match: getOutstandingRepairFilter(customer) },
+                {
+                    $group: {
+                        _id: null,
+                        count: { $sum: 1 },
+                        total: {
+                            $sum: {
+                                $subtract: [
+                                    { $subtract: ['$serviceCharge', { $ifNull: ['$discount', 0] }] },
+                                    { $ifNull: ['$amountPaid', 0] }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]);
+            if (agg[0]) result = { count: agg[0].count, total: agg[0].total };
+
+        } else if (type === 'payable') {
+            if (!supplier) throw createError(400, 'supplier is required');
+            const supplier_doc = await Supplier.findOne({ _id: supplier, isDeleted: false });
+            if (!supplier_doc) throw createError(404, 'Supplier not found');
+
+            const agg = await SparePartUsage.aggregate([
+                { $match: getOutstandingSparePartFilter(supplier) },
+                {
+                    $group: {
+                        _id: null,
+                        count: { $sum: 1 },
+                        total: {
+                            $sum: {
+                                $subtract: [
+                                    { $multiply: ['$unitCost', '$quantity'] },
+                                    { $ifNull: ['$amountPaid', 0] }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]);
+            if (agg[0]) result = { count: agg[0].count, total: agg[0].total };
+
+        } else {
+            throw createError(400, 'Invalid type');
+        }
+
+        res.status(200).json({ success: true, data: result });
     } catch (error) {
         next(error);
     }

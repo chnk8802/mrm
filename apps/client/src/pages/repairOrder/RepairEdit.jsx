@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
+import DatePicker from '@/components/common/DatePicker';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ const RepairEdit = () => {
 
   const onSubmit = async (data) => {
     const finalServiceCharge = Number(data.serviceCharge);
-    const finalDiscount = data.discount ? Number(data.discount) : 0;
+    const finalDiscount = data.discount && !isNaN(data.discount) ? Number(data.discount) : 0;
 
     if (finalDiscount > finalServiceCharge) {
       toast.error('Discount cannot be greater than service charge');
@@ -117,7 +118,7 @@ const RepairEdit = () => {
         ...(data.accessories ? { accessories: data.accessories } : {}),
         ...(data.notes ? { notes: data.notes } : {}),
         ...(data.dueDate ? { dueDate: data.dueDate } : {}),
-        ...(data.discount ? { discount: Number(data.discount) } : {}),
+        ...(finalDiscount > 0 ? { discount: finalDiscount } : {}),
       };
 
       await repairService.updateRepair(id, payload);
@@ -188,32 +189,11 @@ const RepairEdit = () => {
               />
 
               <div>
-                <Label className="text-xs">Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={`mt-1 h-8 w-full justify-start text-sm font-normal ${!dueDate ? 'text-muted-foreground' : ''}`}
-                    >
-                      <CalendarIcon className="w-3.5 h-3.5 mr-2 shrink-0" />
-                      {dueDate ? format(dueDate, 'dd MMM yyyy') : 'Pick a date'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      defaultMonth={dueDate}
-                      onSelect={(date) => {
-                        setDueDate(date);
-                        setValue('dueDate', date);
-                      }}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePicker
+                  label="Due Date"
+                  value={dueDate}
+                  onChange={(date) => { setDueDate(date); setValue('dueDate', date); }}
+                />
                 <FieldError message={errors.dueDate?.message} />
               </div>
 
@@ -303,7 +283,9 @@ const RepairEdit = () => {
                 <div>
                   <Label className="text-xs">Discount (₹)</Label>
                   <Input
-                    {...register('discount', { valueAsNumber: true })}
+                    {...register('discount', {
+                      setValueAs: (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+                    })}
                     type="number"
                     step="0.01"
                     min="0"

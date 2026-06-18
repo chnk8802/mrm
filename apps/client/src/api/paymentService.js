@@ -6,6 +6,8 @@ const paymentService = {
     getPaymentStats:      ()            => api.get('/payments/stats').then(r => r.data),
     createPayment:        (data)        => api.post('/payments', data).then(r => r.data),
     createFullAndFinal:   (data)        => api.post('/payments/full-and-final', data).then(r => r.data),
+    getOutstandingItems: (params) => api.get('/payments/outstanding-items', { params }).then(r => r.data),
+    getOutstandingSummary: (params) => api.get('/payments/outstanding-summary', { params }).then(r => r.data),
 };
 
 export default paymentService;
