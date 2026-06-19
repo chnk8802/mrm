@@ -5,10 +5,11 @@ import Repair from '../models/repair.model.js';
 import SparePartUsage from '../models/sparePartUsage.model.js';
 import Customer from '../models/customer.model.js';
 import Supplier from '../models/supplier.model.js';
-import { createError } from '../utils/errorHandler.js';
-import withTransaction from '../utils/withTransaction.js';
+import { createError } from '../utils/common/errorHandler.js';
+import withTransaction from '../utils/common/withTransaction.js';
 import { paymentSchema, paymentQuerySchema, paymentFNFSchema } from '@repo/validators';
 import { getOutstandingRepairFilter, getOutstandingSparePartFilter, ELIGIBLE_REPAIR_STATUSES } from '../utils/payment.filters.js';
+import { getRepairRemaining } from '../utils/repair.calculations.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -37,10 +38,8 @@ export const createPayment = async (req, res, next) => {
     try {
         const validatedData = paymentSchema.parse(req.body);
 
-        // Set recordedBy from logged in user
         validatedData.recordedBy = req.user._id;
 
-        // Verify customer/supplier exists
         if (validatedData.type === 'receivable') {
             const customer = await Customer.findOne({ _id: validatedData.customer, isDeleted: false });
             if (!customer) throw createError(404, 'Customer not found');
@@ -49,7 +48,6 @@ export const createPayment = async (req, res, next) => {
             if (!supplier) throw createError(404, 'Supplier not found');
         }
 
-        // Verify line items exist and validate amounts
         const lineItemDocs = await Promise.all(
             validatedData.lineItems.map(async (item) => {
                 if (validatedData.type === 'receivable') {
@@ -64,8 +62,12 @@ export const createPayment = async (req, res, next) => {
                         throw createError(400, `Repair ${repair.repairId} is already fully paid`);
                     }
 
+                    if (repair.paymentStatus === 'waived') {
+                        throw createError(400, `Repair ${repair.repairId} has been waived and is not payable`);
+                    }
+
                     const totalOwed = repair.serviceCharge - (repair.discount || 0);
-                    const remainingAmount = totalOwed - (repair.amountPaid || 0);
+                    const remainingAmount = getRepairRemaining(repair);
 
                     if (item.amountPaid > remainingAmount) {
                         throw createError(400, `Amount exceeds remaining balance for repair ${repair.repairId}. Remaining: ${remainingAmount}`);
@@ -90,14 +92,11 @@ export const createPayment = async (req, res, next) => {
             })
         );
 
-        // Calculate total amount from line items
         validatedData.totalAmount = validatedData.lineItems.reduce((sum, item) => sum + item.amountPaid, 0);
 
         const payment = await withTransaction(async (session) => {
-            // Create payment
             const [created] = await Payment.create([validatedData], { session });
 
-            // Update each line item
             await Promise.all(
                 validatedData.lineItems.map(async (item, index) => {
                     const { doc, type, totalOwed } = lineItemDocs[index];
@@ -118,7 +117,6 @@ export const createPayment = async (req, res, next) => {
                 })
             );
 
-            // Update outstanding balance on customer/supplier
             if (validatedData.type === 'receivable') {
                 await Customer.findByIdAndUpdate(
                     validatedData.customer,

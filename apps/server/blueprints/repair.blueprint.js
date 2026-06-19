@@ -1,10 +1,19 @@
 import { ALLOWED_TRANSITIONS } from "@repo/validators";
+import { createError } from "../utils/common/errorHandler.js";
+import { getRepairRemaining } from '../utils/repair.calculations.js';
+
+const waiveCustomerBalance = async (repair) => {
+    const remaining = getRepairRemaining(repair);
+    if (remaining > 0) {
+        await Customer.findByIdAndUpdate(repair.customer, { $inc: { outstandingBalance: -remaining } });
+    }
+};
 
 const transitionHandlers = {
     'received->in-progress': {
         before: async (repair) => {
             if (!repair.technician) {
-                throw { status: 400, message: 'Technician must be assigned before starting repair' };
+                throw createError(400, 'Technician must be assigned before starting repair' );
             }
         },
         during: async (repair) => {},
@@ -13,6 +22,7 @@ const transitionHandlers = {
     'received->cancelled': {
         before: async (repair) => {},
         during: async (repair) => {
+            waiveCustomerBalance(repair);
             repair.paymentStatus = 'waived';
         },
         after:  async (repair) => { /* notify customer */ }
@@ -25,7 +35,7 @@ const transitionHandlers = {
     'in-progress->not-repairable': {
         before: async (repair) => {},
         during: async (repair) => {
-            repair.serviceCharge = 0;
+            waiveCustomerBalance(repair);
             repair.paymentStatus = 'waived';
         },
         after:  async (repair) => { /* notify customer */ }
@@ -33,6 +43,7 @@ const transitionHandlers = {
     'in-progress->cancelled': {
         before: async (repair) => {},
         during: async (repair) => {
+            waiveCustomerBalance(repair);
             repair.paymentStatus = 'waived';
         },
         after:  async (repair) => { /* notify customer */ }

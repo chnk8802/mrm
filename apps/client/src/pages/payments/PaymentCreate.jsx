@@ -75,24 +75,24 @@ const PaymentCreate = () => {
 
   // ── Fetch unpaid items when party is selected ─────────────────────────────
 
-const fetchUnpaidItems = async (selectedPartyId) => {
-  if (!selectedPartyId || !type) return;
-  try {
-    setItemsLoading(true);
-    setItems([]);
-    setSelectedItems({});
+  const fetchUnpaidItems = async (selectedPartyId) => {
+    if (!selectedPartyId || !type) return;
+    try {
+      setItemsLoading(true);
+      setItems([]);
+      setSelectedItems({});
 
-    const res = await paymentService.getOutstandingItems({
-      type,
-      ...(type === 'receivable' ? { customer: selectedPartyId } : { supplier: selectedPartyId }),
-    });
-    setItems(res.data || []);
-  } catch (err) {
-    toast.error('Failed to fetch outstanding items');
-  } finally {
-    setItemsLoading(false);
-  }
-};
+      const res = await paymentService.getOutstandingItems({
+        type,
+        ...(type === 'receivable' ? { customer: selectedPartyId } : { supplier: selectedPartyId }),
+      });
+      setItems(res.data || []);
+    } catch (err) {
+      toast.error('Failed to fetch outstanding items');
+    } finally {
+      setItemsLoading(false);
+    }
+  };
 
   const fetchFnfSummary = async (selectedPartyId, selectedType) => {
     if (!selectedPartyId || !selectedType) return;
@@ -132,8 +132,10 @@ const fetchUnpaidItems = async (selectedPartyId) => {
 
   // ── Item selection ────────────────────────────────────────────────────────
 
+  // Mirrors utils/repair.calculations.js#getRepairRemaining on the backend — keep both in sync if either changes.
   const getItemRemaining = (item) => {
     if (type === 'receivable') {
+      if (['paid', 'waived'].includes(item.paymentStatus)) return 0;
       const total = (item.serviceCharge ?? 0) - (item.discount ?? 0);
       return total - (item.amountPaid ?? 0);
     } else {

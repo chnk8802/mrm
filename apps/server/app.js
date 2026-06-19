@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 
-import { handleError } from './utils/errorHandler.js'
+import { handleError } from './utils/common/errorHandler.js'
 
 // ROUTES
 import authRoutes from './routes/auth.routes.js';

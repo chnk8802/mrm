@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { isValidObjectId } from 'mongoose';
-import { createError } from './errorHandler.js';
+import { createError } from './common/errorHandler.js';
 
 export const ELIGIBLE_REPAIR_STATUSES = ['ready', 'completed'];
 

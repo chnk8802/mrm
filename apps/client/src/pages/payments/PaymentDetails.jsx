@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowDownLeft, ArrowUpRight,
   Calendar, IndianRupee, User, Wrench,
-  FileText, Package, CreditCard, CheckCircle,
+  FileText, Package, CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

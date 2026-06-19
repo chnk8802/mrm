@@ -1,6 +1,4 @@
 import { z } from 'zod';
+import { isValidObjectId } from 'mongoose';
 
-export const objectIdSchema = z.string().refine(
-    (val) => /^[0-9a-fA-F]{24}$/.test(val),
-    'Invalid ID'
-);
+export const objectIdSchema = z.string().refine(isValidObjectId, 'Invalid ID');

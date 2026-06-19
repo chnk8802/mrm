@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Wrench, Users, IndianRupee, Clock, CheckCircle,
+  Wrench, Users, Clock, CheckCircle,
   XCircle, AlertCircle, PackageCheck, ArrowDownLeft,
   ArrowUpRight, TrendingUp, ClipboardList,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import repairService from '@/api/repairService';
 import paymentService from '@/api/paymentService';

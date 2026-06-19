@@ -1,7 +1,7 @@
 import { isValidObjectId } from 'mongoose';
 import Customer from '../models/customer.model.js';
 import Repair from '../models/repair.model.js'
-import { createError } from '../utils/errorHandler.js';
+import { createError } from '../utils/common/errorHandler.js';
 import {
     customerSchema,
     customerUpdateSchema,
@@ -10,7 +10,7 @@ import {
     customerQuerySchema
 } from '@repo/validators';
 
-import { flattenObject } from '../utils/flattenObject.js';
+import { flattenObject } from '../utils/common/flattenObject.js';
 
 /**
  * @desc    Create a new customer
@@ -81,7 +81,7 @@ export const getCustomers = async (req, res, next) => {
 export const getCustomerById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError('400', 'Invalid ID')
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID')
 
         const customer = await Customer.findOne({ _id: id, isDeleted: false });
         if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
@@ -100,7 +100,7 @@ export const getCustomerById = async (req, res, next) => {
 export const updateCustomer = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError('400', 'Invalid ID')
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID')
 
         const validatedData = customerUpdateSchema.parse(req.body);
 
@@ -126,7 +126,7 @@ export const updateCustomer = async (req, res, next) => {
 export const deleteCustomer = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError('400', 'Invalid ID')
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID')
 
         const hasRepairs = await Repair.exists({ technician: id, isDeleted: false });
         if (hasRepairs) throw createError(400, 'User has repair orders assigned and cannot be deleted');
@@ -153,7 +153,7 @@ export const deleteCustomer = async (req, res, next) => {
 export const restoreCustomer = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError('400', 'Invalid ID')
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID')
 
         const customer = await Customer.findById(id).select('+isDeleted');
         if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
@@ -177,7 +177,7 @@ export const restoreCustomer = async (req, res, next) => {
 export const permanentlyDeleteCustomer = async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!isValidObjectId(id)) throw createError('400', 'Invalid ID')
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID')
 
         const customer = await Customer.findOne({ _id: id, isDeleted: true }).select('+isDeleted');
         if (!customer) return res.status(404).json({ success: false, message: 'Customer not found or not soft deleted' });

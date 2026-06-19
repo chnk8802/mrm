@@ -1,9 +1,9 @@
 import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
-import { createError } from '../utils/errorHandler.js';
+import { createError } from '../utils/common/errorHandler.js';
 import { registerSchema, loginSchema } from '@repo/validators';
-import { flattenObject } from '../utils/flattenObject.js';
+import { flattenObject } from '../utils/common/flattenObject.js';
 
 const cookieOptions = () => {
     const isProduction = process.env.NODE_ENV === 'production';

@@ -11,8 +11,8 @@ import {
     sparePartUsageBulkUpdateSchema,
     sparePartUsageQuerySchema,
 } from '@repo/validators';
-import withTransaction from '../utils/withTransaction.js';
-import { createError } from '../utils/errorHandler.js';
+import withTransaction from '../utils/common/withTransaction.js';
+import { createError } from '../utils/common/errorHandler.js';
 
 const populate = (query) => query
     .populate('repair', 'repairId deviceModel status')
