@@ -64,7 +64,7 @@ export const paymentQuerySchema = z.object({
     customer: objectIdSchema.optional(),
     supplier: objectIdSchema.optional(),
     paymentMethod: z.enum(PAYMENT_METHODS).optional(),
-    isFullAndFinal: z.coerce.boolean().optional(),
+    isFullAndFinal: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
     fromDate: z.coerce.date().optional(),
     toDate: z.coerce.date().optional(),
 });

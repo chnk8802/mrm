@@ -28,7 +28,7 @@ export const repairQuerySchema = z.object({
     customer: z.string().optional(),
     technician: z.string().optional(),
     paymentStatus: z.enum(PAYMENT_STATUS).optional(),
-    isPickedUp: z.coerce.boolean().optional(),
+    isPickedUp: z.enum(['true', 'false']).transform(v => v === 'true').optional(),
 });
 
 export const statusUpdateSchema = z.object({

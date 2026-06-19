@@ -21,7 +21,7 @@ router.use(protect);
 router.get('/stats', authorize('admin'), getSupplierStats);
 
 router.patch('/bulk', authorize('admin'), bulkUpdateSuppliers);
-router.delete('/bulk', authorize('admin'), bulkDeleteSuppliers);
+router.post('/bulk', authorize('admin'), bulkDeleteSuppliers);
 
 router.route('/')
     .get(authorize('staff'), getSuppliers)

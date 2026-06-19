@@ -2,23 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Edit, Trash2, ChevronUp, ChevronDown,
-  Wrench, Clock, CheckCircle, XCircle, AlertCircle, PackageCheck,
-  Check, ChevronsUpDown,
+  Wrench, Clock, CheckCircle, XCircle, AlertCircle, PackageCheck, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
-} from '@/components/ui/command';
-
 import { useTheme } from '@/context/ThemeContext';
-
-import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import repairService from '@/api/repairService';
-
 import PageHeader from '@/components/common/PageHeader';
 import TableFooter from '@/components/common/TableFooter';
 import RowActions from '@/components/common/RowActions';
@@ -26,6 +15,10 @@ import FilterPopover from '@/components/common/FilterPopover';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePermission } from '@/hooks/usePermission';
+import { AsyncCombobox } from '@/components/AsyncComboBox';
+import FilterSelect from '@/components/common/FilterSelect';
+import customerService from '@/api/customerService';
+import userService from '@/api/userService';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,8 +31,31 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const PAYMENT_STATUS_OPTIONS = [
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'partial', label: 'Partial' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'waived', label: 'Waived' },
+];
 
+const PICKED_UP_OPTIONS = [
+  { value: 'true', label: 'Picked Up' },
+  { value: 'false', label: 'Not Picked Up' },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const fetchTechnicians = async (search) => {
+  const res = await userService.getUsers({ search, role: 'staff', limit: 5 });
+  return (res.data || []).map((u) => ({ value: u._id, label: u.name }));
+};
+
+const fetchCustomersForFilter = async (search) => {
+  const res = await customerService.getCustomers({ search, limit: 5 });
+  return (res.data || []).map((c) => ({
+    value: c._id,
+    label: `${c.name} — ${c.phone || c.email || ''}`,
+  }));
+};
 const formatDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
 
@@ -58,10 +74,26 @@ const getStatusBadge = (status) => {
   }
 };
 
+const getPaymentStatusBadge = (paymentStatus) => {
+  switch (paymentStatus) {
+    case 'unpaid': return { color: 'bg-red-500/10 text-red-500', label: 'Unpaid' };
+    case 'partial': return { color: 'bg-yellow-500/10 text-yellow-500', label: 'Partial' };
+    case 'paid': return { color: 'bg-green-500/10 text-green-500', label: 'Paid' };
+    case 'waived': return { color: 'bg-muted text-muted-foreground', label: 'Waived' };
+    default: return { color: 'bg-muted text-muted-foreground', label: paymentStatus };
+  }
+};
+
+const getPickupBadge = (isPickedUp) =>
+  isPickedUp
+    ? { color: 'bg-green-500/10 text-green-500', label: 'Picked Up' }
+    : {
+      color: 'bg-muted text-muted-foreground', label: 'Not Picked Up'
+    };
+
 // ─── RepairList ───────────────────────────────────────────────────────────────
 
 const RepairList = () => {
-  const { theme, appTheme } = useTheme();
   const navigate = useNavigate();
 
   const { hasRole } = usePermission();
@@ -76,7 +108,10 @@ const RepairList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
-  const [statusOpen, setStatusOpen] = useState(false);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
+  const [pickedUpFilter, setPickedUpFilter] = useState('');
+  const [technicianFilter, setTechnicianFilter] = useState('');
+  const [customerFilter, setCustomerFilter] = useState('');
 
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [sortBy, setSortBy] = useState('createdAt');
@@ -103,26 +138,22 @@ const RepairList = () => {
       const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
       if (searchQuery) params.search = searchQuery;
       if (statusFilter) params.status = statusFilter;
+      if (paymentStatusFilter) params.paymentStatus = paymentStatusFilter;
+      if (pickedUpFilter) params.isPickedUp = pickedUpFilter;
+      if (technicianFilter) params.technician = technicianFilter;
+      if (customerFilter) params.customer = customerFilter;
 
       const response = await repairService.getRepairs(params);
       setRepairs(response.data);
-      setPagination((prev) => ({
-        ...prev,
-        total: response.pagination.total,
-        pages: response.pagination.pages,
-      }));
+      setPagination((prev) => ({ ...prev, total: response.pagination.total, pages: response.pagination.pages }));
     } catch (err) {
       const errorData = err.response?.data;
-
-      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-        toast.error(errorData.errors[0].message);
-      } else {
-        toast.error(errorData?.message || 'Failed to fetch repair');
-      }
+      if (errorData?.errors?.length) toast.error(errorData.errors[0].message);
+      else toast.error(errorData?.message || 'Failed to fetch repair');
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, sortBy, sortOrder, statusFilter, searchQuery]);
+  }, [pagination.page, pagination.limit, sortBy, sortOrder, statusFilter, paymentStatusFilter, pickedUpFilter, technicianFilter, customerFilter, searchQuery]);
 
   useEffect(() => { fetchRepairs(); }, [fetchRepairs]);
 
@@ -197,60 +228,74 @@ const RepairList = () => {
 
   const clearFilters = () => {
     setStatusFilter('');
+    setPaymentStatusFilter('');
+    setPickedUpFilter('');
+    setTechnicianFilter('');
+    setCustomerFilter('');
     setPagination((p) => ({ ...p, page: 1 }));
   };
 
-  const filterCount = statusFilter ? 1 : 0;
+  const filterCount = [statusFilter, paymentStatusFilter, pickedUpFilter, technicianFilter, customerFilter]
+    .filter(Boolean).length;
 
   // ── Filter panel ──────────────────────────────────────────────────────────
-
   const filterPanel = (
-    <FilterPopover
-      open={showFilters}
-      onClose={() => setShowFilters(false)}
-      onClear={clearFilters}
-      hasFilters={filterCount > 0}
-    >
-      <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Status</p>
-      <Popover open={statusOpen} onOpenChange={setStatusOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-full justify-between h-8 text-sm">
-            {statusFilter
-              ? STATUS_OPTIONS.find((s) => s.value === statusFilter)?.label
-              : 'All Statuses'}
-            <ChevronsUpDown className="ml-2 h-3 w-3 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className={`w-44 p-0 ${theme} bg-popover text-popover-foreground border-border`}
-          data-app-theme={appTheme}>
-          <Command>
-            <CommandInput placeholder="Search status..." />
-            <CommandList>
-              <CommandEmpty>No status found.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem value="" onSelect={() => { setStatusFilter(''); setPagination((p) => ({ ...p, page: 1 })); setStatusOpen(false); }}>
-                  <Check className={cn('mr-2 h-3 w-3', !statusFilter ? 'opacity-100' : 'opacity-0')} />
-                  <span className="text-xs">All Statuses</span>
-                </CommandItem>
-                {STATUS_OPTIONS.map((s) => (
-                  <CommandItem
-                    key={s.value}
-                    value={s.value}
-                    onSelect={(val) => {
-                      setStatusFilter(val === statusFilter ? '' : val);
-                      setPagination((p) => ({ ...p, page: 1 }));
-                      setStatusOpen(false);
-                    }}
-                  >
-                    <Check className={cn('mr-2 h-3 w-3', statusFilter === s.value ? 'opacity-100' : 'opacity-0')} />
-                    <span className="text-xs">{s.label}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+    <FilterPopover open={showFilters} onClose={() => setShowFilters(false)} onClear={clearFilters} hasFilters={filterCount > 0}>
+      <FilterSelect
+        label="Status"
+        value={statusFilter}
+        onChange={(val) => { setStatusFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+        options={STATUS_OPTIONS}
+        allLabel="All Statuses"
+      />
+      <FilterSelect
+        label="Payment Status"
+        value={paymentStatusFilter}
+        onChange={(val) => { setPaymentStatusFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+        options={PAYMENT_STATUS_OPTIONS}
+        allLabel="All Payment Statuses"
+      />
+      <FilterSelect
+        label="Pickup"
+        value={pickedUpFilter}
+        onChange={(val) => { setPickedUpFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+        options={PICKED_UP_OPTIONS}
+        allLabel="All"
+      />
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Technician</p>
+        <div className="flex items-center gap-1">
+          <AsyncCombobox
+            value={technicianFilter}
+            onChange={(val) => { setTechnicianFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+            fetchOptions={fetchTechnicians}
+            placeholder="Search technician..."
+          />
+          {technicianFilter && (
+            <Button variant="ghost" size="sm" className="h-8 px-2"
+              onClick={() => { setTechnicianFilter(''); setPagination(p => ({ ...p, page: 1 })); }}>
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Customer</p>
+        <div className="flex items-center gap-1">
+          <AsyncCombobox
+            value={customerFilter}
+            onChange={(val) => { setCustomerFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+            fetchOptions={fetchCustomersForFilter}
+            placeholder="Search customer..."
+          />
+          {customerFilter && (
+            <Button variant="ghost" size="sm" className="h-8 px-2"
+              onClick={() => { setCustomerFilter(''); setPagination(p => ({ ...p, page: 1 })); }}>
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
     </FilterPopover>
   );
 
@@ -343,9 +388,19 @@ const RepairList = () => {
                       {repair.customer?.phone && <p className="text-xs text-muted-foreground">{repair.customer.phone}</p>}
                     </td>
                     <td className="py-1 px-4">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${color}`}>
-                        <Icon className="w-3 h-3" />{label}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium w-fit ${color}`}>
+                          <Icon className="w-3 h-3" />{label}
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${getPaymentStatusBadge(repair.paymentStatus).color}`}>
+                            {getPaymentStatusBadge(repair.paymentStatus).label}
+                          </span>
+                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${getPickupBadge(repair.isPickedUp).color}`}>
+                            {getPickupBadge(repair.isPickedUp).label}
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-1 px-4">
                       {repair?.problem && <p className="text-xs text-muted-foreground">{repair.problem}</p>}
@@ -422,6 +477,14 @@ const RepairList = () => {
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${color}`}>
                     <Icon className="w-3 h-3" />{label}
                   </span>
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getPaymentStatusBadge(repair.paymentStatus).color}`}>
+                      {getPaymentStatusBadge(repair.paymentStatus).label}
+                    </span>
+                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getPickupBadge(repair.isPickedUp).color}`}>
+                      {getPickupBadge(repair.isPickedUp).label}
+                    </span>
+                  </div>
                   {hasRole('manager') && (
                     <span className="text-xs font-medium text-foreground">{formatCurrency(repair.serviceCharge)}</span>
                   )}

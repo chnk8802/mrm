@@ -10,7 +10,7 @@ const customerService = {
     restoreCustomer:        (id)             => api.patch(`/customers/${id}/restore`).then(r => r.data),
     permanentlyDeleteCustomer: (id)          => api.delete(`/customers/${id}/permanent`).then(r => r.data),
     bulkUpdateCustomers:    (data)           => api.patch('/customers/bulk', data).then(r => r.data),
-    bulkDeleteCustomers:    (data)           => api.delete('/customers/bulk', { data }).then(r => r.data),
+    bulkDeleteCustomers:    (data)           => api.post('/customers/bulk', { data }).then(r => r.data),
 };
 
 export default customerService;

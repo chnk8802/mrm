@@ -10,7 +10,7 @@ const supplierService = {
     restoreSupplier:        (id)             => api.patch(`/suppliers/${id}/restore`).then(r => r.data),
     permanentlyDeleteSupplier: (id)          => api.delete(`/suppliers/${id}/permanent`).then(r => r.data),
     bulkUpdateSuppliers:    (data)           => api.patch('/suppliers/bulk', data).then(r => r.data),
-    bulkDeleteSuppliers:    (data)           => api.delete('/suppliers/bulk', { data }).then(r => r.data),
+    bulkDeleteSuppliers:    (data)           => api.post('/suppliers/bulk', { data }).then(r => r.data),
 };
 
 export default supplierService;

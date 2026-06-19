@@ -1,0 +1,1 @@
+export const rounded = (opts = {}) => ({ type: Number, set: v => Math.round(v), ...opts });

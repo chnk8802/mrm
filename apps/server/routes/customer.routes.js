@@ -16,18 +16,15 @@ import authorize from '../middleware/rbac.middleware.js';
 
 const router = express.Router();
 
-// All routes require authentication
 router.use(protect);
 
-// Static named routes FIRST
 router.route('/stats')
   .get(authorize('admin'), getCustomerStats);
 
 router.route('/bulk')
   .patch(authorize('manager'), bulkUpdateCustomers)
-  .delete(authorize('admin'), bulkDeleteCustomers);
+  .post(authorize('admin'), bulkDeleteCustomers);
 
-// Dynamic :id routes AFTER
 router.route('/')
   .get(authorize('staff'), getCustomers)
   .post(authorize('staff'), createCustomer);
