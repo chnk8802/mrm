@@ -17,7 +17,8 @@ const userSchema = new mongoose.Schema(
         },
         avatar: { type: String, default: "https://i.pravatar.cc" },
         isActive: { type: Boolean, default: true },
-        isDeleted: { type: Boolean, default: false, select: false }
+        isDeleted: { type: Boolean, default: false, select: false },
+        orgId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: function () { return this.role !== 'superadmin'; } },
     },
     { timestamps: true, versionKey: false }
 );
@@ -27,6 +28,7 @@ userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ name: 'text', email: 'text', phone: 'text' });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ orgId: 1 });
 
 userSchema.virtual('fullAddress').get(function () {
     const parts = [];

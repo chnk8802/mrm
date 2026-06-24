@@ -1,4 +1,3 @@
-// Reusable middleware — pass any Zod schema to validate req.body
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
 
