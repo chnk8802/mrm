@@ -23,7 +23,7 @@ router.get('/stats', authorize('admin'), getUserStats);
 
 router.route('/')
     .get(authorize('admin'), getUsers)
-    .post(authorize('superadmin'), createUser);
+    .post(authorize('admin'), createUser);
 
 router.route('/:id')
     .get(authorize('staff'), getUserById)

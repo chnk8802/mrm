@@ -1,6 +1,7 @@
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@repo/validators';
 import mongoose from 'mongoose';
 import { rounded } from '../utils/common/roundedNumber.js';
+import { orgScopePlugin } from '../utils/common/orgScope.plugin.js';
 
 const sparePartUsageSchema = new mongoose.Schema(
     {
@@ -21,5 +22,7 @@ const sparePartUsageSchema = new mongoose.Schema(
 sparePartUsageSchema.index({ repair: 1 });
 sparePartUsageSchema.index({ supplier: 1 });
 sparePartUsageSchema.index({ installedAt: -1 });
+
+sparePartUsageSchema.plugin(orgScopePlugin);
 
 export default mongoose.model('SparePartUsage', sparePartUsageSchema);

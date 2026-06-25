@@ -3,8 +3,6 @@ import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
 import { createError } from '../utils/common/errorHandler.js';
 import { registerSchema, loginSchema } from '@repo/validators';
-import { flattenObject } from '../utils/common/flattenObject.js';
-import { getRequestContext } from '../utils/common/requestContext.js';
 
 const cookieOptions = () => {
     const isProduction = process.env.NODE_ENV === 'production';
@@ -96,7 +94,6 @@ export const loginUser = async (req, res, next) => {
  */
 export const getProfile = async (req, res, next) => {
     try {
-        console.log('CONTEXT CHECK:', getRequestContext());
         const user = await User.findOne({ _id: req.user.id, isActive: true, isDeleted: false });
         if (!user) throw createError(404, 'User not found');
 

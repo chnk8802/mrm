@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { PAYMENT_METHODS, PAYMENT_TYPES } from '@repo/validators'
 import { rounded } from '../utils/common/roundedNumber.js';
+import { orgScopePlugin } from '../utils/common/orgScope.plugin.js';
 
 const paymentSchema = new mongoose.Schema(
     {
@@ -29,5 +30,7 @@ paymentSchema.index({ isDeleted: 1, type: 1 });
 
 paymentSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 paymentSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
+
+paymentSchema.plugin(orgScopePlugin);
 
 export default mongoose.model('Payment', paymentSchema);

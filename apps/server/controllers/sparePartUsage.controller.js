@@ -27,7 +27,7 @@ const verifyRepair = async (repairId) => {
 
 const verifySupplier = async (supplierId) => {
     const supplier = await Supplier.findOne({ _id: supplierId, isDeleted: false, isActive: true });
-    if (!supplier) throw { status: 404, message: 'Supplier not found' };
+    if (!supplier) throw createError(404, 'Supplier not found' );
 };
 
 /**
@@ -60,7 +60,7 @@ export const createSparePartUsage = async (req, res, next) => {
             );
             await Supplier.findByIdAndUpdate(
                 validatedData.supplier,
-                { $inc: { outstandingBalance: (validatedData.unitCost || 0) * (validatedData.quantity || 0)} },
+                { $inc: { outstandingBalance: (validatedData.unitCost || 0) * (validatedData.quantity || 0) } },
                 { session }
             );
             return created;
@@ -83,7 +83,15 @@ export const bulkCreateSparePartUsage = async (req, res, next) => {
     try {
         const { repair: repairId, parts } = sparePartUsageBulkCreateSchema.parse(req.body);
 
-        await verifyRepair(repairId);
+        const repair = await verifyRepair(repairId);
+
+        if (repair.status !== 'in-progress') {
+            throw createError(400, 'Spare parts can only be added when repair is in progress');
+        }
+
+        if (!repair.technician) {
+            throw createError(400, 'Cannot add spare parts — no technician assigned to this repair');
+        }
 
         const supplierIds = [...new Set(parts.filter(p => p.supplier).map(p => p.supplier))];
         for (const supplierId of supplierIds) {
@@ -93,8 +101,14 @@ export const bulkCreateSparePartUsage = async (req, res, next) => {
         const docs = parts.map(part => ({
             ...part,
             repair: repairId,
-            installedBy: part.installedBy || req.user._id
+            installedBy: repair.technician
         }));
+
+        const supplierTotals = {};
+        for (const part of parts) {
+            if (!part.supplier) continue;
+            supplierTotals[part.supplier] = (supplierTotals[part.supplier] || 0) + (part.unitCost || 0) * (part.quantity || 0);
+        }
 
         const created = await withTransaction(async (session) => {
             const result = await SparePartUsage.create(docs, { session });
@@ -103,8 +117,13 @@ export const bulkCreateSparePartUsage = async (req, res, next) => {
                 { $push: { sparePartUsage: { $each: result.map(p => p._id) } } },
                 { session }
             );
+            await Promise.all(
+                Object.entries(supplierTotals).map(([supplierId, total]) =>
+                    Supplier.findByIdAndUpdate(supplierId, { $inc: { outstandingBalance: total } }, { session })
+                )
+            );
             return result;
-        })
+        });
 
         res.status(201).json({ success: true, data: created, message: `${created.length} spare parts added successfully` });
     } catch (error) {
@@ -224,7 +243,7 @@ export const bulkUpdateSparePartUsage = async (req, res, next) => {
             );
             const notFound = updates.filter((_, i) => !updated[i]).map(u => u.id);
             if (notFound.length) {
-                throw { status: 404, message: 'Some records not found', ids: notFound };
+                throw createError(404, 'Some records not found');
             }
 
             return updated;
@@ -254,18 +273,14 @@ export const deleteSparePartUsage = async (req, res, next) => {
             );
 
             if (!sparePartUsage) {
-                throw { status: 404, message: 'Spare part usage not found' };
+                throw createError(404,  'Spare part usage not found');
             }
-
-            const repair = await Repair.findById(sparePartUsage.repair._id || sparePartUsage.repair);
-            console.log('found repair without session:', repair);
 
             const updatedRepair = await Repair.findByIdAndUpdate(
                 sparePartUsage.repair._id || sparePartUsage.repair,
                 { $pull: { sparePartUsage: sparePartUsage._id } },
                 { session }
             );
-            console.log('Updated repair sparePartUsage array:', updatedRepair.sparePartUsage);
         });
 
         res.json({ success: true, message: 'Spare part deleted successfully' });

@@ -121,7 +121,7 @@ export const deleteSupplier = async (req, res, next) => {
         const { id } = req.params;
         if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
-        const hasSparePartUsage = await SparePartUsage.exists({ supplier: id, isDeleted: false });
+        const hasSparePartUsage = await SparePartUsage.countDocuments({ supplier: id, isDeleted: false }) > 0;
         if (hasSparePartUsage) throw createError(400, 'Supplier has spare part records and cannot be deleted');
 
         const supplier = await Supplier.findOneAndUpdate(
@@ -217,10 +217,7 @@ export const bulkDeleteSuppliers = async (req, res, next) => {
     try {
         const { ids } = supplierBulkDeleteSchema.parse(req.body);
 
-        const hasSparePartUsage = await SparePartUsage.exists({
-            supplier: { $in: ids },
-            isDeleted: false
-        });
+        const hasSparePartUsage = await SparePartUsage.countDocuments({ supplier: { $in: ids }, isDeleted: false }) > 0;
         if (hasSparePartUsage) throw createError(400, 'One or more suppliers have spare part records and cannot be deleted');
 
         const result = await Supplier.updateMany(

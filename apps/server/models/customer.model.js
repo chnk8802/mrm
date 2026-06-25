@@ -1,6 +1,7 @@
 import { CUSTOMER_TYPE } from '@repo/validators';
 import mongoose from 'mongoose';
 import { rounded } from '../utils/common/roundedNumber.js';
+import { orgScopePlugin } from '../utils/common/orgScope.plugin.js';
 
 const customerSchema = new mongoose.Schema(
   {
@@ -39,5 +40,7 @@ customerSchema.virtual('fullAddress').get(function() {
 
 customerSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; }});
 customerSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; }});
+
+customerSchema.plugin(orgScopePlugin);
 
 export default mongoose.model('Customer', customerSchema);

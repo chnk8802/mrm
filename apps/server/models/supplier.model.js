@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { rounded } from '../utils/common/roundedNumber.js';
+import { orgScopePlugin } from '../utils/common/orgScope.plugin.js';
 
 const supplierSchema = new mongoose.Schema(
     {
@@ -38,5 +39,7 @@ supplierSchema.virtual('fullAddress').get(function () {
 
 supplierSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 supplierSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
+
+supplierSchema.plugin(orgScopePlugin);
 
 export default mongoose.model('Supplier', supplierSchema);

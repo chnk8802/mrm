@@ -3,7 +3,7 @@ import Payment from '../models/payment.model.js';
 import { reportQuerySchema } from '@repo/validators';
 
 const TECHNICIAN_SPLIT_RATE = 0.5; // 50/50 — revisit when per-technician rates are needed
-const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+const roundWhole = (n) => Math.round(n);
 
 /**
  * @desc    "Owed to Me" report — finished (picked-up) repairs in a date range,
@@ -46,13 +46,13 @@ export const getOwedReport = async (req, res, next) => {
                 repairId: repair.repairId,
                 technician: repair.technician ? { id: repair.technician._id, name: repair.technician.name } : null,
                 pickedUpAt: repair.pickedUpAt,
-                serviceCharge: round2(repair.serviceCharge || 0),
-                discount: round2(repair.discount || 0),
-                netAmount: round2(netAmount),
-                partCost: round2(partCost),
-                grossMargin: round2(grossMargin),
-                technicianSplit: round2(technicianSplit),
-                yourShare: round2(yourShare),
+                serviceCharge: roundWhole(repair.serviceCharge || 0),
+                discount: roundWhole(repair.discount || 0),
+                netAmount: roundWhole(netAmount),
+                partCost: roundWhole(partCost),
+                grossMargin: roundWhole(grossMargin),
+                technicianSplit: roundWhole(technicianSplit),
+                yourShare: roundWhole(yourShare),
             };
         });
 
@@ -80,11 +80,11 @@ export const getOwedReport = async (req, res, next) => {
             byTechnician[key].count += 1;
         }
         for (const group of Object.values(byTechnician)) {
-            group.netAmount = round2(group.netAmount);
-            group.partCost = round2(group.partCost);
-            group.grossMargin = round2(group.grossMargin);
-            group.technicianSplit = round2(group.technicianSplit);
-            group.yourShare = round2(group.yourShare);
+            group.netAmount = roundWhole(group.netAmount);
+            group.partCost = roundWhole(group.partCost);
+            group.grossMargin = roundWhole(group.grossMargin);
+            group.technicianSplit = roundWhole(group.technicianSplit);
+            group.yourShare = roundWhole(group.yourShare);
         }
 
         const totals = rows.reduce((acc, row) => {
@@ -96,11 +96,11 @@ export const getOwedReport = async (req, res, next) => {
             return acc;
         }, { netAmount: 0, partCost: 0, grossMargin: 0, technicianSplit: 0, yourShare: 0 });
 
-        totals.netAmount = round2(totals.netAmount);
-        totals.partCost = round2(totals.partCost);
-        totals.grossMargin = round2(totals.grossMargin);
-        totals.technicianSplit = round2(totals.technicianSplit);
-        totals.yourShare = round2(totals.yourShare);
+        totals.netAmount = roundWhole(totals.netAmount);
+        totals.partCost = roundWhole(totals.partCost);
+        totals.grossMargin = roundWhole(totals.grossMargin);
+        totals.technicianSplit = roundWhole(totals.technicianSplit);
+        totals.yourShare = roundWhole(totals.yourShare);
 
         res.json({
             success: true,
@@ -173,11 +173,11 @@ export const getCollectedReport = async (req, res, next) => {
                     repairId: repair.repairId,
                     technician: repair.technician ? { id: repair.technician._id, name: repair.technician.name } : null,
                     paidAt: payment.paidAt,
-                    amountPaid: round2(item.amountPaid),
-                    partCost: round2(slicePartCost),
-                    grossMargin: round2(sliceGrossMargin),
-                    technicianSplit: round2(technicianSplit),
-                    yourShare: round2(yourShare),
+                    amountPaid: roundWhole(item.amountPaid),
+                    partCost: roundWhole(slicePartCost),
+                    grossMargin: roundWhole(sliceGrossMargin),
+                    technicianSplit: roundWhole(technicianSplit),
+                    yourShare: roundWhole(yourShare),
                 });
             }
         }
@@ -205,11 +205,11 @@ export const getCollectedReport = async (req, res, next) => {
             byTechnician[key].count += 1;
         }
         for (const group of Object.values(byTechnician)) {
-            group.amountPaid = round2(group.amountPaid);
-            group.partCost = round2(group.partCost);
-            group.grossMargin = round2(group.grossMargin);
-            group.technicianSplit = round2(group.technicianSplit);
-            group.yourShare = round2(group.yourShare);
+            group.amountPaid = roundWhole(group.amountPaid);
+            group.partCost = roundWhole(group.partCost);
+            group.grossMargin = roundWhole(group.grossMargin);
+            group.technicianSplit = roundWhole(group.technicianSplit);
+            group.yourShare = roundWhole(group.yourShare);
         }
 
         const totals = rows.reduce((acc, row) => {
@@ -221,11 +221,11 @@ export const getCollectedReport = async (req, res, next) => {
             return acc;
         }, { amountPaid: 0, partCost: 0, grossMargin: 0, technicianSplit: 0, yourShare: 0 });
 
-        totals.amountPaid = round2(totals.amountPaid);
-        totals.partCost = round2(totals.partCost);
-        totals.grossMargin = round2(totals.grossMargin);
-        totals.technicianSplit = round2(totals.technicianSplit);
-        totals.yourShare = round2(totals.yourShare);
+        totals.amountPaid = roundWhole(totals.amountPaid);
+        totals.partCost = roundWhole(totals.partCost);
+        totals.grossMargin = roundWhole(totals.grossMargin);
+        totals.technicianSplit = roundWhole(totals.technicianSplit);
+        totals.yourShare = roundWhole(totals.yourShare);
 
         res.json({
             success: true,
