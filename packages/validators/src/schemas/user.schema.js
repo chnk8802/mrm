@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ROLES } from '../constants/user.constant.js';
+import { addressSchema } from '../common.js';
 
 export const userSchema = z.object({
     name: z.string()
@@ -11,13 +12,7 @@ export const userSchema = z.object({
     phone: z.string()
         .min(10, 'Phone number must be at least 10 digits')
         .max(20, 'Phone number cannot exceed 20 characters'),
-    address: z.object({
-        street: z.string().max(200, 'Street address cannot exceed 200 characters').optional(),
-        city: z.string().max(100, 'City cannot exceed 100 characters').optional(),
-        state: z.string().max(100, 'State cannot exceed 100 characters').optional(),
-        postalCode: z.string().max(20, 'Postal code cannot exceed 20 characters').optional(),
-        country: z.string().max(100, 'Country cannot exceed 100 characters').optional()
-    }).optional(),
+    address: addressSchema.optional(),
     password: z.string()
         .min(6, 'Password must be at least 6 characters'),
     role: z.enum(ROLES),

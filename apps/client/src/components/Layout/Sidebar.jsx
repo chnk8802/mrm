@@ -3,10 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { usePermission } from '@/hooks/usePermission';
 import {
     LayoutDashboard, Users, UserCog, Wrench,
-    Package, Truck, Settings, X, CreditCard, HardHat,
-    ChartArea,
-    Link,
-    Plug
+    Truck, Settings, X, CreditCard, HardHat,
+    ChartArea
 } from 'lucide-react';
 
 const allMenuItems = [
@@ -19,7 +17,6 @@ const allMenuItems = [
     { icon: UserCog, label: 'Users', path: '/app/users', minRole: 'admin' },
     { icon: ChartArea, label: 'Reports', path: '/app/reports', minRole: 'manager' },
     { icon: Settings, label: 'Settings', path: '/app/settings', minRole: null },
-    { icon: Plug, label: 'Integrations', path: '/app/integrations', minRole: 'admin' },
 ];
 
 const Sidebar = ({ isMobile = false, onClose = null }) => {
@@ -75,75 +72,3 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
 };
 
 export default Sidebar;
-
-// import { NavLink } from 'react-router-dom';
-// import { useAuth } from '@/context/AuthContext';
-// import {
-//     LayoutDashboard, Users, UserCog, Wrench, Truck, Settings, X, CreditCard, HardHat, ChartArea, Plug
-// } from 'lucide-react';
-
-// const allMenuItems = [
-//     { icon: LayoutDashboard, label: 'Dashboard', path: '/app', roles: null },
-//     { icon: Wrench, label: 'Repairs', path: '/app/repairs', roles: null },
-//     { icon: CreditCard, label: 'Payments', path: '/app/payments', roles: ['superadmin', 'admin'] },
-//     { icon: Users, label: 'Customers', path: '/app/customers', roles: ['superadmin', 'admin'] },
-//     { icon: Truck, label: 'Suppliers', path: '/app/suppliers', roles: ['superadmin', 'admin'] },
-//     { icon: HardHat, label: 'Technicians', path: '/app/technicians', roles: ['superadmin', 'admin'] },
-//     { icon: UserCog, label: 'Users', path: '/app/users', roles: ['superadmin', 'admin'] },
-//     { icon: ChartArea, label: 'Reports', path: '/app/reports', roles: ['superadmin', 'admin'] },
-//     { icon: Settings, label: 'Settings', path: '/app/settings', roles: null },
-//     { icon: Plug, label: 'Integrations', path: '/app/integrations', roles: ['superadmin', 'admin'] },
-// ];
-
-// const Sidebar = ({ isMobile = false, onClose = null }) => {
-//     const { user } = useAuth();
-
-//     const menuItems = allMenuItems.filter(item =>
-//         !item.roles || item.roles.includes(user?.role)
-//     );
-
-//     return (
-//         <div className="w-60 h-full bg-[hsl(var(--sidebar-bg))] border-r border-border flex flex-col">
-//             {isMobile && (
-//                 <div className="flex justify-end p-3">
-//                     <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
-//                         <X className="w-4 h-4" />
-//                     </button>
-//                 </div>
-//             )}
-
-//             <div className="px-3 py-4 flex-1 overflow-y-auto">
-//                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-3">
-//                     Menu
-//                 </p>
-//                 <nav className="space-y-0.5">
-//                     {menuItems.map((item) => (
-//                         <NavLink
-//                             key={item.path}
-//                             to={item.path}
-//                             end={item.path === '/app'}
-//                             onClick={isMobile ? onClose : undefined}
-//                             className={({ isActive }) =>
-//                                 `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${isActive
-//                                     ? 'bg-primary text-primary-foreground shadow-sm'
-//                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-//                                 }`
-//                             }
-//                         >
-//                             <item.icon className="w-4 h-4 shrink-0" />
-//                             {item.label}
-//                         </NavLink>
-//                     ))}
-//                 </nav>
-//             </div>
-
-//             <div className="px-3 py-4 border-t border-border">
-//                 <p className="text-xs text-muted-foreground px-3">
-//                     MRM v{__APP_VERSION__} · {user?.role}
-//                 </p>
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default Sidebar;

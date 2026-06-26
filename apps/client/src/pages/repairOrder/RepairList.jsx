@@ -1,51 +1,60 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Edit, Trash2, ChevronUp, ChevronDown,
-  Wrench, Clock, CheckCircle, XCircle, AlertCircle, PackageCheck, X
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useTheme } from '@/context/ThemeContext';
-import toast from 'react-hot-toast';
-import repairService from '@/api/repairService';
-import PageHeader from '@/components/common/PageHeader';
-import TableFooter from '@/components/common/TableFooter';
-import RowActions from '@/components/common/RowActions';
-import FilterPopover from '@/components/common/FilterPopover';
-import ConfirmDialog from '@/components/common/ConfirmDialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import { usePermission } from '@/hooks/usePermission';
-import { AsyncCombobox } from '@/components/AsyncComboBox';
-import FilterSelect from '@/components/common/FilterSelect';
-import customerService from '@/api/customerService';
-import userService from '@/api/userService';
+  Edit,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Wrench,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  PackageCheck,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/context/ThemeContext";
+import toast from "react-hot-toast";
+import repairService from "@/api/repairService";
+import PageHeader from "@/components/common/PageHeader";
+import TableFooter from "@/components/common/TableFooter";
+import RowActions from "@/components/common/RowActions";
+import FilterPopover from "@/components/common/FilterPopover";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { usePermission } from "@/hooks/usePermission";
+import { AsyncCombobox } from "@/components/AsyncComboBox";
+import FilterSelect from "@/components/common/FilterSelect";
+import customerService from "@/api/customerService";
+import userService from "@/api/userService";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-  { value: 'received', label: 'Received' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'ready', label: 'Ready' },
-  { value: 'not-repairable', label: 'Not Repairable' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: "received", label: "Received" },
+  { value: "in-progress", label: "In Progress" },
+  { value: "ready", label: "Ready" },
+  { value: "not-repairable", label: "Not Repairable" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 const PAYMENT_STATUS_OPTIONS = [
-  { value: 'unpaid', label: 'Unpaid' },
-  { value: 'partial', label: 'Partial' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'waived', label: 'Waived' },
+  { value: "unpaid", label: "Unpaid" },
+  { value: "partial", label: "Partial" },
+  { value: "paid", label: "Paid" },
+  { value: "waived", label: "Waived" },
 ];
 
 const PICKED_UP_OPTIONS = [
-  { value: 'true', label: 'Picked Up' },
-  { value: 'false', label: 'Not Picked Up' },
+  { value: "true", label: "Picked Up" },
+  { value: "false", label: "Not Picked Up" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fetchTechnicians = async (search) => {
-  const res = await userService.getUsers({ search, role: 'staff', limit: 5 });
+  const res = await userService.getUsers({ search, role: "staff", limit: 5 });
   return (res.data || []).map((u) => ({ value: u._id, label: u.name }));
 };
 
@@ -53,43 +62,92 @@ const fetchCustomersForFilter = async (search) => {
   const res = await customerService.getCustomers({ search, limit: 5 });
   return (res.data || []).map((c) => ({
     value: c._id,
-    label: `${c.name} — ${c.phone || c.email || ''}`,
+    label: `${c.name} — ${c.phone || c.email || ""}`,
   }));
 };
 const formatDate = (d) =>
-  new Date(d).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+  new Date(d).toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
 const formatCurrency = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount ?? 0);
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0);
 
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'received': return { icon: Clock, color: 'bg-yellow-500/10 text-yellow-500', label: 'Received' };
-    case 'in-progress': return { icon: Wrench, color: 'bg-blue-500/10 text-blue-500', label: 'In Progress' };
-    case 'ready': return { icon: PackageCheck, color: 'bg-purple-500/10 text-purple-500', label: 'Ready' };
-    case 'not-repairable': return { icon: AlertCircle, color: 'bg-orange-500/10 text-orange-500', label: 'Not Repairable' };
-    case 'completed': return { icon: CheckCircle, color: 'bg-green-500/10 text-green-500', label: 'Completed' };
-    case 'cancelled': return { icon: XCircle, color: 'bg-red-500/10 text-red-500', label: 'Cancelled' };
-    default: return { icon: AlertCircle, color: 'bg-muted text-muted-foreground', label: status };
+    case "received":
+      return {
+        icon: Clock,
+        color: "bg-yellow-500/10 text-yellow-500",
+        label: "Received",
+      };
+    case "in-progress":
+      return {
+        icon: Wrench,
+        color: "bg-blue-500/10 text-blue-500",
+        label: "In Progress",
+      };
+    case "ready":
+      return {
+        icon: PackageCheck,
+        color: "bg-purple-500/10 text-purple-500",
+        label: "Ready",
+      };
+    case "not-repairable":
+      return {
+        icon: AlertCircle,
+        color: "bg-orange-500/10 text-orange-500",
+        label: "Not Repairable",
+      };
+    case "completed":
+      return {
+        icon: CheckCircle,
+        color: "bg-green-500/10 text-green-500",
+        label: "Completed",
+      };
+    case "cancelled":
+      return {
+        icon: XCircle,
+        color: "bg-red-500/10 text-red-500",
+        label: "Cancelled",
+      };
+    default:
+      return {
+        icon: AlertCircle,
+        color: "bg-muted text-muted-foreground",
+        label: status,
+      };
   }
 };
 
 const getPaymentStatusBadge = (paymentStatus) => {
   switch (paymentStatus) {
-    case 'unpaid': return { color: 'bg-red-500/10 text-red-500', label: 'Unpaid' };
-    case 'partial': return { color: 'bg-yellow-500/10 text-yellow-500', label: 'Partial' };
-    case 'paid': return { color: 'bg-green-500/10 text-green-500', label: 'Paid' };
-    case 'waived': return { color: 'bg-muted text-muted-foreground', label: 'Waived' };
-    default: return { color: 'bg-muted text-muted-foreground', label: paymentStatus };
+    case "unpaid":
+      return { color: "bg-red-500/10 text-red-500", label: "Unpaid" };
+    case "partial":
+      return { color: "bg-yellow-500/10 text-yellow-500", label: "Partial" };
+    case "paid":
+      return { color: "bg-green-500/10 text-green-500", label: "Paid" };
+    case "waived":
+      return { color: "bg-muted text-muted-foreground", label: "Waived" };
+    default:
+      return { color: "bg-muted text-muted-foreground", label: paymentStatus };
   }
 };
 
 const getPickupBadge = (isPickedUp) =>
   isPickedUp
-    ? { color: 'bg-green-500/10 text-green-500', label: 'Picked Up' }
+    ? { color: "bg-green-500/10 text-green-500", label: "Picked Up" }
     : {
-      color: 'bg-muted text-muted-foreground', label: 'Not Picked Up'
-    };
+        color: "bg-muted text-muted-foreground",
+        label: "Not Picked Up",
+      };
 
 // ─── RepairList ───────────────────────────────────────────────────────────────
 
@@ -105,29 +163,39 @@ const RepairList = () => {
   const [selectAll, setSelectAll] = useState(false);
 
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState('');
-  const [pickedUpFilter, setPickedUpFilter] = useState('');
-  const [technicianFilter, setTechnicianFilter] = useState('');
-  const [customerFilter, setCustomerFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
+  const [pickedUpFilter, setPickedUpFilter] = useState("");
+  const [technicianFilter, setTechnicianFilter] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
 
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
 
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null, label: '' });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    id: null,
+    label: "",
+  });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false);
 
   const columns = [
-    { label: 'Repair ID', col: 'repairId' },
-    { label: 'Device', col: 'deviceModel' },
-    { label: 'Customer', col: null }, // populated, not sortable
-    { label: 'Status', col: 'status' },
-    { label: 'Problem', col: 'problem' },
-    ...(hasRole('manager') ? [{ label: 'Charge', col: 'serviceCharge' }] : []),
-    { label: 'Created', col: 'createdAt' },
+    { label: "Repair ID", col: "repairId" },
+    { label: "Device", col: "deviceModel" },
+    { label: "Customer", col: null },
+    ...(hasRole("superadmin") ? [{ label: "Organization", col: null }] : []),
+    { label: "Status", col: "status" },
+    { label: "Problem", col: "problem" },
+    ...(hasRole("manager") ? [{ label: "Charge", col: "serviceCharge" }] : []),
+    { label: "Created", col: "createdAt" },
   ];
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -135,7 +203,12 @@ const RepairList = () => {
   const fetchRepairs = useCallback(async () => {
     try {
       setLoading(true);
-      const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        sortBy,
+        sortOrder,
+      };
       if (searchQuery) params.search = searchQuery;
       if (statusFilter) params.status = statusFilter;
       if (paymentStatusFilter) params.paymentStatus = paymentStatusFilter;
@@ -145,17 +218,34 @@ const RepairList = () => {
 
       const response = await repairService.getRepairs(params);
       setRepairs(response.data);
-      setPagination((prev) => ({ ...prev, total: response.pagination.total, pages: response.pagination.pages }));
+      setPagination((prev) => ({
+        ...prev,
+        total: response.pagination.total,
+        pages: response.pagination.pages,
+      }));
     } catch (err) {
       const errorData = err.response?.data;
       if (errorData?.errors?.length) toast.error(errorData.errors[0].message);
-      else toast.error(errorData?.message || 'Failed to fetch repair');
+      else toast.error(errorData?.message || "Failed to fetch repair");
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, sortBy, sortOrder, statusFilter, paymentStatusFilter, pickedUpFilter, technicianFilter, customerFilter, searchQuery]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    sortBy,
+    sortOrder,
+    statusFilter,
+    paymentStatusFilter,
+    pickedUpFilter,
+    technicianFilter,
+    customerFilter,
+    searchQuery,
+  ]);
 
-  useEffect(() => { fetchRepairs(); }, [fetchRepairs]);
+  useEffect(() => {
+    fetchRepairs();
+  }, [fetchRepairs]);
 
   useEffect(() => {
     const t = setTimeout(() => setPagination((p) => ({ ...p, page: 1 })), 500);
@@ -166,13 +256,20 @@ const RepairList = () => {
 
   const handleSort = (col) => {
     if (!col) return;
-    if (sortBy === col) setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
-    else { setSortBy(col); setSortOrder('asc'); }
+    if (sortBy === col) setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+    else {
+      setSortBy(col);
+      setSortOrder("asc");
+    }
   };
 
   const renderSortIcon = (col) => {
     if (!col || sortBy !== col) return null;
-    return sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />;
+    return sortOrder === "asc" ? (
+      <ChevronUp className="w-3 h-3" />
+    ) : (
+      <ChevronDown className="w-3 h-3" />
+    );
   };
 
   // ── Selection ─────────────────────────────────────────────────────────────
@@ -185,7 +282,7 @@ const RepairList = () => {
 
   const handleSelectRepair = (id) =>
     setSelectedRepairs((prev) =>
-      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id],
     );
 
   // ── Delete ────────────────────────────────────────────────────────────────
@@ -193,23 +290,29 @@ const RepairList = () => {
   const handleDelete = async () => {
     try {
       await repairService.deleteRepair(deleteDialog.id);
-      toast.success('Repair deleted');
-      setDeleteDialog({ open: false, id: null, label: '' });
+      toast.success("Repair deleted");
+      setDeleteDialog({ open: false, id: null, label: "" });
       fetchRepairs();
     } catch (err) {
       const errorData = err.response?.data;
 
-      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      if (
+        errorData?.errors &&
+        Array.isArray(errorData.errors) &&
+        errorData.errors.length > 0
+      ) {
         toast.error(errorData.errors[0].message);
       } else {
-        toast.error(errorData?.message || 'Failed to delete repair');
+        toast.error(errorData?.message || "Failed to delete repair");
       }
     }
   };
 
   const handleBulkDelete = async () => {
     try {
-      await Promise.all(selectedRepairs.map((id) => repairService.deleteRepair(id)));
+      await Promise.all(
+        selectedRepairs.map((id) => repairService.deleteRepair(id)),
+      );
       toast.success(`${selectedRepairs.length} repairs deleted`);
       setSelectedRepairs([]);
       setSelectAll(false);
@@ -218,79 +321,126 @@ const RepairList = () => {
     } catch (err) {
       const errorData = err.response?.data;
 
-      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      if (
+        errorData?.errors &&
+        Array.isArray(errorData.errors) &&
+        errorData.errors.length > 0
+      ) {
         toast.error(errorData.errors[0].message);
       } else {
-        toast.error(errorData?.message || 'Failed to delete repairs');
+        toast.error(errorData?.message || "Failed to delete repairs");
       }
     }
   };
 
   const clearFilters = () => {
-    setStatusFilter('');
-    setPaymentStatusFilter('');
-    setPickedUpFilter('');
-    setTechnicianFilter('');
-    setCustomerFilter('');
+    setStatusFilter("");
+    setPaymentStatusFilter("");
+    setPickedUpFilter("");
+    setTechnicianFilter("");
+    setCustomerFilter("");
     setPagination((p) => ({ ...p, page: 1 }));
   };
 
-  const filterCount = [statusFilter, paymentStatusFilter, pickedUpFilter, technicianFilter, customerFilter]
-    .filter(Boolean).length;
+  const filterCount = [
+    statusFilter,
+    paymentStatusFilter,
+    pickedUpFilter,
+    technicianFilter,
+    customerFilter,
+  ].filter(Boolean).length;
 
   // ── Filter panel ──────────────────────────────────────────────────────────
   const filterPanel = (
-    <FilterPopover open={showFilters} onClose={() => setShowFilters(false)} onClear={clearFilters} hasFilters={filterCount > 0}>
+    <FilterPopover
+      open={showFilters}
+      onClose={() => setShowFilters(false)}
+      onClear={clearFilters}
+      hasFilters={filterCount > 0}
+    >
       <FilterSelect
         label="Status"
         value={statusFilter}
-        onChange={(val) => { setStatusFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+        onChange={(val) => {
+          setStatusFilter(val);
+          setPagination((p) => ({ ...p, page: 1 }));
+        }}
         options={STATUS_OPTIONS}
         allLabel="All Statuses"
       />
       <FilterSelect
         label="Payment Status"
         value={paymentStatusFilter}
-        onChange={(val) => { setPaymentStatusFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+        onChange={(val) => {
+          setPaymentStatusFilter(val);
+          setPagination((p) => ({ ...p, page: 1 }));
+        }}
         options={PAYMENT_STATUS_OPTIONS}
         allLabel="All Payment Statuses"
       />
       <FilterSelect
         label="Pickup"
         value={pickedUpFilter}
-        onChange={(val) => { setPickedUpFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+        onChange={(val) => {
+          setPickedUpFilter(val);
+          setPagination((p) => ({ ...p, page: 1 }));
+        }}
         options={PICKED_UP_OPTIONS}
         allLabel="All"
       />
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Technician</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+          Technician
+        </p>
         <div className="flex items-center gap-1">
           <AsyncCombobox
             value={technicianFilter}
-            onChange={(val) => { setTechnicianFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+            onChange={(val) => {
+              setTechnicianFilter(val);
+              setPagination((p) => ({ ...p, page: 1 }));
+            }}
             fetchOptions={fetchTechnicians}
             placeholder="Search technician..."
           />
           {technicianFilter && (
-            <Button variant="ghost" size="sm" className="h-8 px-2"
-              onClick={() => { setTechnicianFilter(''); setPagination(p => ({ ...p, page: 1 })); }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => {
+                setTechnicianFilter("");
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+            >
               <X className="w-3.5 h-3.5" />
             </Button>
           )}
         </div>
       </div>
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Customer</p>
+        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+          Customer
+        </p>
         <div className="flex items-center gap-1">
           <AsyncCombobox
             value={customerFilter}
-            onChange={(val) => { setCustomerFilter(val); setPagination(p => ({ ...p, page: 1 })); }}
+            onChange={(val) => {
+              setCustomerFilter(val);
+              setPagination((p) => ({ ...p, page: 1 }));
+            }}
             fetchOptions={fetchCustomersForFilter}
             placeholder="Search customer..."
           />
           {customerFilter && (
-            <Button variant="ghost" size="sm" className="h-8 px-2"
-              onClick={() => { setCustomerFilter(''); setPagination(p => ({ ...p, page: 1 })); }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => {
+                setCustomerFilter("");
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+            >
               <X className="w-3.5 h-3.5" />
             </Button>
           )}
@@ -302,13 +452,17 @@ const RepairList = () => {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 48px)' }}>
-
+    <div className="flex flex-col" style={{ height: "calc(100vh - 48px)" }}>
       {/* ── Header ── */}
       {selectedRepairs.length > 0 ? (
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background shrink-0">
-          <span className="text-sm text-muted-foreground">{selectedRepairs.length} selected</span>
-          <Button variant="destructive" size="sm" className="h-8 text-sm"
+          <span className="text-sm text-muted-foreground">
+            {selectedRepairs.length} selected
+          </span>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8 text-sm"
             onClick={() => setBulkDeleteDialog(true)}
           >
             Delete Selected
@@ -319,9 +473,20 @@ const RepairList = () => {
           title="Repairs"
           searchOpen={searchOpen}
           searchQuery={searchQuery}
-          onSearchToggle={() => { setSearchOpen((p) => !p); if (searchOpen) setSearchQuery(''); }}
-          onSearchChange={(val) => { setSearchQuery(val); setPagination((p) => ({ ...p, page: 1 })); }}
-          {...(hasRole('manager') ? { onAddNew: () => navigate('/app/repairs/new'), addLabel: 'New Repair' } : {})}
+          onSearchToggle={() => {
+            setSearchOpen((p) => !p);
+            if (searchOpen) setSearchQuery("");
+          }}
+          onSearchChange={(val) => {
+            setSearchQuery(val);
+            setPagination((p) => ({ ...p, page: 1 }));
+          }}
+          {...(hasRole("manager")
+            ? {
+                onAddNew: () => navigate("/app/repairs/new"),
+                addLabel: "New Repair",
+              }
+            : {})}
           filterCount={filterCount}
           onFilterToggle={() => setShowFilters((p) => !p)}
         >
@@ -334,102 +499,183 @@ const RepairList = () => {
         <table className="w-full">
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
             <tr className="border-b border-border">
-              {hasRole('manager') && (
+              {hasRole("manager") && (
                 <th className="py-2.5 px-4 w-10">
-                  <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
                 </th>
               )}
               {columns.map(({ label, col }) => (
-                <th key={label}
-                  className={`text-left py-2.5 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap ${col ? 'cursor-pointer hover:text-foreground transition-colors' : ''}`}
+                <th
+                  key={label}
+                  className={`text-left py-2.5 px-4 text-xs font-medium text-muted-foreground whitespace-nowrap ${col ? "cursor-pointer hover:text-foreground transition-colors" : ""}`}
                   onClick={() => handleSort(col)}
                 >
-                  <div className="flex items-center gap-1">{label}{renderSortIcon(col)}</div>
+                  <div className="flex items-center gap-1">
+                    {label}
+                    {renderSortIcon(col)}
+                  </div>
                 </th>
               ))}
-              {hasRole('manager') && (
-                <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">Actions</th>
+              {hasRole("manager") && (
+                <th className="text-left py-2.5 px-4 text-xs font-medium text-muted-foreground">
+                  Actions
+                </th>
               )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={1 + columns.length + (hasRole('manager') ? 1 : 0)} className="text-center py-16 text-sm text-muted-foreground">Loading repairs...</td></tr>
+              <tr>
+                <td
+                  colSpan={1 + columns.length + (hasRole("manager") ? 1 : 0)}
+                  className="text-center py-16 text-sm text-muted-foreground"
+                >
+                  Loading repairs...
+                </td>
+              </tr>
             ) : repairs.length === 0 ? (
               <tr>
-                <td colSpan={1 + columns.length + (hasRole('manager') ? 1 : 0)} className="text-center py-16 text-sm text-muted-foreground">
+                <td
+                  colSpan={1 + columns.length + (hasRole("manager") ? 1 : 0)}
+                  className="text-center py-16 text-sm text-muted-foreground"
+                >
                   <Wrench className="mx-auto w-8 h-8 mb-2 opacity-30" />
-                  {searchQuery || statusFilter ? 'No repairs found matching your filters' : 'No repairs yet'}
+                  {searchQuery || statusFilter
+                    ? "No repairs found matching your filters"
+                    : "No repairs yet"}
                 </td>
               </tr>
             ) : (
               repairs.map((repair) => {
-                const { icon: Icon, color, label } = getStatusBadge(repair.status);
+                const {
+                  icon: Icon,
+                  color,
+                  label,
+                } = getStatusBadge(repair.status);
                 return (
-                  <tr key={repair._id}
+                  <tr
+                    key={repair._id}
                     className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
                     onClick={() => navigate(`/app/repairs/${repair._id}`)}
                   >
-                    {hasRole('manager') && (
-                      <td className="py-1 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    {hasRole("manager") && (
+                      <td
+                        className="py-1 px-4 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Checkbox
                           checked={selectedRepairs.includes(repair._id)}
                           onCheckedChange={() => handleSelectRepair(repair._id)}
                         />
                       </td>
                     )}
-                    <td className="py-1 px-4 text-sm font-medium text-foreground">{repair.repairId}</td>
-                    <td className="py-1 px-4">
-                      <p className="text-sm font-medium text-foreground">{repair.deviceModel}</p>
-                      {repair.imei && <p className="text-xs text-muted-foreground">{repair.imei}</p>}
+                    <td className="py-1 px-4 text-sm font-medium text-foreground">
+                      {repair.repairId}
                     </td>
                     <td className="py-1 px-4">
-                      <p className="text-sm text-foreground">{repair.customer?.name || '—'}</p>
-                      {repair.customer?.phone && <p className="text-xs text-muted-foreground">{repair.customer.phone}</p>}
+                      <p className="text-sm font-medium text-foreground">
+                        {repair.deviceModel}
+                      </p>
+                      {repair.imei && (
+                        <p className="text-xs text-muted-foreground">
+                          {repair.imei}
+                        </p>
+                      )}
                     </td>
+                    <td className="py-1 px-4">
+                      <p className="text-sm text-foreground">
+                        {repair.customer?.name || "—"}
+                      </p>
+                      {repair.customer?.phone && (
+                        <p className="text-xs text-muted-foreground">
+                          {repair.customer.phone}
+                        </p>
+                      )}
+                    </td>
+                    {hasRole("superadmin") && (
+                      <td className="py-1 px-4">
+                        <span className="text-xs font-medium text-purple-500">
+                          {repair.orgId?.name || "—"}
+                        </span>
+                      </td>
+                    )}
                     <td className="py-1 px-4">
                       <div className="flex flex-col gap-1">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium w-fit ${color}`}>
-                          <Icon className="w-3 h-3" />{label}
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium w-fit ${color}`}
+                        >
+                          <Icon className="w-3 h-3" />
+                          {label}
                         </span>
                         <div className="flex flex-wrap gap-1">
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${getPaymentStatusBadge(repair.paymentStatus).color}`}>
+                          <span
+                            className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${getPaymentStatusBadge(repair.paymentStatus).color}`}
+                          >
                             {getPaymentStatusBadge(repair.paymentStatus).label}
                           </span>
-                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${getPickupBadge(repair.isPickedUp).color}`}>
+                          <span
+                            className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium w-fit ${getPickupBadge(repair.isPickedUp).color}`}
+                          >
                             {getPickupBadge(repair.isPickedUp).label}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td className="py-1 px-4">
-                      {repair?.problem && <p className="text-xs text-muted-foreground">{repair.problem}</p>}
+                      {repair?.problem && (
+                        <p className="text-xs text-muted-foreground">
+                          {repair.problem}
+                        </p>
+                      )}
                     </td>
-                    {hasRole('manager') && (
+                    {hasRole("manager") && (
                       <td className="py-1 px-4 text-sm text-foreground font-medium">
                         {formatCurrency(repair.serviceCharge)}
                         {repair.discount > 0 && (
-                          <p className="text-xs text-muted-foreground">-{formatCurrency(repair.discount)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            -{formatCurrency(repair.discount)}
+                          </p>
                         )}
                       </td>
                     )}
                     <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
                       {formatDate(repair.createdAt)}
                     </td>
-                    <td className="py-1 px-4" onClick={(e) => e.stopPropagation()}>
-                      {hasRole('manager') &&
+                    <td
+                      className="py-1 px-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {hasRole("manager") && (
                         <RowActions
                           actions={[
-                            { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
-                            ...(hasRole('superadmin') ? [
-                              {
-                                label: 'Delete', icon: Trash2, danger: true, divider: true,
-                                onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
-                              },
-                            ] : []),
+                            {
+                              label: "Edit",
+                              icon: Edit,
+                              onClick: () =>
+                                navigate(`/app/repairs/${repair._id}/edit`),
+                            },
+                            ...(hasRole("superadmin")
+                              ? [
+                                  {
+                                    label: "Delete",
+                                    icon: Trash2,
+                                    danger: true,
+                                    divider: true,
+                                    onClick: () =>
+                                      setDeleteDialog({
+                                        open: true,
+                                        id: repair._id,
+                                        label: repair.repairId,
+                                      }),
+                                  },
+                                ]
+                              : []),
                           ]}
                         />
-                      }
+                      )}
                     </td>
                   </tr>
                 );
@@ -442,71 +688,122 @@ const RepairList = () => {
       {/* ── Mobile Cards ── */}
       <div className="md:hidden flex-1 overflow-y-auto divide-y divide-border">
         {loading ? (
-          <p className="text-center py-16 text-sm text-muted-foreground">Loading repairs...</p>
+          <p className="text-center py-16 text-sm text-muted-foreground">
+            Loading repairs...
+          </p>
         ) : repairs.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-muted-foreground">
             <Wrench className="w-8 h-8 mb-2 opacity-30" />
-            <p className="text-sm">{searchQuery || statusFilter ? 'No repairs found' : 'No repairs yet'}</p>
+            <p className="text-sm">
+              {searchQuery || statusFilter
+                ? "No repairs found"
+                : "No repairs yet"}
+            </p>
           </div>
         ) : (
           repairs.map((repair) => {
             const { icon: Icon, color, label } = getStatusBadge(repair.status);
             return (
-              <div key={repair._id}
+              <div
+                key={repair._id}
                 onClick={() => navigate(`/app/repairs/${repair._id}`)}
                 className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3"
               >
                 {/* Checkbox */}
-                {hasRole('manager') && (
-                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                {hasRole("manager") && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="shrink-0"
+                  >
                     <Checkbox
                       checked={selectedRepairs.includes(repair._id)}
-                      onCheckedChange={() => handleSelectRepair(repair._id)} />
+                      onCheckedChange={() => handleSelectRepair(repair._id)}
+                    />
                   </div>
                 )}
 
                 {/* Left */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{repair.repairId}</p>
-                  <p className="text-xs text-muted-foreground truncate">{repair.deviceModel}</p>
-                  <p className="text-xs text-muted-foreground">{repair.customer?.name || '—'}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {repair.repairId}
+                  </p>
+                  {hasRole("superadmin") && (
+                    <p className="text-xs font-medium text-purple-500">
+                      {repair.orgId?.name}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground truncate">
+                    {repair.deviceModel}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {repair.customer?.name || "—"}
+                  </p>
                 </div>
 
                 {/* Right */}
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${color}`}>
-                    <Icon className="w-3 h-3" />{label}
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${color}`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {label}
                   </span>
                   <div className="flex flex-wrap justify-end gap-1">
-                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getPaymentStatusBadge(repair.paymentStatus).color}`}>
+                    <span
+                      className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getPaymentStatusBadge(repair.paymentStatus).color}`}
+                    >
                       {getPaymentStatusBadge(repair.paymentStatus).label}
                     </span>
-                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getPickupBadge(repair.isPickedUp).color}`}>
+                    <span
+                      className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getPickupBadge(repair.isPickedUp).color}`}
+                    >
                       {getPickupBadge(repair.isPickedUp).label}
                     </span>
                   </div>
-                  {hasRole('manager') && (
-                    <span className="text-xs font-medium text-foreground">{formatCurrency(repair.serviceCharge)}</span>
+                  {hasRole("manager") && (
+                    <span className="text-xs font-medium text-foreground">
+                      {formatCurrency(repair.serviceCharge)}
+                    </span>
                   )}
-                  <span className="text-xs text-muted-foreground">{formatDate(repair.createdAt)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(repair.createdAt)}
+                  </span>
                 </div>
 
                 {/* Actions */}
-                {hasRole('manager') &&
-                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                {hasRole("manager") && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="shrink-0"
+                  >
                     <RowActions
                       actions={[
-                        { label: 'Edit', icon: Edit, onClick: () => navigate(`/app/repairs/${repair._id}/edit`) },
-                        ...(hasRole('superadmin') ? [
-                          {
-                            label: 'Delete', icon: Trash2, danger: true, divider: true,
-                            onClick: () => setDeleteDialog({ open: true, id: repair._id, label: repair.repairId })
-                          },
-                        ] : []),
+                        {
+                          label: "Edit",
+                          icon: Edit,
+                          onClick: () =>
+                            navigate(`/app/repairs/${repair._id}/edit`),
+                        },
+                        ...(hasRole("superadmin")
+                          ? [
+                              {
+                                label: "Delete",
+                                icon: Trash2,
+                                danger: true,
+                                divider: true,
+                                onClick: () =>
+                                  setDeleteDialog({
+                                    open: true,
+                                    id: repair._id,
+                                    label: repair.repairId,
+                                  }),
+                              },
+                            ]
+                          : []),
                       ]}
                     />
                   </div>
-                }
+                )}
               </div>
             );
           })
@@ -517,13 +814,15 @@ const RepairList = () => {
       <TableFooter
         pagination={pagination}
         onPageChange={(page) => setPagination((p) => ({ ...p, page }))}
-        onLimitChange={(limit) => setPagination((p) => ({ ...p, limit, page: 1 }))}
+        onLimitChange={(limit) =>
+          setPagination((p) => ({ ...p, limit, page: 1 }))
+        }
       />
 
       {/* ── Dialogs ── */}
       <ConfirmDialog
         open={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, id: null, label: '' })}
+        onClose={() => setDeleteDialog({ open: false, id: null, label: "" })}
         onConfirm={handleDelete}
         title="Delete Repair"
         description={`Repair "${deleteDialog.label}" will be permanently deleted. This cannot be undone.`}
@@ -539,7 +838,7 @@ const RepairList = () => {
         confirmLabel="Delete All"
         danger
       />
-    </div >
+    </div>
   );
 };
 

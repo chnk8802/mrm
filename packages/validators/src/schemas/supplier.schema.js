@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { objectIdSchema } from '../common.js';
+import { addressSchema, objectIdSchema } from '../common.js';
 
 export const supplierSchema = z.object({
     name: z.string()
@@ -13,13 +13,7 @@ export const supplierSchema = z.object({
         .max(100, 'Email cannot exceed 100 characters')
         .optional()
         .or(z.literal('')),
-    address: z.object({
-        street: z.string().max(200, 'Street address cannot exceed 200 characters').optional(),
-        city: z.string().max(100, 'City cannot exceed 100 characters').optional(),
-        state: z.string().max(100, 'State cannot exceed 100 characters').optional(),
-        postalCode: z.string().max(20, 'Postal code cannot exceed 20 characters').optional(),
-        country: z.string().max(100, 'Country cannot exceed 100 characters').optional()
-    }).optional(),
+    address: addressSchema.optional(),
     notes: z.string()
         .max(1000, 'Notes cannot exceed 1000 characters')
         .optional(),
