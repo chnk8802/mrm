@@ -128,10 +128,14 @@ const UserList = () => {
     } catch (err) {
       const errorData = err.response?.data;
 
-      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      if (
+        errorData?.errors &&
+        Array.isArray(errorData.errors) &&
+        errorData.errors.length > 0
+      ) {
         toast.error(errorData.errors[0].message);
       } else {
-        toast.error(errorData?.message || 'Failed to fetch techncians');
+        toast.error(errorData?.message || "Failed to fetch techncians");
       }
     } finally {
       setLoading(false);
@@ -174,10 +178,14 @@ const UserList = () => {
     } catch (err) {
       const errorData = err.response?.data;
 
-      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      if (
+        errorData?.errors &&
+        Array.isArray(errorData.errors) &&
+        errorData.errors.length > 0
+      ) {
         toast.error(errorData.errors[0].message);
       } else {
-        toast.error(errorData?.message || 'Failed to delete user');
+        toast.error(errorData?.message || "Failed to delete user");
       }
     }
   };
@@ -312,7 +320,11 @@ const UserList = () => {
           setSearchQuery(val);
           setPagination((p) => ({ ...p, page: 1 }));
         }}
-        onAddNew={() => navigate("/app/users/new")}
+        onAddNew={
+          currentUser?.role !== "superadmin"
+            ? () => navigate("/app/users/new")
+            : undefined
+        }
         addLabel="Add User"
         filterCount={roleFilter ? 1 : 0}
         onFilterToggle={() => setShowFilters((p) => !p)}
@@ -399,11 +411,16 @@ const UserList = () => {
                   <td className="py-1 px-4">
                     <RowActions
                       actions={[
-                        {
-                          label: "Edit",
-                          icon: Edit,
-                          onClick: () => navigate(`/app/users/${user._id}/edit`),
-                        },
+                        ...(currentUser?.role !== "superadmin"
+                          ? [
+                              {
+                                label: "Edit",
+                                icon: Edit,
+                                onClick: () =>
+                                  navigate(`/app/users/${user._id}/edit`),
+                              },
+                            ]
+                          : []),
                         {
                           label: "Delete",
                           icon: Trash2,

@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
         name: { type: String, required: true, trim: true },
         email: { type: String, required: true, trim: true, lowercase: true },
         password: { type: String, required: true, select: false },
-        role: { type: String, enum: ROLES, default: 'superadmin' },
+        role: { type: String, enum: ROLES, required: true },
         phone: { type: String, required: true, trim: true, maxlength: [20, 'Phone number cannot exceed 20 characters'] },
         address: {
             street: { type: String, trim: true, maxlength: [200, 'Street address cannot exceed 200 characters'] },
