@@ -3,7 +3,7 @@ import Organization from '../models/organization.model.js';
 import User from '../models/user.model.js';
 import { createError } from '../utils/common/errorHandler.js';
 import withTransaction from '../utils/common/withTransaction.js';
-import { createOrganizationSchema } from '@repo/validators';
+import { createOrganizationSchema, organizationQuerySchema } from '@repo/validators';
 
 /**
  * @desc    Create a new organization + its first admin user
@@ -47,6 +47,44 @@ export const createOrganization = async (req, res, next) => {
                 }
             },
             message: 'Organization and admin created successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get all organizations with pagination, sorting, and search
+ * @route   GET /api/platform/organizations
+ * @access  Private (Superadmin only)
+ */
+export const getOrganizations = async (req, res, next) => {
+    try {
+        const { page, limit, sortBy, sortOrder, search, isActive } = organizationQuerySchema.parse(req.query);
+
+        const query = { isDeleted: false };
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { contactEmail: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        if (isActive !== undefined) query.isActive = isActive;
+
+        const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+        const skip = (page - 1) * limit;
+
+        const [organizations, total] = await Promise.all([
+            Organization.find(query).sort(sortOptions).skip(skip).limit(limit),
+            Organization.countDocuments(query)
+        ]);
+
+        res.json({
+            success: true,
+            data: organizations,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) }
         });
     } catch (error) {
         next(error);

@@ -6,6 +6,9 @@ import Layout from "./components/Layout/Layout";
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard";
 
+import OrganizationCreate from "./pages/superadmin/organization/OrganizationCreate";
+import OrganizationList from "./pages/superadmin/organization/OrganizationList";
+
 import RepairList from "./pages/repairOrder/RepairList";
 import RepairCreate from "./pages/repairOrder/RepairCreate";
 import RepairDetails from "./pages/repairOrder/RepairDetails";
@@ -116,10 +119,20 @@ export default function App() {
             <Route path="reports" element={<Reports />} />
 
             {/* admin only — not superadmin */}
-            <Route element={ <ProtectedRoute minRole="admin" blockRoles={["superadmin"]} /> } >
+            <Route
+              element={
+                <ProtectedRoute minRole="admin" blockRoles={["superadmin"]} />
+              }
+            >
               <Route path="users/new" element={<UserCreate />} />
               <Route path="users/:id/edit" element={<UserEdit />} />
             </Route>
+          </Route>
+
+          {/* superadmin only */}
+          <Route element={<ProtectedRoute minRole="superadmin" />}>
+            <Route path="organizations" element={<OrganizationList />} />
+            <Route path="organizations/new" element={<OrganizationCreate />} />
           </Route>
         </Route>
       </Route>

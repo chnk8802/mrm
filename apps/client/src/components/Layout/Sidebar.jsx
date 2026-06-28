@@ -4,7 +4,8 @@ import { usePermission } from '@/hooks/usePermission';
 import {
     LayoutDashboard, Users, UserCog, Wrench,
     Truck, Settings, X, CreditCard, HardHat,
-    ChartArea
+    ChartArea,
+    Building2
 } from 'lucide-react';
 
 const allMenuItems = [
@@ -15,6 +16,7 @@ const allMenuItems = [
     { icon: Truck, label: 'Suppliers', path: '/app/suppliers', minRole: 'manager' },
     { icon: HardHat, label: 'Technicians', path: '/app/technicians', minRole: 'manager' },
     { icon: UserCog, label: 'Users', path: '/app/users', minRole: 'admin' },
+    { icon: Building2, label: 'Organizations', path: '/app/organizations', minRole: 'superadmin' },
     { icon: ChartArea, label: 'Reports', path: '/app/reports', minRole: 'manager' },
     { icon: Settings, label: 'Settings', path: '/app/settings', minRole: null },
 ];

@@ -13,3 +13,12 @@ export const createOrganizationSchema = z.object({
         address: addressSchema.optional()
     })
 }).strict();
+
+export const organizationQuerySchema = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(10),
+    sortBy: z.enum(['name', 'createdAt', 'updatedAt']).default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+    search: z.string().optional(),
+    isActive: z.coerce.boolean().optional()
+});
