@@ -13,8 +13,6 @@ import { authService } from '@/api/authService';
 import toast from 'react-hot-toast';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Constants (stable — defined outside component so they never cause re-renders)
-// ─────────────────────────────────────────────────────────────────────────────
 const TABS = [
   { value: 'profile', label: 'Profile', icon: User, desc: 'Your personal info' },
   { value: 'security', label: 'Security', icon: Lock, desc: 'Password & access' },

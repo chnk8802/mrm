@@ -232,6 +232,11 @@ export const createFullAndFinalPayment = async (req, res, next) => {
     }
 };
 
+/**
+ * @desc    Get outstanding Items
+ * @route   GET /api/payments/outstanding-items
+ * @access  Private
+ */
 export const getOutstandingItems = async (req, res, next) => {
     try {
         const { type, customer, supplier } = req.query;

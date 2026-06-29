@@ -244,6 +244,7 @@ const CustomerList = () => {
 
   const handleBulkDelete = async () => {
     try {
+      console.log("Customer bulk payload",{ids: selectedCustomers})
       await customerService.bulkDeleteCustomers({ids: selectedCustomers});
       toast.success(`${selectedCustomers.length} customers deleted`);
       setSelectedCustomers([]);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2 } from "lucide-react";
-import organizationService from "@/api/organization.service";
+import organizationService from "@/api/organizationService";
 import toast from "react-hot-toast";
 import PageHeader from "@/components/common/PageHeader";
 import TableFooter from "@/components/common/TableFooter";

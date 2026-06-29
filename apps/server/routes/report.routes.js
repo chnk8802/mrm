@@ -1,8 +1,5 @@
 import express from 'express';
-import {
-    getOwedReport,
-    getCollectedReport
-} from '../controllers/report.controller.js';
+import { getOwedReport, getCollectedReport } from '../controllers/report.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import authorize from '../middleware/rbac.middleware.js';
 

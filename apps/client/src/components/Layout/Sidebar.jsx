@@ -66,7 +66,7 @@ const Sidebar = ({ isMobile = false, onClose = null }) => {
 
             <div className="px-3 py-4 border-t border-border">
                 <p className="text-xs text-muted-foreground px-3">
-                    MRM v{__APP_VERSION__} · {user?.role}
+                   {user.name} - {user?.role}
                 </p>
             </div>
         </div>

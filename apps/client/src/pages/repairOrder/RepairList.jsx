@@ -14,7 +14,6 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/context/ThemeContext";
 import toast from "react-hot-toast";
 import repairService from "@/api/repairService";
 import PageHeader from "@/components/common/PageHeader";

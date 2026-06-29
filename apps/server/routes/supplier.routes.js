@@ -1,16 +1,5 @@
 import express from 'express';
-import {
-    createSupplier,
-    getSuppliers,
-    getSupplierById,
-    updateSupplier,
-    deleteSupplier,
-    restoreSupplier,
-    permanentlyDeleteSupplier,
-    bulkUpdateSuppliers,
-    bulkDeleteSuppliers,
-    getSupplierStats
-} from '../controllers/supplier.controller.js';
+import { createSupplier, getSuppliers, getSupplierById, updateSupplier, deleteSupplier, restoreSupplier, permanentlyDeleteSupplier, bulkUpdateSuppliers, bulkDeleteSuppliers, getSupplierStats } from '../controllers/supplier.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import authorize from '../middleware/rbac.middleware.js';
 
@@ -19,19 +8,10 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/stats', authorize('admin'), getSupplierStats);
-
 router.patch('/bulk', authorize('admin'), bulkUpdateSuppliers);
 router.post('/bulk', authorize('admin'), bulkDeleteSuppliers);
-
-router.route('/')
-    .get(authorize('staff'), getSuppliers)
-    .post(authorize('admin'), createSupplier);
-
-router.route('/:id')
-    .get(authorize('staff'), getSupplierById)
-    .patch(authorize('manager'), updateSupplier)
-    .delete(authorize('admin'), deleteSupplier);
-
+router.route('/') .get(authorize('staff'), getSuppliers) .post(authorize('admin'), createSupplier);
+router.route('/:id') .get(authorize('staff'), getSupplierById) .patch(authorize('manager'), updateSupplier) .delete(authorize('admin'), deleteSupplier);
 router.patch('/:id/restore', authorize('admin'), restoreSupplier);
 router.delete('/:id/permanent', authorize('superadmin'), permanentlyDeleteSupplier);
 

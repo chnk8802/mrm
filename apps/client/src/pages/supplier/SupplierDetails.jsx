@@ -9,7 +9,6 @@ import {
   MapPin,
   Calendar,
   FileText,
-  User,
   Power,
   PowerOff,
   Receipt,

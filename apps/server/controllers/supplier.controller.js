@@ -2,13 +2,7 @@ import { isValidObjectId } from 'mongoose';
 import Supplier from '../models/supplier.model.js';
 import SparePartUsage from '../models/sparePartUsage.model.js';
 import { createError } from '../utils/common/errorHandler.js';
-import {
-    supplierSchema,
-    supplierUpdateSchema,
-    supplierBulkUpdateSchema,
-    supplierBulkDeleteSchema,
-    supplierQuerySchema
-} from '@repo/validators';
+import { supplierSchema, supplierUpdateSchema, supplierBulkUpdateSchema, supplierBulkDeleteSchema, supplierQuerySchema } from '@repo/validators';
 import { flattenObject } from '../utils/common/flattenObject.js';
 
 /**
