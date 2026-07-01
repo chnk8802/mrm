@@ -54,6 +54,26 @@ export const createOrganization = async (req, res, next) => {
 };
 
 /**
+ * @desc    Get the current user's organization
+ * @route   GET /api/organizations/me
+ * @access  Private (Admin/Manager/Staff)
+ */
+export const getMyOrganization = async (req, res, next) => {
+    try {
+        if (req.user.role === 'superadmin') {
+            throw createError(400, 'Superadmin is not tied to an organization');
+        }
+
+        const org = await Organization.findById(req.user.orgId).select('name plan isActive');
+        if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
+
+        res.json({ success: true, data: org });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * @desc    Get all organizations with pagination, sorting, and search
  * @route   GET /api/platform/organizations
  * @access  Private (Superadmin only)

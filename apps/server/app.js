@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 
 import { handleError } from './utils/common/errorHandler.js'
 
+import platformOrganizationRoutes from './routes/platformRoutes/organization.routes.js'
+
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import organizationRoutes from './routes/organization.routes.js';
@@ -26,7 +28,7 @@ app.use(cookieParser());
 
 app.get('/', (req, res) => res.send('Mobile Repair API Running...'));
 
-app.use('/api/platform/organizations', organizationRoutes);
+app.use('/api/platform/organizations', platformOrganizationRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -37,6 +39,7 @@ app.use('/api/repairs', repairRoutes);
 app.use('/api/spare-part-usage', sparePartUsageRoutes)
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/organizations', organizationRoutes);
 
 app.use(handleError);
 

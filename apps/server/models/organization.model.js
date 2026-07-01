@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
+import { DEFAULT_PLAN, PLAN_LIST } from '@repo/validators';
 
 const organizationSchema = new mongoose.Schema(
     {
         name: { type: String, required: true, trim: true, maxlength: [100, 'Name cannot exceed 100 characters'] },
         contactEmail: { type: String, trim: true, lowercase: true, maxlength: [100, 'Email cannot exceed 100 characters'] },
         contactPhone: { type: String, trim: true, maxlength: [20, 'Phone number cannot exceed 20 characters'] },
+        plan: { type: String, enum: PLAN_LIST, default: DEFAULT_PLAN },
         isActive: { type: Boolean, default: true },
         isDeleted: { type: Boolean, default: false, select: false }
     },

@@ -1,5 +1,6 @@
-import User from '../models/user.model.js';
 import bcrypt from 'bcryptjs';
+import User from '../models/user.model.js';
+import Organization from '../models/organization.model.js';
 import generateToken from '../utils/generateToken.js';
 import { createError } from '../utils/common/errorHandler.js';
 import { registerSchema, loginSchema } from '@repo/validators';
@@ -75,6 +76,13 @@ export const loginUser = async (req, res, next) => {
 
         const user = await User.findOne({ email, isActive: true, isDeleted: false }).select('+password');
         if (!user) throw createError(401, 'Invalid email or password');
+
+        if (user.role !== 'superadmin') {
+            const org = await Organization.findById(user.orgId);
+            if (!org || !org.isActive || org.isDeleted) {
+                throw createError(403, 'This organization no longer has access. Contact support.');
+            }
+        }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) throw createError(401, 'Invalid email or password');

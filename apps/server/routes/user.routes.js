@@ -9,7 +9,7 @@ router.use(protect);
 
 router.get('/stats', authorize('admin'), getUserStats);
 router.route('/') .get(authorize('admin'), getUsers) .post(authorize('admin'), createUser);
-router.route('/:id') .get(authorize('staff'), getUserById) .patch(authorize('admin'), updateUser) .delete(authorize('superadmin'), deleteUser);
+router.route('/:id') .get(authorize('staff'), getUserById) .patch(authorize('admin'), updateUser).delete(authorize('admin'), deleteUser);
 router.patch("/:id/restore", restoreUser);
 router.patch('/:id/deactivate', authorize('admin'), deactivateUser);
 router.patch('/:id/activate', authorize('admin'), activateUser);

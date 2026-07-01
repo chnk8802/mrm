@@ -9,7 +9,9 @@ import {
     userUpdateSchema,
     userQuerySchema,
     resetPasswordSchema,
+    PLANS,
 } from '@repo/validators';
+import Organization from '../models/organization.model.js';
 
 const canCreate = {
     superadmin: ['admin', 'manager', 'staff'],
@@ -31,6 +33,19 @@ export const createUser = async (req, res, next) => {
         if (!allowedRoles.includes(validatedData.role)) {
             throw createError(403, `You cannot create a user with role: ${validatedData.role}`);
         }
+
+        if (req.user.role !== 'superadmin') {
+            const org = await Organization.findById(req.user.orgId);
+            if (!org) throw createError(404, 'Organization not found');
+
+            const maxUsers = PLANS[org.plan]?.maxUsers ?? PLANS.plan1test.maxUsers;
+            const activeUserCount = await User.countDocuments({ orgId: req.user.orgId, isDeleted: false });
+
+            if (activeUserCount >= maxUsers) {
+                throw createError(403, `User limit reached for your plan (${maxUsers} max). Contact support to upgrade.`);
+            }
+        }
+
 
         const userExists = await User.findOne({ email: validatedData.email }).setOptions({ skipOrgScope: true });;
         if (userExists) throw createError(400, 'User with this email already exists');
@@ -198,6 +213,9 @@ export const deleteUser = async (req, res, next) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
         if (user.role === 'superadmin') throw createError(403, 'Superadmin cannot be deleted');
+        if (user.role === 'admin' && req.user.role === 'admin') {
+            throw createError(403, 'Admin cannot delete another admin');
+        }
 
         // check for active repairs assigned to this user before deleting
         const hasRepairs = await Repair.countDocuments({ technician: id, isDeleted: false }) > 0;
