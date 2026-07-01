@@ -13,6 +13,7 @@ import customerService from '@/api/customerService';
 import supplierService from '@/api/supplierService';
 import paymentService from '@/api/paymentService';
 import toast from 'react-hot-toast';
+import DateTimePicker from '@/components/common/DateTimePicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -321,12 +322,11 @@ const PaymentCreate = () => {
 
             {/* Paid At */}
             <div>
-              <Label className="text-xs">Payment Date</Label>
-              <Input
-                type="datetime-local"
+              <DateTimePicker
+                label="Payment Date"
                 value={paidAt}
-                onChange={(e) => setPaidAt(e.target.value)}
-                className="mt-1 h-8 text-sm"
+                onChange={setPaidAt}
+                placeholder="Select payment date & time"
               />
             </div>
 
