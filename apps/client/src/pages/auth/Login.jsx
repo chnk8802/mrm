@@ -17,6 +17,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import toast from "react-hot-toast";
+import TestingNotice from "../website/TestingNotice";
 
 const demoAccounts = [
   { role: "Admin", email: "admin@demo.com", password: "Admin@123" },
@@ -67,6 +68,7 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50 py-12 px-4">
+      <div className="w-full max-w-md space-y-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl">MRM</CardTitle>
@@ -139,6 +141,8 @@ function Login() {
           </CardFooter>
         </form>
       </Card>
+      <TestingNotice />
+    </div>
     </div>
   );
 }
