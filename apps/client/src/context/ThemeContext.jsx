@@ -10,14 +10,14 @@ export const ThemeProvider = ({ children }) => {
     });
 
     const [appTheme, setAppTheme] = useState(() => {
-        // Aligned to match the 'mrm-design-preset' key used in your settings component
+        // Aligned to match the 'mrm-design-preset' key used in settings component
         return localStorage.getItem('mrm-design-preset') || 'default';
     });
 
     useEffect(() => {
-    localStorage.setItem('theme', theme);
-    localStorage.setItem('mrm-design-preset', appTheme);
-}, [theme, appTheme]);
+        localStorage.setItem('theme', theme);
+        localStorage.setItem('mrm-design-preset', appTheme);
+    }, [theme, appTheme]);
 
     // Handle system preference modifications if user changes operating system schemes mid-session
     useEffect(() => {
