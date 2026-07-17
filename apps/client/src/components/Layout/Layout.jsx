@@ -31,17 +31,15 @@ const Layout = () => {
       className={`${theme} h-screen flex flex-col bg-background text-foreground transition-colors duration-200`}
       data-app-theme={appTheme}
     >
-      <Topbar
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen((o) => !o)}
-      />
+      <Topbar/>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
         <div
-          className={`hidden md:flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? "w-60" : "w-0 overflow-hidden"}`}
+          className={`hidden md:flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? "w-60" : "w-16"
+            }`}
         >
-          <Sidebar />
+          <Sidebar collapsed={!sidebarOpen} onToggleCollapse={() => setSidebarOpen((o) => !o)}/>
         </div>
 
         <main className="flex-1 overflow-y-auto">

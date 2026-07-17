@@ -4,6 +4,7 @@ import { Search, ChevronUp, ChevronDown, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import technicianService from '@/api/technicianService';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const columns = [
     { label: 'Name', col: 'name' },
@@ -15,6 +16,7 @@ const columns = [
 
 const TechnicianList = () => {
     const navigate = useNavigate();
+    useDocumentTitle("Technicians");
 
     const [technicians, setTechnicians] = useState([]);
     const [filtered, setFiltered] = useState([]);

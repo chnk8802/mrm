@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import paymentService from '@/api/paymentService';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,12 @@ const PaymentDetails = () => {
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const partyName = payment?.type === 'receivable'
+  ? payment?.customer?.name
+  : payment?.supplier?.name;
+
+useDocumentTitle(partyName || 'Payment Details');
+
   useEffect(() => {
     const fetchPayment = async () => {
       try {
@@ -75,8 +82,14 @@ const PaymentDetails = () => {
     </div>
   );
 
-  const isReceivable = payment.type === 'receivable';
-  const party = isReceivable ? payment.customer : payment.supplier;
+  if (!payment) return (
+  <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
+    Payment not found.
+  </div>
+);
+
+const isReceivable = payment.type === 'receivable';
+const party = isReceivable ? payment.customer : payment.supplier;
 
   return (
     <div className="space-y-4 p-4 pb-24 md:pb-4">

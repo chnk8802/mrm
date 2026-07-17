@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import toast from "react-hot-toast";
 import TestingNotice from "../website/TestingNotice";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const demoAccounts = [
   { role: "Admin", email: "admin@demo.com", password: "Admin@123" },
@@ -27,6 +28,7 @@ const demoAccounts = [
 ];
 
 function Login() {
+  useDocumentTitle('Login');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();

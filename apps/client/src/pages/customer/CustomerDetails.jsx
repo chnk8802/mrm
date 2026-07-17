@@ -20,6 +20,7 @@ import customerService from '@/api/customerService';
 import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,8 @@ const CustomerDetails = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
 
+  useDocumentTitle(customer?.name || 'Customer Details');
+  
   useEffect(() => {
     const fetchCustomer = async () => {
       try {

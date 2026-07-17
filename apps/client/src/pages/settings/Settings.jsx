@@ -12,32 +12,15 @@ import { getInitials } from '@/utils/getInitials';
 import { authService } from '@/api/authService';
 import toast from 'react-hot-toast';
 import TestingNotice from '../website/TestingNotice';
+import ThemeSelector from '@/components/common/ThemeSelector';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─────────────────────────────────────────────────────────────────────────────
 const TABS = [
   { value: 'profile', label: 'Profile', icon: User, desc: 'Your personal info' },
-  { value: 'security', label: 'Security', icon: Lock, desc: 'Password & access' },
+  // { value: 'security', label: 'Security', icon: Lock, desc: 'Password & access' },
   { value: 'preferences', label: 'Preferences', icon: Palette, desc: 'Theme & regional' },
-  { value: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alerts & updates' },
-];
-
-const DESIGN_THEMES = [
-  { value: 'default', label: 'Default', sub: 'Indigo minimal', dot: 'bg-indigo-500' },
-  { value: 'workshop', label: 'Workshop', sub: 'Emerald green', dot: 'bg-emerald-500' },
-  { value: 'ocean', label: 'Ocean', sub: 'Deep blue', dot: 'bg-blue-500' },
-  { value: 'cyberpunk', label: 'Cyberpunk', sub: 'Neon pink', dot: 'bg-pink-500' },
-];
-
-const LANGUAGES = [
-  { value: 'en', label: 'English' }, { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' }, { value: 'de', label: 'German' },
-  { value: 'zh', label: 'Chinese' },
-];
-
-const TIMEZONES = [
-  { value: 'UTC', label: 'UTC' }, { value: 'EST', label: 'Eastern (EST)' },
-  { value: 'PST', label: 'Pacific (PST)' }, { value: 'CST', label: 'Central (CST)' },
-  { value: 'MST', label: 'Mountain (MST)' },
+  // { value: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alerts & updates' },
 ];
 
 const NOTIF_ITEMS = [
@@ -78,6 +61,7 @@ const ThemedSwitch = ({ checked, onCheckedChange }) => (
 // Settings
 // ─────────────────────────────────────────────────────────────────────────────
 const Settings = () => {
+  useDocumentTitle('Settings');
   const { theme, setTheme, appTheme, setAppTheme } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
@@ -423,50 +407,7 @@ const Settings = () => {
           <div>
             <Label className="text-xs">Colour preset</Label>
             <p className="text-xs text-muted-foreground mt-0.5 mb-2">Changes sidebar, borders and accent colours</p>
-            <div className="grid grid-cols-2 gap-2">
-              {DESIGN_THEMES.map((preset) => {
-                const active = prefs.appTheme === preset.value;
-                return (
-                  <button key={preset.value} type="button" onClick={() => setPref('appTheme', preset.value)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md border text-xs font-medium transition-colors
-                      ${active ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-card text-muted-foreground hover:bg-muted/50'}`}
-                  >
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${preset.dot}`} />
-                    <span className="flex flex-col items-start min-w-0">
-                      <span className="text-foreground leading-tight">{preset.label}</span>
-                      <span className="text-muted-foreground font-normal leading-tight">{preset.sub}</span>
-                    </span>
-                    {active && <Check className="w-3 h-3 ml-auto shrink-0 text-primary" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-border shadow-none">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Regional</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label className="text-xs">Language</Label>
-            <Select value={prefs.language} onValueChange={v => setPref('language', v)}>
-              <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map(l => <SelectItem key={l.value} value={l.value} className="text-sm">{l.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Timezone</Label>
-            <Select value={prefs.timezone} onValueChange={v => setPref('timezone', v)}>
-              <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIMEZONES.map(t => <SelectItem key={t.value} value={t.value} className="text-sm">{t.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <ThemeSelector value={prefs.appTheme} onChange={v => setPref('appTheme', v)} />
           </div>
         </CardContent>
       </Card>
@@ -506,9 +447,9 @@ const Settings = () => {
 
   const panels = {
     profile: profilePanel,
-    security: securityPanel,
+    // security: securityPanel,
     preferences: preferencesPanel,
-    notifications: notificationsPanel,
+    // notifications: notificationsPanel,
   };
 
   return (

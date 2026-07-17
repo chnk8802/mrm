@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import userService from "@/api/userService";
 import toast from "react-hot-toast";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const FieldError = ({ message }) => message
     ? <p className="text-xs text-red-500 mt-1">{message}</p>
@@ -23,6 +24,9 @@ const UserEdit = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [newPassword, setNewPassword] = useState('');
     const [passwordLoading, setPasswordLoading] = useState(false);
+    const [userName, setUserName] = useState(null);
+
+    useDocumentTitle(userName || 'Edit User');
 
     const {
         register,
@@ -36,6 +40,7 @@ const UserEdit = () => {
             try {
                 const response = await userService.getUserById(id);
                 const user = response.data;
+                setUserName(user.name || null);
                 reset({
                     name: user.name || '',
                     phone: user.phone || '',

@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import userService from "@/api/userService";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const createUserSchema = z
   .object({
@@ -46,6 +47,7 @@ const FieldError = ({ message }) =>
 const UserCreate = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  useDocumentTitle('Create Users');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 

@@ -23,10 +23,11 @@ import FilterPopover from "@/components/common/FilterPopover";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { usePermission } from "@/hooks/usePermission";
-import { AsyncCombobox } from "@/components/AsyncComboBox";
+import { AsyncCombobox } from "@/components/common/AsyncComboBox";
 import FilterSelect from "@/components/common/FilterSelect";
 import customerService from "@/api/customerService";
 import userService from "@/api/userService";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -151,6 +152,7 @@ const getPickupBadge = (isPickedUp) =>
 // ─── RepairList ───────────────────────────────────────────────────────────────
 
 const RepairList = () => {
+  useDocumentTitle('Repairs');
   const navigate = useNavigate();
 
   const { hasRole } = usePermission();

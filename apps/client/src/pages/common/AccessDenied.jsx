@@ -2,8 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, Home } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const AccessDenied = () => {
+  useDocumentTitle('Access Denied')
   const navigate = useNavigate();
   const { user } = useAuth();
 

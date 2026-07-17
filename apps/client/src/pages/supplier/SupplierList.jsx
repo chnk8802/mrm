@@ -11,6 +11,7 @@ import TableFooter from '@/components/common/TableFooter';
 import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ const BulkUpdateModal = ({ count, onClose, onSubmit, loading }) => {
 
 const SupplierList = () => {
   const navigate = useNavigate();
+  useDocumentTitle('Suppliers');
 
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);

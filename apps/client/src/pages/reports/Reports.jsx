@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
 import reportService from '@/api/reportService';
 import userService from '@/api/userService';
-import { AsyncCombobox } from '@/components/AsyncComboBox';
+import { AsyncCombobox } from '@/components/common/AsyncComboBox';
 import DateRangePicker from '@/components/common/DateRangePicker';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ const SummaryCard = ({ label, value, emphasis = false }) => (
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
 const Reports = () => {
+  useDocumentTitle('Reports');
   const [reportType, setReportType] = useState('owed');
   const [fromDate, setFromDate] = useState(startOfMonth());
   const [toDate, setToDate] = useState(new Date());

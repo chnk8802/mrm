@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronUp, ChevronDown, ArrowDownLeft, ArrowUpRight, } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import paymentService from '@/api/paymentService';
 
 import PageHeader from '@/components/common/PageHeader';
@@ -10,6 +9,7 @@ import FilterPopover from '@/components/common/FilterPopover';
 import toast from 'react-hot-toast';
 import FilterSelect from '@/components/common/FilterSelect'
 import DateRangePicker from '@/components/common/DateRangePicker';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPE_OPTIONS = [
@@ -57,6 +57,7 @@ const formatMethod = (method) => ({
 // ─── PaymentList ──────────────────────────────────────────────────────────────
 
 const PaymentList = () => {
+  useDocumentTitle('Payments');
   const navigate = useNavigate();
 
   const [payments, setPayments] = useState([]);

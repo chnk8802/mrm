@@ -34,6 +34,7 @@ import TableFooter from '@/components/common/TableFooter';
 import RowActions from '@/components/common/RowActions';
 import FilterPopover from '@/components/common/FilterPopover';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -138,6 +139,7 @@ const BulkUpdateModal = ({ count, onClose, onSubmit, loading }) => {
 
 const CustomerList = () => {
   const navigate = useNavigate();
+  useDocumentTitle('Customers');
 
   const [customers, setCustomers] = useState([]);
   const [selectedCustomers, setSelectedCustomers] = useState([]);

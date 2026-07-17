@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import supplierService from '@/api/supplierService';
 import toast from 'react-hot-toast';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -31,6 +32,8 @@ const SupplierEdit = () => {
 
   const [loading, setLoading] = useState(true);
   const [isActive, setIsActive] = useState('true');
+  const [supplierName, setSupplierName] = useState(null);
+  useDocumentTitle(supplierName || 'Edit Supplier');
 
   const {
     register,
@@ -46,6 +49,7 @@ const SupplierEdit = () => {
       try {
         const response = await supplierService.getSupplierById(id);
         const s = response.data;
+        setSupplierName(s.name || null);
         setIsActive(s.isActive !== false ? 'true' : 'false');
         reset({
           name: s.name || '',

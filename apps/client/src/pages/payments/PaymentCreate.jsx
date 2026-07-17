@@ -8,12 +8,13 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { AsyncCombobox } from '@/components/AsyncComboBox';
+import { AsyncCombobox } from '@/components/common/AsyncComboBox';
 import customerService from '@/api/customerService';
 import supplierService from '@/api/supplierService';
 import paymentService from '@/api/paymentService';
 import toast from 'react-hot-toast';
 import DateTimePicker from '@/components/common/DateTimePicker';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,7 @@ const fetchSuppliers = async (search) => {
 // ─── PaymentCreate ────────────────────────────────────────────────────────────
 
 const PaymentCreate = () => {
+  useDocumentTitle('Create payment');
   const navigate = useNavigate();
 
   // Step 1 — type + party

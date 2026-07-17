@@ -6,7 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/utils/getInitials';
 
-const Topbar = ({ sidebarOpen, onToggleSidebar }) => {
+const Topbar = () => {
     const { user, organization, logout } = useAuth();
     const { theme, toggle } = useTheme();
     const navigate = useNavigate();
@@ -25,19 +25,8 @@ const Topbar = ({ sidebarOpen, onToggleSidebar }) => {
 
             <div className="h-12 bg-[hsl(var(--topbar-bg))] border-b border-border flex items-center px-4 gap-3">
 
-                {/* Sidebar Toggle */}
-                <button
-                    onClick={onToggleSidebar}
-                    className="hidden md:flex p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                >
-                    {sidebarOpen
-                        ? <PanelLeftClose className="w-4 h-4" />
-                        : <PanelLeftOpen className="w-4 h-4" />
-                    }
-                </button>
-
                 {/* Brand */}
-                <span className="font-bold text-sm tracking-tight text-foreground">MRM</span>
+                <span className="font-bold text-sm tracking-tight text-foreground">Ohmic</span>
 
                 <div className="flex-1" />
 

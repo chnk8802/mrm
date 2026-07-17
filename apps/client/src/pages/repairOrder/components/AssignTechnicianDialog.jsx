@@ -9,7 +9,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AsyncCombobox } from '@/components/AsyncComboBox';
+import { AsyncCombobox } from '@/components/common/AsyncComboBox';
 
 const AssignTechnicianDialog = ({ 
   open, 

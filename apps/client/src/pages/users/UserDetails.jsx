@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import RowActions from "@/components/common/RowActions";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import toast from "react-hot-toast";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const getRoleIcon = (role) => {
   switch (role) {
@@ -103,7 +104,7 @@ const UserDetails = () => {
     type: null,
   });
   const [actionLoading, setActionLoading] = useState(false);
-
+  useDocumentTitle(user?.name || "User Details");
   useEffect(() => {
     const fetchUser = async () => {
       try {

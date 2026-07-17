@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import supplierService from '@/api/supplierService';
 import toast from 'react-hot-toast';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ const FieldError = ({ message }) =>
 
 const SupplierCreate = () => {
   const navigate = useNavigate();
+  useDocumentTitle('Add Supplier');
 
   const {
     register,

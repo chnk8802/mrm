@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 
-export default function useDocumentTitle(title) {
+export const useDocumentTitle = (title) => {
   useEffect(() => {
-    document.title = `${title} | MRM`;
+    const prev = document.title;
+    document.title = title ? `${title} | Ohmic` : 'Ohmic';
+    return () => { document.title = prev; };
   }, [title]);
-}
+};

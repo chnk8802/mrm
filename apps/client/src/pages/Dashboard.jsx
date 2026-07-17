@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import repairService from '@/api/repairService';
 import paymentService from '@/api/paymentService';
 import customerService from '@/api/customerService';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -580,6 +581,7 @@ const StaffDashboard = ({ userId }) => {
 
 const Dashboard = () => {
   const { user } = useAuth();
+  useDocumentTitle("Dashboard");
 
   if (!user) return null;
 

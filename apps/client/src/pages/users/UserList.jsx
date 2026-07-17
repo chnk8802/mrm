@@ -1,33 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Edit,
-  Trash2,
-  ChevronUp,
-  ChevronDown,
-  UserCog,
-  Wrench,
-  ShieldCheck,
-  Shield,
-  ClipboardList,
-  Check,
-  ChevronsUpDown,
-  X,
-} from "lucide-react";
+import { Edit, Trash2, ChevronUp, ChevronDown, UserCog, Wrench, ShieldCheck, Shield, ClipboardList, Check, ChevronsUpDown, X, } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger, } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import userService from "@/api/userService";
@@ -37,6 +13,7 @@ import PageHeader from "@/components/common/PageHeader";
 import TableFooter from "@/components/common/TableFooter";
 import RowActions from "@/components/common/RowActions";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const roleOptions = [
   { value: "admin", label: "Admin" },
@@ -86,7 +63,7 @@ const columns = [
 const UserList = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-
+  useDocumentTitle('Users');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);

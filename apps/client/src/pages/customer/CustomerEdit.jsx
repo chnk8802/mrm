@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import customerService from '@/api/customerService';
 import toast from 'react-hot-toast';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,9 @@ const CustomerEdit = () => {
   } = useForm({ resolver: zodResolver(customerUpdateSchema) });
 
   const selectedType = watch('customerType');
+  const name = watch('name');
+
+  useDocumentTitle(name || 'Edit Customer');
 
   // ── Fetch & pre-fill ───────────────────────────────────────────────────────
 

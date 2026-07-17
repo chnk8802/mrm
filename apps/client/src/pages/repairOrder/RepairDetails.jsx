@@ -16,12 +16,13 @@ import supplierService from '@/api/supplierService';
 import sparePartUsageService from '@/api/sparePartUsageService';
 import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import { AsyncCombobox } from '@/components/AsyncComboBox';
+import { AsyncCombobox } from '@/components/common/AsyncComboBox';
 import toast from 'react-hot-toast';
 import StatusUpdateDialog from './components/StatusUpdateDialog';
 import AssignTechnicianDialog from './components/AssignTechnicianDialog';
 import Can from '@/components/common/Can';
 import { usePermission } from '@/hooks/usePermission';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -241,6 +242,8 @@ const RepairDetails = () => {
 
   const [dialog, setDialog] = useState({ open: false, type: null });
   const [deletePartId, setDeletePartId] = useState(null);
+
+  useDocumentTitle(repair?.repairId || 'Repair Details');
 
   const closeDialog = () => setDialog({ open: false, type: null });
 

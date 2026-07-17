@@ -19,6 +19,7 @@ import supplierService from '@/api/supplierService';
 import RowActions from '@/components/common/RowActions';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import toast from 'react-hot-toast';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,7 @@ const SupplierDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null });
-
+  useDocumentTitle(supplier?.name || 'Supplier Details');
   useEffect(() => {
     const fetchSupplier = async () => {
       try {

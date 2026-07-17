@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import customerService from '@/api/customerService';
 import toast from 'react-hot-toast';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ const FieldError = ({ message }) =>
 // ─── CustomerCreate ───────────────────────────────────────────────────────────
 
 const CustomerCreate = () => {
+  useDocumentTitle('Create customer');
   const navigate = useNavigate();
 
   const {

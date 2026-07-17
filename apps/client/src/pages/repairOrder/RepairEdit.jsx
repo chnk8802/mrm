@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
 import DatePicker from '@/components/common/DatePicker';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -36,15 +37,15 @@ const ReadOnlyRow = ({ icon: Icon, label, value, sub }) => (
 const RepairEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-
   const [loading, setLoading] = useState(true);
   const [dueDate, setDueDate] = useState(null);
-
   // Read-only display info — not part of the editable form
   const [customerInfo, setCustomerInfo] = useState(null);
   const [technicianInfo, setTechnicianInfo] = useState(null);
-
   const [isLocked, setIsLocked] = useState(false);
+  const [repairIdLabel, setRepairIdLabel] = useState(null);
+
+  useDocumentTitle(repairIdLabel || 'Edit Repair');
 
   const {
     register,
@@ -61,7 +62,7 @@ const RepairEdit = () => {
       try {
         const response = await repairService.getRepairById(id);
         const r = response.data;
-
+        setRepairIdLabel(r.repairId || null);
         const locked = ['completed', 'cancelled', 'not-repairable'].includes(r.status);
         setIsLocked(locked);
 

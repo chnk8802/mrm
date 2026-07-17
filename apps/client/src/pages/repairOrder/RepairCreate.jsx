@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AsyncCombobox } from '@/components/AsyncComboBox';
+import { AsyncCombobox } from '@/components/common/AsyncComboBox';
 import customerService from '@/api/customerService';
 import userService from '@/api/userService';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
 import CreateCustomerDialog from './components/Createcustomerdialog';
 import DatePicker from '@/components/common/DatePicker';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ const fetchTechnicians = async (search) => {
 // ─── RepairCreate ─────────────────────────────────────────────────────────────
 
 const RepairCreate = () => {
+  useDocumentTitle('Create new repair');
   const navigate = useNavigate();
   const [createCustomerDialog, setCreateCustomerDialog] = useState({ open: false, name: '' });
   const [newCustomerLabel, setNewCustomerLabel] = useState('');
