@@ -1,31 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Check, ChevronsUpDown, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger, } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, } from '@/components/ui/command'; import { cn } from '@/lib/utils';
 
-export const AsyncCombobox = ({
-  value,
-  onChange,
-  fetchOptions,
-  placeholder = 'Search...',
-  error,
-  initialLabel,
-  onCreateNew,
-  createLabel = 'Create new',
-}) => {
+export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Search...', error, initialLabel, onCreateNew, createLabel = 'Create new', }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [options, setOptions] = useState([]);

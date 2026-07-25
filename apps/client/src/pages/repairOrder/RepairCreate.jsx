@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import CreateCustomerDialog from './components/Createcustomerdialog';
 import DatePicker from '@/components/common/DatePicker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import technicianService from '@/api/technicianService';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -33,7 +34,7 @@ const fetchCustomers = async (search) => {
 };
 
 const fetchTechnicians = async (search) => {
-  const res = await userService.getUsers({ role: 'staff', search, limit: 5, isActive: true });
+  const res = await technicianService.getTechnicians({ search });
   return (res.data || []).map((t) => ({
     value: t._id,
     label: t.name,

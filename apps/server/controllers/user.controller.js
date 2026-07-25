@@ -400,12 +400,21 @@ export const getUserStats = async (req, res, next) => {
  * @access  Private (Staff)
  */
 export const getTechnicians = async (req, res, next) => {
-    try {
-        const technicians = await User.find({ role: 'staff', isActive: true, isDeleted: false })
-            .select('name phone email isActive createdAt');
+  try {
+    const { search } = req.query;
+    const query = { role: 'staff', isActive: true, isDeleted: false };
 
-        res.json({ success: true, data: technicians });
-    } catch (error) {
-        next(error);
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
     }
+
+    const technicians = await User.find(query).select('name phone email isActive createdAt');
+    res.json({ success: true, data: technicians });
+  } catch (error) {
+    next(error);
+  }
 };

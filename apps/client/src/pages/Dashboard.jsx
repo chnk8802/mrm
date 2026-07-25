@@ -340,7 +340,6 @@ const ManagerDashboard = () => {
           paymentService.getPaymentStats(),
           repairService.getRepairs({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
         ]);
-        console.log(rs, ps, rr)
         setRepairStats(rs.data);
         setPaymentStats(ps.data);
         setRecentRepairs(rr.data || []);
