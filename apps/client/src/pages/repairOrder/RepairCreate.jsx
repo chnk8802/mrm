@@ -17,6 +17,7 @@ import CreateCustomerDialog from './components/Createcustomerdialog';
 import DatePicker from '@/components/common/DatePicker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import technicianService from '@/api/technicianService';
+import DateTimePicker from '@/components/common/DateTimePicker';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -168,12 +169,12 @@ const RepairCreate = () => {
               </div>
 
               <div>
-                <DatePicker
-                  className='w-full'
-                  label="Due Date"
-                  value={dueDate}
-                  onChange={(date) => { setDueDate(date); setValue('dueDate', date); }}
-                  disabledDates={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                <DateTimePicker
+                className='w-full'
+                label='Due Date'
+                value={dueDate}
+                onChange={(date) => { setDueDate(date); setValue('dueDate', date); }}
+                disabledDates={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                 />
                 <FieldError message={errors.dueDate?.message} />
               </div>

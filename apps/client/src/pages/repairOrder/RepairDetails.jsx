@@ -23,6 +23,7 @@ import AssignTechnicianDialog from './components/AssignTechnicianDialog';
 import Can from '@/components/common/Can';
 import { usePermission } from '@/hooks/usePermission';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import technicianService from '@/api/technicianService';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -84,12 +85,14 @@ const getPaymentBadge = (status) => {
   }
 };
 
-const FieldError = ({ message }) =>
-  message ? <p className="text-xs text-red-500 mt-1">{message}</p> : null;
+const FieldError = ({ message }) => message ? <p className="text-xs text-red-500 mt-1">{message}</p> : null;
 
 const fetchTechnicians = async (search) => {
-  const res = await userService.getUsers({ role: 'staff', search, limit: 5, isActive: true });
-  return (res.data || []).map((t) => ({ value: t._id, label: t.name }));
+  const res = await technicianService.getTechnicians({ search });
+  return (res.data || []).map((t) => ({
+    value: t._id,
+    label: t.name,
+  }));
 };
 
 const fetchSuppliers = async (search) => {

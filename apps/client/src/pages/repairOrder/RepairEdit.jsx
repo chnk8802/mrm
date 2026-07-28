@@ -13,6 +13,7 @@ import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
 import DatePicker from '@/components/common/DatePicker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import DateTimePicker from '@/components/common/DateTimePicker';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -187,7 +188,7 @@ const RepairEdit = () => {
               />
 
               <div>
-                <DatePicker
+                <DateTimePicker
                   label="Due Date"
                   value={dueDate}
                   onChange={(date) => { setDueDate(date); setValue('dueDate', date); }}
