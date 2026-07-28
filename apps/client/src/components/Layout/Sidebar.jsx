@@ -17,7 +17,7 @@ const allMenuItems = [
     { icon: HardHat, label: 'Technicians', path: '/app/technicians', minRole: 'manager' },
     { icon: UserCog, label: 'Users', path: '/app/users', minRole: 'admin' },
     { icon: Building2, label: 'Organizations', path: '/app/organizations', minRole: 'superadmin' },
-    { icon: ChartArea, label: 'Reports', path: '/app/reports', minRole: 'manager' },
+    { icon: ChartArea, label: 'Reports', path: '/app/reports', minRole: 'admin' },
     { icon: Settings, label: 'Settings', path: '/app/settings', minRole: null },
 ];
 
