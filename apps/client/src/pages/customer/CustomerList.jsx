@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Edit,
   Trash2,
@@ -141,6 +141,21 @@ const CustomerList = () => {
   const navigate = useNavigate();
   useDocumentTitle('Customers');
 
+  // ── Filter lives in the URL so dashboard/sidebar deep-links (e.g.
+  //    ?type=business) and this page's own filter UI stay in sync.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const setParam = (key, val) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val) next.set(key, val);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const customerTypeFilter = searchParams.get('type') || '';
+
   const [customers, setCustomers] = useState([]);
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -149,7 +164,6 @@ const CustomerList = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [customerTypeFilter, setCustomerTypeFilter] = useState('');
   const [typeOpen, setTypeOpen] = useState(false);
 
   const [bulkUpdateOpen, setBulkUpdateOpen] = useState(false);
@@ -296,7 +310,7 @@ const CustomerList = () => {
   // ── Misc ──────────────────────────────────────────────────────────────────
 
   const clearFilters = () => {
-    setCustomerTypeFilter('');
+    setParam('type', '');
     setPagination((p) => ({ ...p, page: 1 }));
   };
 
@@ -332,7 +346,7 @@ const CustomerList = () => {
                 <CommandItem
                   value=""
                   onSelect={() => {
-                    setCustomerTypeFilter('');
+                    setParam('type', '');
                     setPagination((p) => ({ ...p, page: 1 }));
                     setTypeOpen(false);
                   }}
@@ -345,7 +359,7 @@ const CustomerList = () => {
                     key={type.value}
                     value={type.value}
                     onSelect={(val) => {
-                      setCustomerTypeFilter(val === customerTypeFilter ? '' : val);
+                      setParam('type', val === customerTypeFilter ? '' : val);
                       setPagination((p) => ({ ...p, page: 1 }));
                       setTypeOpen(false);
                     }}

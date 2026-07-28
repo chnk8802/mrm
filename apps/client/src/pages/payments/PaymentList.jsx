@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronUp, ChevronDown, ArrowDownLeft, ArrowUpRight, } from 'lucide-react';
 import paymentService from '@/api/paymentService';
 
@@ -60,21 +60,31 @@ const PaymentList = () => {
   useDocumentTitle('Payments');
   const navigate = useNavigate();
 
+  // ── Filters live in the URL so dashboard/sidebar deep-links (e.g.
+  //    ?type=receivable) and this page's own filter UI stay in sync.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const setParam = (key, val) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val) next.set(key, val);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const typeFilter = searchParams.get('type') || '';
+  const methodFilter = searchParams.get('paymentMethod') || '';
+  const fnfFilter = searchParams.get('isFullAndFinal') || '';
+  const fromDate = searchParams.get('fromDate') || '';
+  const toDate = searchParams.get('toDate') || '';
+
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-
-  // Filters
-  const [typeFilter, setTypeFilter] = useState('');
-  const [methodFilter, setMethodFilter] = useState('');
-  const [fnfFilter, setFnfFilter] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [methodOpen, setMethodOpen] = useState(false);
 
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [sortBy, setSortBy] = useState('createdAt');
@@ -86,6 +96,7 @@ const PaymentList = () => {
     try {
       setLoading(true);
       const params = { page: pagination.page, limit: pagination.limit, sortBy, sortOrder };
+      if (searchQuery) params.search = searchQuery;
       if (typeFilter) params.type = typeFilter;
       if (methodFilter) params.paymentMethod = methodFilter;
       if (fnfFilter) params.isFullAndFinal = fnfFilter === 'true';
@@ -110,9 +121,14 @@ const PaymentList = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, sortBy, sortOrder, typeFilter, methodFilter, fnfFilter, fromDate, toDate]);
+  }, [pagination.page, pagination.limit, sortBy, sortOrder, typeFilter, methodFilter, fnfFilter, fromDate, toDate, searchQuery]);
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPagination((p) => ({ ...p, page: 1 })), 500);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   // ── Sort ───────────────────────────────────────────────────────────────────
 
@@ -130,11 +146,11 @@ const PaymentList = () => {
   // ── Filters ────────────────────────────────────────────────────────────────
 
   const clearFilters = () => {
-    setTypeFilter('');
-    setMethodFilter('');
-    setFnfFilter('');
-    setFromDate('');
-    setToDate('');
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      ['type', 'paymentMethod', 'isFullAndFinal', 'fromDate', 'toDate'].forEach((k) => next.delete(k));
+      return next;
+    });
     setPagination((p) => ({ ...p, page: 1 }));
   };
 
@@ -147,17 +163,35 @@ const PaymentList = () => {
       onClear={clearFilters}
       hasFilters={filterCount > 0}
     >
-      <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter} options={TYPE_OPTIONS} allLabel="All Types" />
-      <FilterSelect label="Method" value={methodFilter} onChange={setMethodFilter} options={METHOD_OPTIONS} allLabel="All Methods" />
-      <FilterSelect label="Full & Final" value={fnfFilter} onChange={setFnfFilter} options={FNF_OPTIONS} allLabel="All" />
+      <FilterSelect
+        label="Type"
+        value={typeFilter}
+        onChange={(val) => { setParam('type', val); setPagination((p) => ({ ...p, page: 1 })); }}
+        options={TYPE_OPTIONS}
+        allLabel="All Types"
+      />
+      <FilterSelect
+        label="Method"
+        value={methodFilter}
+        onChange={(val) => { setParam('paymentMethod', val); setPagination((p) => ({ ...p, page: 1 })); }}
+        options={METHOD_OPTIONS}
+        allLabel="All Methods"
+      />
+      <FilterSelect
+        label="Full & Final"
+        value={fnfFilter}
+        onChange={(val) => { setParam('isFullAndFinal', val); setPagination((p) => ({ ...p, page: 1 })); }}
+        options={FNF_OPTIONS}
+        allLabel="All"
+      />
 
       {/* Date Range */}
       <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Date Range</p>
       <DateRangePicker
         fromDate={fromDate}
         toDate={toDate}
-        onFromChange={setFromDate}
-        onToChange={setToDate}
+        onFromChange={(val) => { setParam('fromDate', val); setPagination((p) => ({ ...p, page: 1 })); }}
+        onToChange={(val) => { setParam('toDate', val); setPagination((p) => ({ ...p, page: 1 })); }}
         stacked
       />
     </FilterPopover>

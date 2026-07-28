@@ -1,6 +1,7 @@
 import { ALLOWED_TRANSITIONS } from "@repo/validators";
 import { createError } from "../utils/common/errorHandler.js";
 import { getRepairRemaining } from '../utils/repair.calculations.js';
+import Customer from '../models/counter.model.js'
 
 const waiveCustomerBalance = async (repair) => {
     const remaining = getRepairRemaining(repair);
