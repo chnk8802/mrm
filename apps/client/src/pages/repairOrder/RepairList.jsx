@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Edit,
   Trash2,
@@ -28,6 +28,7 @@ import FilterSelect from "@/components/common/FilterSelect";
 import customerService from "@/api/customerService";
 import userService from "@/api/userService";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import technicianService from "@/api/technicianService";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,8 +55,8 @@ const PICKED_UP_OPTIONS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fetchTechnicians = async (search) => {
-  const res = await userService.getUsers({ search, role: "staff", limit: 5 });
-  return (res.data || []).map((u) => ({ value: u._id, label: u.name }));
+  const res = await technicianService.getTechnicians({ search });
+  return (res.data || []).map((t) => ({ value: t._id, label: t.name, }));
 };
 
 const fetchCustomersForFilter = async (search) => {
@@ -154,8 +155,26 @@ const getPickupBadge = (isPickedUp) =>
 const RepairList = () => {
   useDocumentTitle('Repairs');
   const navigate = useNavigate();
-
   const { hasRole } = usePermission();
+
+  // ── All filters live in the URL so dashboard deep-links (e.g. ?status=ready)
+  //    and this page's own filter UI always stay in sync, in both directions.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const setParam = (key, val) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val) next.set(key, val);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const statusFilter = searchParams.get("status") || "";
+  const paymentStatusFilter = searchParams.get("paymentStatus") || "";
+  const pickedUpFilter = searchParams.get("isPickedUp") || "";
+  const technicianFilter = searchParams.get("technician") || "";
+  const customerFilter = searchParams.get("customer") || "";
 
   const [repairs, setRepairs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,11 +185,6 @@ const RepairList = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("");
-  const [pickedUpFilter, setPickedUpFilter] = useState("");
-  const [technicianFilter, setTechnicianFilter] = useState("");
-  const [customerFilter, setCustomerFilter] = useState("");
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -335,11 +349,13 @@ const RepairList = () => {
   };
 
   const clearFilters = () => {
-    setStatusFilter("");
-    setPaymentStatusFilter("");
-    setPickedUpFilter("");
-    setTechnicianFilter("");
-    setCustomerFilter("");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      ["status", "paymentStatus", "isPickedUp", "technician", "customer"].forEach((k) =>
+        next.delete(k),
+      );
+      return next;
+    });
     setPagination((p) => ({ ...p, page: 1 }));
   };
 
@@ -363,7 +379,7 @@ const RepairList = () => {
         label="Status"
         value={statusFilter}
         onChange={(val) => {
-          setStatusFilter(val);
+          setParam("status", val);
           setPagination((p) => ({ ...p, page: 1 }));
         }}
         options={STATUS_OPTIONS}
@@ -373,7 +389,7 @@ const RepairList = () => {
         label="Payment Status"
         value={paymentStatusFilter}
         onChange={(val) => {
-          setPaymentStatusFilter(val);
+          setParam("paymentStatus", val);
           setPagination((p) => ({ ...p, page: 1 }));
         }}
         options={PAYMENT_STATUS_OPTIONS}
@@ -383,7 +399,7 @@ const RepairList = () => {
         label="Pickup"
         value={pickedUpFilter}
         onChange={(val) => {
-          setPickedUpFilter(val);
+          setParam("isPickedUp", val);
           setPagination((p) => ({ ...p, page: 1 }));
         }}
         options={PICKED_UP_OPTIONS}
@@ -397,7 +413,7 @@ const RepairList = () => {
           <AsyncCombobox
             value={technicianFilter}
             onChange={(val) => {
-              setTechnicianFilter(val);
+              setParam("technician", val);
               setPagination((p) => ({ ...p, page: 1 }));
             }}
             fetchOptions={fetchTechnicians}
@@ -409,7 +425,7 @@ const RepairList = () => {
               size="sm"
               className="h-8 px-2"
               onClick={() => {
-                setTechnicianFilter("");
+                setParam("technician", "");
                 setPagination((p) => ({ ...p, page: 1 }));
               }}
             >
@@ -426,7 +442,7 @@ const RepairList = () => {
           <AsyncCombobox
             value={customerFilter}
             onChange={(val) => {
-              setCustomerFilter(val);
+              setParam("customer", val);
               setPagination((p) => ({ ...p, page: 1 }));
             }}
             fetchOptions={fetchCustomersForFilter}
@@ -438,7 +454,7 @@ const RepairList = () => {
               size="sm"
               className="h-8 px-2"
               onClick={() => {
-                setCustomerFilter("");
+                setParam("customer", "");
                 setPagination((p) => ({ ...p, page: 1 }));
               }}
             >

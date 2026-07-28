@@ -89,10 +89,7 @@ const FieldError = ({ message }) => message ? <p className="text-xs text-red-500
 
 const fetchTechnicians = async (search) => {
   const res = await technicianService.getTechnicians({ search });
-  return (res.data || []).map((t) => ({
-    value: t._id,
-    label: t.name,
-  }));
+  return (res.data || []).map((t) => ({ value: t._id, label: t.name, }));
 };
 
 const fetchSuppliers = async (search) => {
