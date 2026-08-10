@@ -1,3 +1,4 @@
+import { ORG_STORAGE_KEY } from '@repo/validators';
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/api/axiosInstance';
 import organizationService from '@/api/organizationService';
@@ -8,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedOrgId, setSelectedOrgId] = useState(() => localStorage.getItem(ORG_STORAGE_KEY) || null);
 
   useEffect(() => {
     api.get('/auth/profile')
@@ -37,11 +39,21 @@ export const AuthProvider = ({ children }) => {
     await api.post('/auth/logout');
     setUser(null);
     setOrganization(null);
+    selectOrg(null);
     window.location.href = '/login';
   };
 
+  const selectOrg = (orgId) => {
+    setSelectedOrgId(orgId);
+    if (orgId) {
+      localStorage.setItem(ORG_STORAGE_KEY, orgId);
+    } else {
+      localStorage.removeItem(ORG_STORAGE_KEY);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, organization, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, organization, loading, login, logout, selectedOrgId, selectOrg }}>
       {children}
     </AuthContext.Provider>
   );

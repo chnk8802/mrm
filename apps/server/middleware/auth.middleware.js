@@ -20,9 +20,12 @@ const protect = async (req, res, next) => {
         if (!user) return res.status(401).json({ success: false, message: 'User no longer exists' });
         req.user = user;
 
-        requestContext.run({ orgId: user.orgId, role: user.role }, () => {
+        const selectedOrgId = user.role === 'superadmin' ? req.headers['x-org-id'] : undefined;
+
+        requestContext.run({ orgId: selectedOrgId || user.orgId, role: user.role }, () => {
             next();
         });
+
     } catch (error) {
         return res.status(401).json({ message: 'Not authorized, token failed' });
     }

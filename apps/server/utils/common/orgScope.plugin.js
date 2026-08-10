@@ -21,8 +21,11 @@ export const orgScopePlugin = (schema, options = {}) => {
     schema.pre(QUERY_HOOKS, function (next) {
         if (this.getOptions().skipOrgScope) return next();
         const ctx = getRequestContext();
-        if (!ctx || ctx.role === 'superadmin') return next();
-        if (!ctx.orgId) return next(new Error('Missing organization context for scoped query'));
+        if (!ctx) return next();
+        if (!ctx.orgId) {
+            if (ctx.role === 'superadmin') return next();
+            return next(new Error('Missing organization context for scoped query'));
+        }
         this.where({ orgId: ctx.orgId });
         next();
     });
@@ -30,8 +33,11 @@ export const orgScopePlugin = (schema, options = {}) => {
     // Auto-filter aggregation pipelines (these don't go through the hooks above)
     schema.pre('aggregate', function (next) {
         const ctx = getRequestContext();
-        if (!ctx || ctx.role === 'superadmin') return next();
-        if (!ctx.orgId) return next(new Error('Missing organization context for scoped aggregation'));
+        if (!ctx) return next();
+        if (!ctx.orgId) {
+            if (ctx.role === 'superadmin') return next();
+            return next(new Error('Missing organization context for scoped query'));
+        }
         this.pipeline().unshift({ $match: { orgId: ctx.orgId } });
         next();
     });
@@ -40,8 +46,11 @@ export const orgScopePlugin = (schema, options = {}) => {
     schema.pre('validate', function (next) {
         if (this.isNew && !this.orgId) {
             const ctx = getRequestContext();
-            if (ctx && ctx.role !== 'superadmin') {
-                if (!ctx.orgId) return next(new Error('Missing organization context for document creation'));
+            if (ctx) {
+                if (!ctx.orgId) {
+                    if (ctx.role === 'superadmin') return next();
+                    return next(new Error('Missing organization context for scoped query'));
+                }
                 this.orgId = ctx.orgId;
             }
         }
