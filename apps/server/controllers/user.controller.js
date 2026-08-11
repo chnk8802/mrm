@@ -167,7 +167,6 @@ export const updateUser = async (req, res, next) => {
     }
 };
 
-
 /**
  * @desc    Update own password (verifies current password)
  * @route   PUT /api/users/me/password
@@ -177,7 +176,7 @@ export const updatePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
 
-        const user = await User.findById(req.user._id).select('+password');
+        const user = await User.findById(req.user._id).select('+password').setOptions({ skipOrgScope: true });
         if (!user) throw createError(404, 'User not found');
 
         const isMatch = await bcrypt.compare(currentPassword, user.password);

@@ -111,6 +111,8 @@ export const getProfile = async (req, res, next) => {
         next(error);
     }
 };
+
+
 /**
  * @desc    Update logged in user profile
  * @route   PATCH /api/auth/profile
@@ -120,7 +122,7 @@ export const updateProfile = async (req, res, next) => {
     try {
         const { name, phone, address, password, avatar } = req.body;
 
-        const user = await User.findOne({ _id: req.user.id, isActive: true, isDeleted: false }).select('+password');
+        const user = await User.findOne({ _id: req.user.id, isActive: true, isDeleted: false }).select('+password').setOptions({ skipOrgScope: true });
         if (!user) throw createError(404, 'User not found');
 
         if (name)    user.name    = name;
