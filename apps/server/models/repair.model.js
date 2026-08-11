@@ -58,7 +58,7 @@ repairSchema.index({ isDeleted: 1, status: 1 });
 repairSchema.index({ createdAt: -1 });
 repairSchema.index({ deviceModel: 'text', imei: 'text', problem: 'text' });
 
-repairSchema.plugin(orgScopePlugin, {countsTowardsCap: true});
+repairSchema.plugin(orgScopePlugin, {countsTowardCap: true});
 repairSchema.index({ orgId: 1, repairId: 1 }, { unique: true });
 
 export default mongoose.model('Repair', repairSchema);

@@ -40,6 +40,6 @@ supplierSchema.virtual('fullAddress').get(function () {
 supplierSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 supplierSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 
-supplierSchema.plugin(orgScopePlugin, {countsTowardsCap: true});
+supplierSchema.plugin(orgScopePlugin, {countsTowardCap: true});
 
 export default mongoose.model('Supplier', supplierSchema);

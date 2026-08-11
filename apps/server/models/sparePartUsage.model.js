@@ -23,6 +23,6 @@ sparePartUsageSchema.index({ repair: 1 });
 sparePartUsageSchema.index({ supplier: 1 });
 sparePartUsageSchema.index({ installedAt: -1 });
 
-sparePartUsageSchema.plugin(orgScopePlugin, {countsTowardsCap: true});
+sparePartUsageSchema.plugin(orgScopePlugin, {countsTowardCap: true});
 
 export default mongoose.model('SparePartUsage', sparePartUsageSchema);

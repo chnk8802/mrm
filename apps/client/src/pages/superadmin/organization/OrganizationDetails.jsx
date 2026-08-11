@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-const OrganizationDetail = () => {
+const OrganizationDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -47,8 +47,8 @@ const OrganizationDetail = () => {
           name: orgRes.data.name || "",
           contactEmail: orgRes.data.contactEmail || "",
           contactPhone: orgRes.data.contactPhone || "",
-          planId: orgRes.data.planId?._id || "",
-          capsOverride: orgRes.data.capsOverride,
+          planId: orgRes.data.subscription.planId?._id || "",
+          capsOverride: orgRes.data.subscription.capsOverride,
           isActive: orgRes.data.isActive,
         });
       } catch (err) {
@@ -108,12 +108,18 @@ const OrganizationDetail = () => {
         <div>
           <p className="text-xs text-muted-foreground">Records used</p>
           <p className="text-lg font-semibold text-foreground">
-            {org.capsOverride ? `${org.recordCount} / Unlimited` : `${org.recordCount} / ${org.planId?.recordCap ?? "—"}`}
+            {org.subscription.capsOverride ? `${org.subscription.recordCount} / Unlimited` : `${org.subscription.recordCount} / ${org.subscription.planId?.recordCap ?? "—"}`}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Current Plan</p>
-          <p className="text-lg font-semibold text-foreground">{org.planId?.name || "—"}</p>
+          <p className="text-lg font-semibold text-foreground">{org.subscription.planId?.name || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Trial Ends</p>
+          <p className="text-lg font-semibold text-foreground">
+            {org.subscription.expiresAt ? new Date(org.subscription.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+          </p>
         </div>
       </div>
 
@@ -190,4 +196,4 @@ const OrganizationDetail = () => {
   );
 };
 
-export default OrganizationDetail;
+export default OrganizationDetails;

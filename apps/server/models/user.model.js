@@ -44,6 +44,6 @@ userSchema.virtual('fullAddress').get(function () {
 userSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 userSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 
-userSchema.plugin(orgScopePlugin, { addField: false , countsTowardsCap: true});
+userSchema.plugin(orgScopePlugin, { addField: false , countsTowardCap: true});
 
 export default mongoose.model('User', userSchema);

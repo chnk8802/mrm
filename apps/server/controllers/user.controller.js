@@ -37,8 +37,8 @@ export const createUser = async (req, res, next) => {
             const org = await Organization.findById(req.user.orgId).populate('planId', 'userCap');
             if (!org) throw createError(404, 'Organization not found');
 
-            if (!org.capsOverride) {
-                const maxUsers = org.planId.userCap;
+            if (!org.subscription.capsOverride) {
+                const maxUsers = org.subscription.planId.userCap;
                 const activeUserCount = await User.countDocuments({ orgId: req.user.orgId, isDeleted: false });
 
                 if (activeUserCount >= maxUsers) {

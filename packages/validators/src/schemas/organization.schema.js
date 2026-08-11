@@ -20,7 +20,8 @@ export const organizationUpdateSchema = z.object({
     contactPhone: z.string().max(20).optional(),
     planId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid plan ID').optional(),
     capsOverride: z.boolean().optional(),
-    isActive: z.boolean().optional()
+    isActive: z.boolean().optional(),
+    expiresAt: z.coerce.date().optional(),
 }).strict();
 
 export const organizationQuerySchema = z.object({

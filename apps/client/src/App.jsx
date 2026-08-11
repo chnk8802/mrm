@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 
 import OrganizationCreate from "./pages/superadmin/organization/OrganizationCreate";
 import OrganizationList from "./pages/superadmin/organization/OrganizationList";
+import OrganizationDetails from "./pages/superadmin/organization/OrganizationDetails";
 
 import RepairList from "./pages/repairOrder/RepairList";
 import RepairCreate from "./pages/repairOrder/RepairCreate";
@@ -133,6 +134,7 @@ export default function App() {
           <Route element={<ProtectedRoute minRole="superadmin" />}>
             <Route path="organizations" element={<OrganizationList />} />
             <Route path="organizations/new" element={<OrganizationCreate />} />
+            <Route path="organizations/:id" element={<OrganizationDetails />} />
           </Route>
         </Route>
       </Route>

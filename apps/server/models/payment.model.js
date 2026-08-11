@@ -31,6 +31,6 @@ paymentSchema.index({ isDeleted: 1, type: 1 });
 paymentSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 paymentSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 
-paymentSchema.plugin(orgScopePlugin, {countsTowardsCap: true});
+paymentSchema.plugin(orgScopePlugin, {countsTowardCap: true});
 
 export default mongoose.model('Payment', paymentSchema);

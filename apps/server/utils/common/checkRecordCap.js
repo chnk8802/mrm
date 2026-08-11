@@ -13,15 +13,15 @@ export const checkRecordCap = async () => {
     const ctx = getRequestContext();
     if (!ctx?.orgId) return;
 
-    const org = await Organization.findById(ctx.orgId).populate('planId', 'recordCap');
+    const org = await Organization.findById(ctx.orgId).populate('subscription.planId', 'recordCap');
     if (!org) throw createError(404, 'Organization not found');
 
-    if (org.capsOverride) return;
+    if (org.subscription.capsOverride) return;
 
-    if (org.recordCount >= org.planId.recordCap) {
+    if (org.subscription.recordCount >= org.subscription.planId.recordCap) {
         throw createError(
             403,
-            `Record limit reached for your plan (${org.planId.recordCap} max). Contact support to upgrade.`
+            `Record limit reached for your plan (${org.subscription.planId.recordCap} max). Contact support to upgrade.`
         );
     }
 };

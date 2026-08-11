@@ -5,11 +5,14 @@ const organizationSchema = new mongoose.Schema(
         name: { type: String, required: true, trim: true, maxlength: [100, 'Name cannot exceed 100 characters'] },
         contactEmail: { type: String, trim: true, lowercase: true, maxlength: [100, 'Email cannot exceed 100 characters'] },
         contactPhone: { type: String, trim: true, maxlength: [20, 'Phone number cannot exceed 20 characters'] },
-        planId: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan', required: true },
-        capsOverride: { type: Boolean, default: false },
-        recordCount: { type: Number, default: 0, min: 0 },
+        subscription: {
+            planId: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan', required: true },
+            capsOverride: { type: Boolean, default: false },
+            recordCount: { type: Number, default: 0, min: 0 },
+            expiresAt: { type: Date },
+        },
         isActive: { type: Boolean, default: true },
-        isDeleted: { type: Boolean, default: false, select: false }
+        isDeleted: { type: Boolean, default: false, select: false },
     },
     { timestamps: true, versionKey: false }
 );

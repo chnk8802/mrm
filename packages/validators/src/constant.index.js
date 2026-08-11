@@ -3,4 +3,4 @@ export * from './constants/customer.constant.js'
 export * from './constants/repair.constant.js';
 export * from './constants/payment.constant.js';
 export * from './constants/plans.constant.js'
-export * from './constants/organisation.constant.js'
+export * from './constants/organization.constant.js'

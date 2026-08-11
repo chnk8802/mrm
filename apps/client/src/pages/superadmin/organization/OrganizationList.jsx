@@ -131,7 +131,7 @@ const OrganizationList = () => {
                       {org.name}
                     </div>
                   </td>
-                  <td className="py-1 px-4 text-sm text-muted-foreground">{org.planId?.name || "—"}</td>
+                  <td className="py-1 px-4 text-sm text-muted-foreground">{org.subscription.planId?.name || "—"}</td>
                   <td className="py-1 px-4 text-sm text-muted-foreground">{org.contactEmail || "—"}</td>
                   <td className="py-1 px-4 text-sm text-muted-foreground">{org.contactPhone || "—"}</td>
                   <td className="py-1 px-4">
@@ -164,7 +164,7 @@ const OrganizationList = () => {
             >
               <div>
                 <p className="text-sm font-medium text-foreground">{org.name}</p>
-                <p className="text-xs text-muted-foreground">{org.planId?.name || "—"}</p>
+                <p className="text-xs text-muted-foreground">{org.subscription.planId?.name || "—"}</p>
                 <p className="text-xs text-muted-foreground">{org.contactEmail || "—"}</p>
                 <p className="text-xs text-muted-foreground">{org.contactPhone || "—"}</p>
               </div>

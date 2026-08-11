@@ -133,7 +133,7 @@ const Settings = () => {
     if (!userData || userData.role === 'superadmin') return;
     organizationService.getMyOrganization()
       .then(r => setOrgData(r.data))
-      .catch(() => {}); // non-critical — plan tab just won't render usage
+      .catch(() => { }); // non-critical — plan tab just won't render usage
   }, [userData]);
 
   const setAddr = useCallback((key, val) =>
@@ -352,8 +352,8 @@ const Settings = () => {
     if (!orgData) {
       return <p className="text-sm text-muted-foreground">Loading plan details...</p>;
     }
-    const plan = orgData.planId;
-    const unlimited = orgData.capsOverride;
+    const plan = orgData.subscription.planId;
+    const unlimited = orgData.subscription.capsOverride;
 
     return (
       <div className="space-y-4">
@@ -380,14 +380,15 @@ const Settings = () => {
               <div className="space-y-1 p-3 rounded-lg border border-border">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Records used</p>
                 <p className="text-lg font-semibold text-foreground">
-                  {orgData.recordCount}
+                  {orgData.subscription.recordCount}
                   <span className="text-sm font-normal text-muted-foreground"> / {unlimited ? 'Unlimited' : plan?.recordCap ?? '—'}</span>
                 </p>
               </div>
               <div className="space-y-1 p-3 rounded-lg border border-border">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">User cap</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Users</p>
                 <p className="text-lg font-semibold text-foreground">
-                  {unlimited ? 'Unlimited' : plan?.userCap ?? '—'}
+                  {orgData.userCount}
+                  <span className="text-sm font-normal text-muted-foreground"> / {unlimited ? 'Unlimited' : plan?.userCap ?? '—'}</span>
                 </p>
               </div>
             </div>
