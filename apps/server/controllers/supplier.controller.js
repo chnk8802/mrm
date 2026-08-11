@@ -4,6 +4,7 @@ import SparePartUsage from '../models/sparePartUsage.model.js';
 import { createError } from '../utils/common/errorHandler.js';
 import { supplierSchema, supplierUpdateSchema, supplierBulkUpdateSchema, supplierBulkDeleteSchema, supplierQuerySchema } from '@repo/validators';
 import { flattenObject } from '../utils/common/flattenObject.js';
+import { checkRecordCap } from '../utils/common/checkRecordCap.js';
 
 /**
  * @desc    Create a new supplier
@@ -13,6 +14,8 @@ import { flattenObject } from '../utils/common/flattenObject.js';
 export const createSupplier = async (req, res, next) => {
     try {
         const validatedData = supplierSchema.parse(req.body);
+        await checkRecordCap();
+        
         const supplier = await Supplier.create(validatedData);
         res.status(201).json({ success: true, data: supplier, message: 'Supplier created successfully' });
     } catch (error) {

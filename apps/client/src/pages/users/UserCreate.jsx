@@ -90,6 +90,7 @@ const UserCreate = () => {
   };
 
   const onSubmit = async (data) => {
+    console.log("subMITTING")
     try {
       const { confirmPassword, ...userData } = data;
       await userService.createUser(userData);
@@ -98,11 +99,7 @@ const UserCreate = () => {
     } catch (err) {
       const errorData = err.response?.data;
 
-      if (
-        errorData?.errors &&
-        Array.isArray(errorData.errors) &&
-        errorData.errors.length > 0
-      ) {
+      if ( errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0 ) {
         toast.error(errorData.errors[0].message);
       } else {
         toast.error(errorData?.message || "Failed to create user");
@@ -125,7 +122,7 @@ const UserCreate = () => {
         <h1 className="text-base font-semibold text-foreground">Create User</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, (errs) => console.log('validation failed:', errs))}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Role Selection */}
           <Card className="border-border shadow-none">

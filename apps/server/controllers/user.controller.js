@@ -9,7 +9,6 @@ import {
     userUpdateSchema,
     userQuerySchema,
     resetPasswordSchema,
-    PLANS,
 } from '@repo/validators';
 import Organization from '../models/organization.model.js';
 
@@ -35,25 +34,24 @@ export const createUser = async (req, res, next) => {
         }
 
         if (req.user.role !== 'superadmin') {
-            const org = await Organization.findById(req.user.orgId);
+            const org = await Organization.findById(req.user.orgId).populate('planId', 'userCap');
             if (!org) throw createError(404, 'Organization not found');
 
-            const maxUsers = PLANS[org.plan]?.maxUsers ?? PLANS.plan1test.maxUsers;
-            const activeUserCount = await User.countDocuments({ orgId: req.user.orgId, isDeleted: false });
+            if (!org.capsOverride) {
+                const maxUsers = org.planId.userCap;
+                const activeUserCount = await User.countDocuments({ orgId: req.user.orgId, isDeleted: false });
 
-            if (activeUserCount >= maxUsers) {
-                throw createError(403, `User limit reached for your plan (${maxUsers} max). Contact support to upgrade.`);
+                if (activeUserCount >= maxUsers) {
+                    throw createError(403, `User limit reached for your plan (${maxUsers} max). Contact support to upgrade.`);
+                }
             }
         }
-
 
         const userExists = await User.findOne({ email: validatedData.email }).setOptions({ skipOrgScope: true });;
         if (userExists) throw createError(400, 'User with this email already exists');
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(validatedData.password, salt);
-
-        delete validatedData.orgId;
         const user = await User.create({ ...validatedData, password: hashedPassword });
 
         const userResponse = user.toObject();

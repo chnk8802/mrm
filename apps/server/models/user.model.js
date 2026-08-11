@@ -4,7 +4,7 @@ import { orgScopePlugin } from '../utils/common/orgScope.plugin.js';
 
 const userSchema = new mongoose.Schema(
     {
-        name: { type: String, required: true, trim: true },
+        name: { type: String, required: true, trim: true, maxlength: [20, 'user\'s name cannot exceed 20 characters'] },
         email: { type: String, required: true, trim: true, lowercase: true },
         password: { type: String, required: true, select: false },
         role: { type: String, enum: ROLES, required: true },
@@ -44,6 +44,6 @@ userSchema.virtual('fullAddress').get(function () {
 userSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 userSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; } });
 
-userSchema.plugin(orgScopePlugin, { addField: false });
+userSchema.plugin(orgScopePlugin, { addField: false , countsTowardsCap: true});
 
 export default mongoose.model('User', userSchema);

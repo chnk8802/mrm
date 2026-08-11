@@ -8,6 +8,7 @@ import TableFooter from "@/components/common/TableFooter";
 
 const columns = [
   { label: "Name", col: "name" },
+  { label: "Plan", col: "plan" },
   { label: "Contact Email", col: "contactEmail" },
   { label: "Contact Phone", col: "contactPhone" },
   { label: "Status", col: "status" },
@@ -119,13 +120,18 @@ const OrganizationList = () => {
               </tr>
             ) : (
               organizations.map((org) => (
-                <tr key={org._id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                <tr
+                  key={org._id}
+                  onClick={() => navigate(`/app/organizations/${org._id}`)}
+                  className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+                >
                   <td className="py-1 px-4 text-sm font-medium text-foreground">
                     <div className="flex items-center gap-2">
                       <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
                       {org.name}
                     </div>
                   </td>
+                  <td className="py-1 px-4 text-sm text-muted-foreground">{org.planId?.name || "—"}</td>
                   <td className="py-1 px-4 text-sm text-muted-foreground">{org.contactEmail || "—"}</td>
                   <td className="py-1 px-4 text-sm text-muted-foreground">{org.contactPhone || "—"}</td>
                   <td className="py-1 px-4">
@@ -151,9 +157,14 @@ const OrganizationList = () => {
           <p className="text-center py-16 text-sm text-muted-foreground">No organizations found</p>
         ) : (
           organizations.map((org) => (
-            <div key={org._id} className="px-4 py-3 flex items-center justify-between">
+            <div
+              key={org._id}
+              onClick={() => navigate(`/app/organizations/${org._id}`)}
+              className="px-4 py-3 flex items-center justify-between cursor-pointer active:bg-muted/40"
+            >
               <div>
                 <p className="text-sm font-medium text-foreground">{org.name}</p>
+                <p className="text-xs text-muted-foreground">{org.planId?.name || "—"}</p>
                 <p className="text-xs text-muted-foreground">{org.contactEmail || "—"}</p>
                 <p className="text-xs text-muted-foreground">{org.contactPhone || "—"}</p>
               </div>

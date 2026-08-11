@@ -13,6 +13,7 @@ import {
 } from '@repo/validators';
 import withTransaction from '../utils/common/withTransaction.js';
 import { createError } from '../utils/common/errorHandler.js';
+import { checkRecordCap } from '../utils/common/checkRecordCap.js';
 
 const populate = (query) => query
     .populate('repair', 'repairId deviceModel status')
@@ -38,6 +39,7 @@ const verifySupplier = async (supplierId) => {
 export const createSparePartUsage = async (req, res, next) => {
     try {
         const validatedData = sparePartUsageSchema.parse(req.body);
+        await checkRecordCap();
 
         const repair = await verifyRepair(validatedData.repair);
 

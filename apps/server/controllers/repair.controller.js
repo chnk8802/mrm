@@ -17,6 +17,7 @@ import {
   scopeRepairQueryForRole,
   shapeRepairForRole,
 } from "../utils/repair.access.js";
+import { checkRecordCap } from "../utils/common/checkRecordCap.js";
 
 /**
  * @desc Create a new repair order
@@ -26,6 +27,7 @@ import {
 export const createRepair = async (req, res, next) => {
   try {
     const validatedData = repairSchema.parse(req.body);
+    await checkRecordCap();
 
     const customer = await Customer.findOne({
       _id: validatedData.customer,

@@ -1,15 +1,11 @@
 import bcrypt from 'bcryptjs';
 import Organization from '../models/organization.model.js';
 import User from '../models/user.model.js';
+import Plan from '../models/plan.model.js';
 import { createError } from '../utils/common/errorHandler.js';
 import withTransaction from '../utils/common/withTransaction.js';
 import { createOrganizationSchema, organizationQuerySchema } from '@repo/validators';
 
-/**
- * @desc    Create a new organization + its first admin user
- * @route   POST /api/platform/organizations
- * @access  Private (Superadmin only)
- */
 export const createOrganization = async (req, res, next) => {
     try {
         const { name, contactEmail, contactPhone, admin } = createOrganizationSchema.parse(req.body);
@@ -17,11 +13,17 @@ export const createOrganization = async (req, res, next) => {
         const existingUser = await User.findOne({ email: admin.email, isDeleted: false });
         if (existingUser) throw createError(400, 'A user with this email already exists');
 
+        const defaultPlan = await Plan.findOne({ isDefault: true, isActive: true });
+        if (!defaultPlan) throw createError(500, 'No default plan configured');
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(admin.password, salt);
 
         const result = await withTransaction(async (session) => {
-            const [org] = await Organization.create([{ name, contactEmail, contactPhone }], { session });
+            const [org] = await Organization.create(
+                [{ name, contactEmail, contactPhone, planId: defaultPlan._id }],
+                { session }
+            );
 
             const [adminUser] = await User.create([{
                 name: admin.name,
@@ -64,7 +66,29 @@ export const getMyOrganization = async (req, res, next) => {
             throw createError(400, 'Superadmin is not tied to an organization');
         }
 
-        const org = await Organization.findById(req.user.orgId).select('name plan isActive');
+        const org = await Organization.findById(req.user.orgId)
+            .select('name planId capsOverride recordCount isActive')
+            .populate('planId', 'name slug userCap recordCap');
+        if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
+
+        res.json({ success: true, data: org });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get single organization by ID
+ * @route   GET /api/platform/organizations/:id
+ * @access  Private (Superadmin only)
+ */
+export const getOrganizationById = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        const org = await Organization.findOne({ _id: id, isDeleted: false })
+            .populate('planId', 'name slug userCap recordCap');
         if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
 
         res.json({ success: true, data: org });
@@ -97,7 +121,7 @@ export const getOrganizations = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const [organizations, total] = await Promise.all([
-            Organization.find(query).sort(sortOptions).skip(skip).limit(limit),
+            Organization.find(query).sort(sortOptions).skip(skip).limit(limit).populate('planId', 'name slug'),
             Organization.countDocuments(query)
         ]);
 
@@ -106,6 +130,37 @@ export const getOrganizations = async (req, res, next) => {
             data: organizations,
             pagination: { page, limit, total, pages: Math.ceil(total / limit) }
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update an organization
+ * @route   PATCH /api/platform/organizations/:id
+ * @access  Private (Superadmin only)
+ */
+export const updateOrganization = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
+
+        const validatedData = organizationUpdateSchema.parse(req.body);
+
+        if (validatedData.planId) {
+            const plan = await Plan.findOne({ _id: validatedData.planId, isActive: true });
+            if (!plan) throw createError(400, 'Invalid or inactive plan');
+        }
+
+        const org = await Organization.findOneAndUpdate(
+            { _id: id, isDeleted: false },
+            { $set: validatedData },
+            { new: true, runValidators: true }
+        ).populate('planId', 'name slug userCap recordCap');
+
+        if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
+
+        res.json({ success: true, data: org, message: 'Organization updated successfully' });
     } catch (error) {
         next(error);
     }

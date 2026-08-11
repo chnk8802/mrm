@@ -41,6 +41,6 @@ customerSchema.virtual('fullAddress').get(function() {
 customerSchema.set('toJSON', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; }});
 customerSchema.set('toObject', { virtuals: true, transform: (doc, ret) => { delete ret.id; return ret; }});
 
-customerSchema.plugin(orgScopePlugin);
+customerSchema.plugin(orgScopePlugin, {countsTowardsCap: true});
 
 export default mongoose.model('Customer', customerSchema);

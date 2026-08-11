@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Lock, User, Palette, Moon, Sun, Check, Eye, EyeOff, Pencil, X } from 'lucide-react';
+import { Bell, Lock, User, Palette, Moon, Sun, Check, Eye, EyeOff, Pencil, X, CreditCard } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { getInitials } from '@/utils/getInitials';
 import { authService } from '@/api/authService';
+import organizationService from '@/api/organizationService';
 import toast from 'react-hot-toast';
 import TestingNotice from '../website/TestingNotice';
 import ThemeSelector from '@/components/common/ThemeSelector';
@@ -18,6 +19,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 // ─────────────────────────────────────────────────────────────────────────────
 const TABS = [
   { value: 'profile', label: 'Profile', icon: User, desc: 'Your personal info' },
+  { value: 'plan', label: 'Plan', icon: CreditCard, desc: 'Usage & subscription' },
   // { value: 'security', label: 'Security', icon: Lock, desc: 'Password & access' },
   { value: 'preferences', label: 'Preferences', icon: Palette, desc: 'Theme & regional' },
   // { value: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alerts & updates' },
@@ -69,6 +71,9 @@ const Settings = () => {
   // ── global state ──
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
+
+  // ── plan state ──
+  const [orgData, setOrgData] = useState(null);
 
   // ── profile edit state ──
   const [editMode, setEditMode] = useState(false);
@@ -122,6 +127,14 @@ const Settings = () => {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // ── fetch org/plan data once we know the user's role ──
+  useEffect(() => {
+    if (!userData || userData.role === 'superadmin') return;
+    organizationService.getMyOrganization()
+      .then(r => setOrgData(r.data))
+      .catch(() => {}); // non-critical — plan tab just won't render usage
+  }, [userData]);
 
   const setAddr = useCallback((key, val) =>
     setEditForm(f => ({ ...f, address: { ...f.address, [key]: val } }))
@@ -335,6 +348,59 @@ const Settings = () => {
     </div>
   ), [userData, editMode, editForm, editSaving, setAddr, cancelEdit, handleEditSave]);
 
+  const planPanel = useMemo(() => {
+    if (!orgData) {
+      return <p className="text-sm text-muted-foreground">Loading plan details...</p>;
+    }
+    const plan = orgData.planId;
+    const unlimited = orgData.capsOverride;
+
+    return (
+      <div className="space-y-4">
+        <Card className="border-border shadow-none">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Current Plan</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+              <div>
+                <p className="text-sm font-semibold text-foreground">{plan?.name || '—'}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {unlimited ? 'Unlimited access (manually granted)' : 'Standard plan limits apply'}
+                </p>
+              </div>
+              {unlimited && (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+                  Unlimited
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1 p-3 rounded-lg border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Records used</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {orgData.recordCount}
+                  <span className="text-sm font-normal text-muted-foreground"> / {unlimited ? 'Unlimited' : plan?.recordCap ?? '—'}</span>
+                </p>
+              </div>
+              <div className="space-y-1 p-3 rounded-lg border border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">User cap</p>
+                <p className="text-lg font-semibold text-foreground">
+                  {unlimited ? 'Unlimited' : plan?.userCap ?? '—'}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Need a higher limit? Contact support to upgrade your plan.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }, [orgData]);
+
   const securityPanel = useMemo(() => (
     <Card className="border-border shadow-none">
       <CardHeader className="pb-3">
@@ -447,10 +513,13 @@ const Settings = () => {
 
   const panels = {
     profile: profilePanel,
+    plan: planPanel,
     // security: securityPanel,
     preferences: preferencesPanel,
     // notifications: notificationsPanel,
   };
+
+  const visibleTabs = TABS.filter(t => t.value !== 'plan' || userData?.role !== 'superadmin');
 
   return (
     <div className="flex flex-col h-full">
@@ -469,7 +538,7 @@ const Settings = () => {
       {/* Mobile tab strip */}
       <div className="md:hidden border-b border-border bg-background px-3 py-2 [mask-image:linear-gradient(to_right,black_90%,transparent)]">
         <div className="flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
-          {TABS.map(({ value, label, icon: Icon }) => {
+          {visibleTabs.map(({ value, label, icon: Icon }) => {
             const active = activeTab === value;
             return (
               <button
@@ -491,7 +560,7 @@ const Settings = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — desktop only */}
         <nav className="hidden md:flex flex-col w-48 shrink-0 border-r border-border bg-muted/20 p-2 gap-0.5">
-          {TABS.map(({ value, label, icon: Icon, desc }) => {
+          {visibleTabs.map(({ value, label, icon: Icon, desc }) => {
             const active = activeTab === value;
             return (
               <button

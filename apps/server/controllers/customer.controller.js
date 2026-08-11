@@ -11,6 +11,7 @@ import {
 } from '@repo/validators';
 
 import { flattenObject } from '../utils/common/flattenObject.js';
+import { checkRecordCap } from '../utils/common/checkRecordCap.js';
 
 /**
  * @desc    Create a new customer
@@ -20,6 +21,7 @@ import { flattenObject } from '../utils/common/flattenObject.js';
 export const createCustomer = async (req, res, next) => {
     try {
         const validatedData = customerSchema.parse(req.body);
+        await checkRecordCap();
 
         const customer = await Customer.create(validatedData);
 

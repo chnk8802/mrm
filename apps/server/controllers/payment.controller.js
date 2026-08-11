@@ -10,6 +10,7 @@ import withTransaction from '../utils/common/withTransaction.js';
 import { paymentSchema, paymentQuerySchema, paymentFNFSchema } from '@repo/validators';
 import { getOutstandingRepairFilter, getOutstandingSparePartFilter, ELIGIBLE_REPAIR_STATUSES } from '../utils/payment.filters.js';
 import { getRepairRemaining } from '../utils/repair.calculations.js';
+import { checkRecordCap } from '../utils/common/checkRecordCap.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ const calculatePaymentStatus = (totalOwed, amountPaid) => {
 export const createPayment = async (req, res, next) => {
     try {
         const validatedData = paymentSchema.parse(req.body);
+        await checkRecordCap();
 
         validatedData.recordedBy = req.user._id;
 

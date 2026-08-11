@@ -14,6 +14,15 @@ export const createOrganizationSchema = z.object({
     })
 }).strict();
 
+export const organizationUpdateSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    contactEmail: z.string().email().optional(),
+    contactPhone: z.string().max(20).optional(),
+    planId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid plan ID').optional(),
+    capsOverride: z.boolean().optional(),
+    isActive: z.boolean().optional()
+}).strict();
+
 export const organizationQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(10),
