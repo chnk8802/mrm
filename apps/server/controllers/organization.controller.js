@@ -75,7 +75,7 @@ export const getMyOrganization = async (req, res, next) => {
         }
 
         const org = await Organization.findById(req.user.orgId)
-            .select('name planId capsOverride recordCount isActive')
+            .select('name subscription isActive')
             .populate('subscription.planId', 'name slug userCap recordCap');
         if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
 
