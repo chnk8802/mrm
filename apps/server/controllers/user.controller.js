@@ -34,7 +34,7 @@ export const createUser = async (req, res, next) => {
         }
 
         if (req.user.role !== 'superadmin') {
-            const org = await Organization.findById(req.user.orgId).populate('planId', 'userCap');
+            const org = await Organization.findById(req.user.orgId).populate('subscription.planId', 'userCap');
             if (!org) throw createError(404, 'Organization not found');
 
             if (!org.subscription.capsOverride) {
