@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { globalLimiter } from './utils/common/rateLimiters.js';
 
 import { handleError } from './utils/common/errorHandler.js'
 
@@ -26,6 +27,9 @@ app.use(cors({ origin: (origin, callback) => { callback(null, true) }, credentia
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+app.set('trust proxy', 1); // before any limiter, required on Render
+app.use(globalLimiter);    // before your routes
 
 app.get('/', (req, res) => res.send('Mobile Repair API Running...'));
 
