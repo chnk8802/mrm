@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import config from '../config/env.js';
 import User from '../models/user.model.js';
+import Organization from '../models/organization.model.js';
 import { requestContext } from '../utils/common/requestContext.js';
 
 const protect = async (req, res, next) => {
@@ -16,11 +17,23 @@ const protect = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, config.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
-        if (!user) return res.status(401).json({ success: false, message: 'User no longer exists' });
-        if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
-            return res.status(401).json({ success: false, message: 'Session expired, please log in again' });
+
+        const user = await User.findById(decoded.id).select('-password +isDeleted');
+        if (!user || user.isDeleted || !user.isActive) {
+            return res.status(401).json({ success: false, message: 'User no longer exists or is inactive' });
         }
+
+        if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+            return res.status(401).json({ success: false, message: 'Password was changed, please log in again' });
+        }
+
+        if (user.role !== 'superadmin') {
+            const org = await Organization.findById(user.orgId).select('isActive +isDeleted');
+            if (!org || !org.isActive || org.isDeleted) {
+                return res.status(403).json({ success: false, message: 'This organization no longer has access. Contact support.' });
+            }
+        }
+
         req.user = user;
 
         if (user.mustChangePassword) {
