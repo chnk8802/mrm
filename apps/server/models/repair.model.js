@@ -3,7 +3,6 @@ import Counter from './counter.model.js';
 import { PAYMENT_METHODS, PAYMENT_STATUS, STATUS_OPTIONS } from '@repo/validators';
 import { rounded } from '../utils/common/roundedNumber.js';
 import { orgScopePlugin } from '../utils/common/orgScope.plugin.js';
-import { getRequestContext } from '../utils/common/requestContext.js';
 
 const repairSchema = new mongoose.Schema(
     {
@@ -31,8 +30,7 @@ const repairSchema = new mongoose.Schema(
 
 repairSchema.pre('save', async function (next) {
     if (!this.repairId) {
-        const ctx = getRequestContext();
-        const orgKey = ctx?.orgId?.toString() ?? 'global';
+        const orgKey = this.orgId?.toString() ?? 'global';
         const counter = await Counter.findByIdAndUpdate(
             `repairId:${orgKey}`,
             { $inc: { seq: 1 } },
