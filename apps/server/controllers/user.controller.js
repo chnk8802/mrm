@@ -52,7 +52,7 @@ export const createUser = async (req, res, next) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(validatedData.password, salt);
-        const user = await User.create({ ...validatedData, password: hashedPassword });
+        const user = await User.create({ ...validatedData, password: hashedPassword, mustChangePassword: true });
 
         const userResponse = user.toObject();
         delete userResponse.password;
@@ -182,8 +182,14 @@ export const updatePassword = async (req, res, next) => {
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) throw createError(400, 'Current password is incorrect');
 
+        if (await bcrypt.compare(newPassword, user.password)) {
+            throw createError(400, 'New password must be different from the current one');
+        }
+
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
+        user.mustChangePassword = false;
+        user.passwordChangedAt = new Date();
         await user.save();
 
         res.json({ success: true, message: 'Password updated successfully' });
@@ -353,6 +359,8 @@ export const resetPassword = async (req, res, next) => {
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
+        user.mustChangePassword = true;
+        user.passwordChangedAt = new Date();
         await user.save();
 
         res.json({ success: true, message: 'Password reset successfully' });

@@ -22,7 +22,8 @@ const userResponse = (user) => ({
     phone: user.phone,
     address: user.address,
     role: user.role,
-    avatar: user.avatar
+    avatar: user.avatar,
+    mustChangePassword: user.mustChangePassword
 });
 
 /**
@@ -86,7 +87,6 @@ export const loginUser = async (req, res, next) => {
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) throw createError(401, 'Invalid email or password');
-
         res.cookie('token', generateToken(user._id), cookieOptions());
 
         res.json({ success: true, data: userResponse(user) });
@@ -120,7 +120,7 @@ export const getProfile = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
     try {
-        const { name, phone, address, password, avatar } = req.body;
+        const { name, phone, address, avatar } = req.body;
 
         const user = await User.findOne({ _id: req.user.id, isActive: true, isDeleted: false }).select('+password').setOptions({ skipOrgScope: true });
         if (!user) throw createError(404, 'User not found');
@@ -132,11 +132,6 @@ export const updateProfile = async (req, res, next) => {
         // handle nested address update
         if (address) {
             user.address = { ...user.address?.toObject(), ...address };
-        }
-
-        if (password) {
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(password, salt);
         }
 
         await user.save();

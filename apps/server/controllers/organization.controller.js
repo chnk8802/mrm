@@ -39,7 +39,8 @@ export const createOrganization = async (req, res, next) => {
                 password: hashedPassword,
                 phone: admin.phone,
                 role: 'admin',
-                orgId: org._id
+                orgId: org._id,
+                mustChangePassword: true
             }], { session });
 
             return { org, adminUser };

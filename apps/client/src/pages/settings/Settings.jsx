@@ -1,12 +1,11 @@
 import { useSearchParams } from 'react-router-dom';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Lock, User, Palette, Moon, Sun, Check, Eye, EyeOff, Pencil, X, CreditCard } from 'lucide-react';
+import { Bell, Lock, User, Palette, Moon, Sun, Check, Pencil, X, CreditCard } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { getInitials } from '@/utils/getInitials';
 import { authService } from '@/api/authService';
@@ -14,13 +13,14 @@ import organizationService from '@/api/organizationService';
 import toast from 'react-hot-toast';
 import TestingNotice from '../website/TestingNotice';
 import ThemeSelector from '@/components/common/ThemeSelector';
+import ChangePasswordForm from '@/components/common/ChangePasswordForm';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 // ─────────────────────────────────────────────────────────────────────────────
 const TABS = [
   { value: 'profile', label: 'Profile', icon: User, desc: 'Your personal info' },
   { value: 'plan', label: 'Plan', icon: CreditCard, desc: 'Usage & subscription' },
-  // { value: 'security', label: 'Security', icon: Lock, desc: 'Password & access' },
+  { value: 'security', label: 'Security', icon: Lock, desc: 'Password & access' },
   { value: 'preferences', label: 'Preferences', icon: Palette, desc: 'Theme & regional' },
   // { value: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alerts & updates' },
 ];
@@ -29,12 +29,6 @@ const NOTIF_ITEMS = [
   { key: 'emailNotifications', label: 'Email notifications', desc: 'Order updates and account alerts' },
   { key: 'pushNotifications', label: 'Push notifications', desc: 'Real-time alerts on your device' },
   { key: 'marketingEmails', label: 'Marketing emails', desc: 'New features and promotions' },
-];
-
-const PW_FIELDS = [
-  { id: 'currentPassword', label: 'Current password', showKey: 'current' },
-  { id: 'newPassword', label: 'New password', showKey: 'new' },
-  { id: 'confirmPassword', label: 'Confirm password', showKey: 'confirm' },
 ];
 
 const EMPTY_ADDRESS = { street: '', city: '', state: '', postalCode: '', country: '' };
@@ -79,11 +73,6 @@ const Settings = () => {
   const [editMode, setEditMode] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: EMPTY_ADDRESS });
-
-  // ── security state ──
-  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [pwShow, setPwShow] = useState({ current: false, new: false, confirm: false });
-  const [pwSaving, setPwSaving] = useState(false);
 
   // ── preferences state ──
   const [prefs, setPrefs] = useState({
@@ -167,35 +156,6 @@ const Settings = () => {
       setEditSaving(false);
     }
   }, [editForm]);
-
-  const handlePasswordUpdate = useCallback(async (e) => {
-    e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirmPassword)
-      return toast.error('Passwords do not match');
-    if (pwForm.newPassword.length < 6)
-      return toast.error('Password must be at least 6 characters');
-
-    setPwSaving(true);
-    try {
-      await authService.updatePassword({
-        currentPassword: pwForm.currentPassword,
-        newPassword: pwForm.newPassword,
-      });
-      toast.success('Password updated successfully');
-      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setPwShow({ current: false, new: false, confirm: false });
-    } catch (e) {
-      const errorData = e.response?.data;
-
-      if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
-        toast.error(errorData.errors[0].message);
-      } else {
-        toast.error(errorData?.message || 'Failed to update password');
-      }
-    } finally {
-      setPwSaving(false);
-    }
-  }, [pwForm]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Panels — memoized so they only rebuild when their own deps change
@@ -402,45 +362,16 @@ const Settings = () => {
     );
   }, [orgData]);
 
-  const securityPanel = useMemo(() => (
+  const securityPanel = (
     <Card className="border-border shadow-none">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold">Change Password</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handlePasswordUpdate} className="space-y-3 max-w-sm">
-          {PW_FIELDS.map(({ id, label, showKey }) => (
-            <div key={id}>
-              <Label className="text-xs">{label}</Label>
-              <div className="relative mt-1">
-                <Input
-                  id={id}
-                  type={pwShow[showKey] ? 'text' : 'password'}
-                  value={pwForm[id]}
-                  onChange={e => setPwForm(p => ({ ...p, [id]: e.target.value }))}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                  className="h-8 text-sm pr-9"
-                  autoComplete={id === 'currentPassword' ? 'current-password' : 'new-password'}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPwShow(p => ({ ...p, [showKey]: !p[showKey] }))}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {pwShow[showKey] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-          ))}
-          <div className="flex justify-end pt-1">
-            <Button type="submit" size="sm" disabled={pwSaving}>
-              {pwSaving ? 'Updating...' : 'Update Password'}
-            </Button>
-          </div>
-        </form>
+        <ChangePasswordForm />
       </CardContent>
     </Card>
-  ), [pwForm, pwShow, pwSaving, handlePasswordUpdate]);
+  );
 
   const preferencesPanel = useMemo(() => (
     <div className="space-y-4">
@@ -515,7 +446,7 @@ const Settings = () => {
   const panels = {
     profile: profilePanel,
     plan: planPanel,
-    // security: securityPanel,
+    security: securityPanel,
     preferences: preferencesPanel,
     // notifications: notificationsPanel,
   };

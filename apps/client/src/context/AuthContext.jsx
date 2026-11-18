@@ -35,6 +35,12 @@ export const AuthProvider = ({ children }) => {
     return res.data.data;
   };
 
+  const completePasswordChange = async () => {
+    const updated = { ...user, mustChangePassword: false };
+    setUser(updated);
+    await loadOrg(updated);
+  };
+
   const logout = async () => {
     await api.post('/auth/logout');
     setUser(null);
@@ -53,7 +59,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, organization, loading, login, logout, selectedOrgId, selectOrg }}>
+    <AuthContext.Provider value={{ user, organization, loading, login, logout, selectedOrgId, selectOrg, completePasswordChange }}>
       {children}
     </AuthContext.Provider>
   );

@@ -20,6 +20,8 @@ const userSchema = new mongoose.Schema(
         isActive: { type: Boolean, default: true },
         isDeleted: { type: Boolean, default: false, select: false },
         orgId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: function () { return this.role !== 'superadmin'; } },
+        mustChangePassword: { type: Boolean, default: false },
+        passwordChangedAt: { type: Date },
     },
     { timestamps: true, versionKey: false }
 );
