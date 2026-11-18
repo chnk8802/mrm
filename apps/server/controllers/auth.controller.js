@@ -5,7 +5,7 @@ import generateToken from '../utils/generateToken.js';
 import { createError } from '../utils/common/errorHandler.js';
 import { registerSchema, loginSchema } from '@repo/validators';
 
-const cookieOptions = () => {
+export const cookieOptions = () => {
     const isProduction = process.env.NODE_ENV === 'production';
     return {
         httpOnly: true,

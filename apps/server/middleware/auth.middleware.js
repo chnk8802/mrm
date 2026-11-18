@@ -18,6 +18,9 @@ const protect = async (req, res, next) => {
         const decoded = jwt.verify(token, config.JWT_SECRET);
         const user = await User.findById(decoded.id).select('-password');
         if (!user) return res.status(401).json({ success: false, message: 'User no longer exists' });
+        if (user.passwordChangedAt && decoded.iat < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+            return res.status(401).json({ success: false, message: 'Session expired, please log in again' });
+        }
         req.user = user;
 
         if (user.mustChangePassword) {

@@ -11,6 +11,12 @@ import { Label } from "@/components/ui/label";
 import userService from "@/api/userService";
 import toast from "react-hot-toast";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useAuth } from "@/context/AuthContext";
+
+const RESETTABLE = {
+    superadmin: ['admin', 'manager', 'staff'],
+    admin: ['manager', 'staff'],
+};
 
 const FieldError = ({ message }) => message
     ? <p className="text-xs text-red-500 mt-1">{message}</p>
@@ -25,6 +31,8 @@ const UserEdit = () => {
     const [newPassword, setNewPassword] = useState('');
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [userName, setUserName] = useState(null);
+    const { user: me } = useAuth();
+    const [targetUser, setTargetUser] = useState(null);
 
     useDocumentTitle(userName || 'Edit User');
 
@@ -41,6 +49,7 @@ const UserEdit = () => {
                 const response = await userService.getUserById(id);
                 const user = response.data;
                 setUserName(user.name || null);
+                setTargetUser({ _id: user._id, role: user.role });
                 reset({
                     name: user.name || '',
                     phone: user.phone || '',
@@ -113,6 +122,11 @@ const UserEdit = () => {
         </div>
     );
 
+    const canResetPassword =
+    targetUser &&
+    me._id !== targetUser._id &&
+    RESETTABLE[me.role]?.includes(targetUser.role);
+
     return (
         <div className="space-y-4 p-4 pb-20 md:pb-4">
 
@@ -180,6 +194,7 @@ const UserEdit = () => {
             </form>
 
             {/* Password Reset — separate from main form */}
+            {canResetPassword && (
             <Card className="border-border shadow-none">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-semibold">Reset Password</CardTitle>
@@ -211,9 +226,10 @@ const UserEdit = () => {
                             {passwordLoading ? 'Updating...' : 'Update'}
                         </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Leave blank to keep current password.</p>
+                    <p className="text-xs text-muted-foreground mt-2"> The user will be asked to set a new password the next time they log in. </p>
                 </CardContent>
             </Card>
+            )}
         </div>
     );
 };

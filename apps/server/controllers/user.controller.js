@@ -11,6 +11,8 @@ import {
     resetPasswordSchema,
 } from '@repo/validators';
 import Organization from '../models/organization.model.js';
+import generateToken from '../utils/generateToken.js';
+import { cookieOptions } from './auth.controller.js';
 
 const canCreate = {
     superadmin: ['admin', 'manager', 'staff'],
@@ -192,6 +194,7 @@ export const updatePassword = async (req, res, next) => {
         user.passwordChangedAt = new Date();
         await user.save();
 
+        res.cookie('token', generateToken(user._id), cookieOptions());
         res.json({ success: true, message: 'Password updated successfully' });
     } catch (error) {
         next(error);
@@ -352,10 +355,19 @@ export const resetPassword = async (req, res, next) => {
         const { id } = req.params;
         if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
+        if (id === req.user.id.toString()) {
+            throw createError(400, 'Use change password to update your own password');
+        }
+
         const { newPassword } = resetPasswordSchema.parse(req.body);
 
         const user = await User.findOne({ _id: id, isDeleted: false });
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const allowedRoles = canCreate[req.user.role] || [];
+        if (!allowedRoles.includes(user.role)) {
+            throw createError(403, `You cannot reset the password of a ${user.role}`);
+        }
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
