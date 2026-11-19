@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Edit, Trash2, Wrench, Phone, Calendar,
+  ArrowLeft, Edit, Trash2, Wrench, Phone, Calendar, ChevronDown,
   CheckCircle, Clock, AlertCircle, XCircle, PackageCheck,
-  IndianRupee, Package, User, FileText, CircleDot, Plus, X,
+  IndianRupee, Package, User, FileText, CircleDot, Plus, X, Printer
 } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuLabel,
+  DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import repairService from '@/api/repairService';
-import userService from '@/api/userService';
+import JobSlip from './components/JobSlip';
 import supplierService from '@/api/supplierService';
 import sparePartUsageService from '@/api/sparePartUsageService';
 import RowActions from '@/components/common/RowActions';
@@ -24,6 +28,7 @@ import Can from '@/components/common/Can';
 import { usePermission } from '@/hooks/usePermission';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import technicianService from '@/api/technicianService';
+import { useAuth } from '@/context/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -229,6 +234,7 @@ const SparePartForm = ({ repairId, onAdded, onCancel }) => {
 // ─── RepairDetails ────────────────────────────────────────────────────────────
 
 const RepairDetails = () => {
+  const { organization } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -242,6 +248,9 @@ const RepairDetails = () => {
 
   const [dialog, setDialog] = useState({ open: false, type: null });
   const [deletePartId, setDeletePartId] = useState(null);
+
+  const [paper, setPaper] = useState(() => localStorage.getItem('slipPaper') || '80');
+  const changePaper = (v) => { setPaper(v); localStorage.setItem('slipPaper', v); };
 
   useDocumentTitle(repair?.repairId || 'Repair Details');
 
@@ -406,6 +415,37 @@ const RepairDetails = () => {
           <ArrowLeft className="w-4 h-4" /> Repairs
         </Button>
         <div className="flex items-center gap-2">
+          <div className="flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="h-8 gap-1.5 rounded-r-none"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              Print Slip ({paper === 'a4' ? 'A4' : `${paper}mm`})
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label="Paper size"
+                  className="h-8 px-2 rounded-l-none border-l-0"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Paper size</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={paper} onValueChange={changePaper}>
+                  <DropdownMenuRadioItem value="58">58mm</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="80">80mm</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="a4">A4</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <Can role="manager">
             <Button size="sm" onClick={() => navigate(`/app/repairs/${id}/edit`)} className="h-8 gap-1.5">
               <Edit className="w-3.5 h-3.5" /> Edit
@@ -724,6 +764,13 @@ const RepairDetails = () => {
           loading={actionLoading}
         />
       )}
+
+      <JobSlip
+        repair={repair}
+        shopName={organization?.name || 'Repair Shop'}
+        showPricing={hasRole('manager')}
+        paper={paper === 'a4' ? 'a4' : Number(paper)}
+      />
     </div>
   );
 };

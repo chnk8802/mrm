@@ -38,7 +38,10 @@ export const AuthProvider = ({ children }) => {
   const completePasswordChange = async () => {
     const updated = { ...user, mustChangePassword: false };
     setUser(updated);
-    await loadOrg(updated);
+    if (updated.role !== 'superadmin') {
+      const orgRes = await organizationService.getMyOrganization();
+      setOrganization(orgRes.data);
+    }
   };
 
   const logout = async () => {
