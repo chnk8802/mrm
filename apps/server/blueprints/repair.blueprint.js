@@ -1,7 +1,7 @@
 import { ALLOWED_TRANSITIONS } from "@repo/validators";
 import { createError } from "../utils/common/errorHandler.js";
 import { getRepairRemaining } from '../utils/repair.calculations.js';
-import Customer from '../models/counter.model.js'
+import Customer from '../models/customer.model.js'
 
 const waiveCustomerBalance = async (repair) => {
     const remaining = getRepairRemaining(repair);
@@ -23,7 +23,7 @@ const transitionHandlers = {
     'received->cancelled': {
         before: async (repair) => {},
         during: async (repair) => {
-            waiveCustomerBalance(repair);
+            await waiveCustomerBalance(repair);
             repair.paymentStatus = 'waived';
         },
         after:  async (repair) => { /* notify customer */ }

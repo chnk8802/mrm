@@ -5,10 +5,12 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "nodemon server.js",
     "seed:plans": "node scripts/index.js",
-    "reset:superadmin": "node scripts/resetSuperadminPassword.js"
+    "reset:superadmin": "node scripts/resetSuperadminPassword.js",
+    "start": "node server.js"
   },
   "dependencies": {
     "@repo/validators": "*",
@@ -24,6 +26,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "mongodb-memory-server": "^11.3.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^7.3.2",
+    "vitest": "^5.1.1"
   }
 }

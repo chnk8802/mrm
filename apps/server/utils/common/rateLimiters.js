@@ -24,7 +24,7 @@ export const registerLimiter = rateLimit({
 // Strict, for login (and later forgot-password)
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: process.env.NODE_ENV === 'production' ? 10 : 100,
+    limit: Number(process.env.AUTH_RATE_LIMIT) || (process.env.NODE_ENV === 'production' ? 10 : 100),
     skipSuccessfulRequests: true,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
