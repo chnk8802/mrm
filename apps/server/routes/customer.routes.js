@@ -9,8 +9,8 @@ router.use(protect);
 
 router.route('/stats') .get(authorize('admin'), getCustomerStats);
 router.route('/bulk') .patch(authorize('manager'), bulkUpdateCustomers) .post(authorize('admin'), bulkDeleteCustomers);
-router.route('/') .get(authorize('staff'), getCustomers) .post(authorize('staff'), createCustomer);
-router.route('/:id') .get(authorize('staff'), getCustomerById) .patch(authorize('staff'), updateCustomer) .delete(authorize('admin'), deleteCustomer);
+router.route('/') .get(authorize('manager'), getCustomers) .post(authorize('manager'), createCustomer);
+router.route('/:id') .get(authorize('manager'), getCustomerById) .patch(authorize('manager'), updateCustomer) .delete(authorize('admin'), deleteCustomer);
 router.patch('/:id/restore', authorize('admin'), restoreCustomer);
 router.route('/:id/permanent') .delete(authorize('superadmin'), permanentlyDeleteCustomer);
 

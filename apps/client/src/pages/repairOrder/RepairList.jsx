@@ -155,9 +155,9 @@ const getPickupBadge = (isPickedUp) =>
   isPickedUp
     ? { color: "bg-green-500/10 text-green-500", label: "Picked Up" }
     : {
-        color: "bg-muted text-muted-foreground",
-        label: "Not Picked Up",
-      };
+      color: "bg-muted text-muted-foreground",
+      label: "Not Picked Up",
+    };
 
 // ─── RepairList ───────────────────────────────────────────────────────────────
 
@@ -395,19 +395,19 @@ const RepairList = () => {
     },
     ...(hasRole("admin") && canDeleteRepair(repair)
       ? [
-          {
-            label: "Delete",
-            icon: Trash2,
-            danger: true,
-            divider: true,
-            onClick: () =>
-              setDeleteDialog({
-                open: true,
-                id: repair._id,
-                label: repair.repairId,
-              }),
-          },
-        ]
+        {
+          label: "Delete",
+          icon: Trash2,
+          danger: true,
+          divider: true,
+          onClick: () =>
+            setDeleteDialog({
+              open: true,
+              id: repair._id,
+              label: repair.repairId,
+            }),
+        },
+      ]
       : []),
   ];
 
@@ -478,35 +478,37 @@ const RepairList = () => {
           )}
         </div>
       </div>
-      <div>
-        <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-          Customer
-        </p>
-        <div className="flex items-center gap-1">
-          <AsyncCombobox
-            value={customerFilter}
-            onChange={(val) => {
-              setParam("customer", val);
-              setPagination((p) => ({ ...p, page: 1 }));
-            }}
-            fetchOptions={fetchCustomersForFilter}
-            placeholder="Search customer..."
-          />
-          {customerFilter && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2"
-              onClick={() => {
-                setParam("customer", "");
+      {hasRole("manager") && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+            Customer
+          </p>
+          <div className="flex items-center gap-1">
+            <AsyncCombobox
+              value={customerFilter}
+              onChange={(val) => {
+                setParam("customer", val);
                 setPagination((p) => ({ ...p, page: 1 }));
               }}
-            >
-              <X className="w-3.5 h-3.5" />
-            </Button>
-          )}
+              fetchOptions={fetchCustomersForFilter}
+              placeholder="Search customer..."
+            />
+            {customerFilter && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => {
+                  setParam("customer", "");
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </FilterPopover>
   );
 
@@ -544,9 +546,9 @@ const RepairList = () => {
           }}
           {...(hasRole("manager")
             ? {
-                onAddNew: () => navigate("/app/repairs/new"),
-                addLabel: "New Repair",
-              }
+              onAddNew: () => navigate("/app/repairs/new"),
+              addLabel: "New Repair",
+            }
             : {})}
           filterCount={filterCount}
           onFilterToggle={() => setShowFilters((p) => !p)}

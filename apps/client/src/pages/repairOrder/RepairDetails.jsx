@@ -424,6 +424,7 @@ const RepairDetails = () => {
           <ArrowLeft className="w-4 h-4" /> Repairs
         </Button>
         <div className="flex items-center gap-2">
+          <Can role="manager">
           <div className="flex items-center">
             <Button
               variant="outline"
@@ -455,6 +456,7 @@ const RepairDetails = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          </Can>
           <Can role="manager">
             <Button size="sm" onClick={() => navigate(`/app/repairs/${id}/edit`)} className="h-8 gap-1.5">
               <Edit className="w-3.5 h-3.5" /> Edit
