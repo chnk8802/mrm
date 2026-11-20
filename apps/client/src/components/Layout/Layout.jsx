@@ -5,16 +5,19 @@ import { LayoutDashboard, Users, Wrench, Settings, Menu } from "lucide-react";
 import Sidebar from "@/components/Layout/Sidebar";
 import Topbar from "@/components/Layout/Topbar";
 import { useTheme } from "@/context/ThemeContext";
+import { usePermission } from "@/hooks/usePermission";
 
 const mobileNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
-  { icon: Users, label: "Customers", path: "/app/customers" },
-  { icon: Wrench, label: "Repairs", path: "/app/repairs" },
-  { icon: Settings, label: "Settings", path: "/app/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/app", minRole: null },
+  { icon: Users, label: "Customers", path: "/app/customers", minRole: "manager" },
+  { icon: Wrench, label: "Repairs", path: "/app/repairs", minRole: null },
+  { icon: Settings, label: "Settings", path: "/app/settings", minRole: null },
 ];
 
 const Layout = () => {
   const { theme, appTheme } = useTheme();
+  const { hasRole } = usePermission();
+  const visibleNavItems = mobileNavItems.filter((item) => !item.minRole || hasRole(item.minRole));
 
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     const stored = localStorage.getItem("sidebarOpen");
@@ -31,7 +34,7 @@ const Layout = () => {
       className={`${theme} h-screen flex flex-col bg-background text-foreground transition-colors duration-200`}
       data-app-theme={appTheme}
     >
-      <Topbar/>
+      <Topbar />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop Sidebar */}
@@ -39,7 +42,7 @@ const Layout = () => {
           className={`hidden md:flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? "w-60" : "w-16"
             }`}
         >
-          <Sidebar collapsed={!sidebarOpen} onToggleCollapse={() => setSidebarOpen((o) => !o)}/>
+          <Sidebar collapsed={!sidebarOpen} onToggleCollapse={() => setSidebarOpen((o) => !o)} />
         </div>
 
         <main className="flex-1 overflow-y-auto">
@@ -63,7 +66,7 @@ const Layout = () => {
       {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[hsl(var(--topbar-bg))] border-t border-border z-30">
         <div className="flex items-center justify-around py-2">
-          {mobileNavItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
