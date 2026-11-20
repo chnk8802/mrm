@@ -67,7 +67,7 @@ const PaymentCreate = () => {
 
   // Step 3 — payment details
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [paidAt, setPaidAt] = useState('');
+  const [paidAt, setPaidAt] = useState(() => new Date());
   const [notes, setNotes] = useState('');
   const [fnfSummary, setFnfSummary] = useState(null); // { count, total } | null
   const [fnfLoading, setFnfLoading] = useState(false);
