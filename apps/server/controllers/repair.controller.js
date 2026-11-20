@@ -18,6 +18,7 @@ import {
   shapeRepairForRole,
 } from "../utils/repair.access.js";
 import { checkRecordCap } from "../utils/common/checkRecordCap.js";
+import { calculatePaymentStatus } from "../utils/repair.calculations.js";
 
 /**
  * @desc Create a new repair order
@@ -207,14 +208,16 @@ export const updateRepair = async (req, res, next) => {
       );
     }
 
+    const paid = existingRepair.amountPaid ?? 0;
+
     if (
-      existingRepair.amountPaid > 0 &&
-      (validatedData.serviceCharge !== undefined ||
-        validatedData.discount !== undefined)
+      paid > 0 &&
+      validatedData.serviceCharge !== undefined &&
+      validatedData.serviceCharge !== existingRepair.serviceCharge
     ) {
       throw createError(
         400,
-        "Cannot change service charge or discount after payment has been made",
+        "Cannot change service charge after payment has been made",
       );
     }
 
@@ -223,19 +226,43 @@ export const updateRepair = async (req, res, next) => {
     const effectiveDiscount =
       validatedData.discount ?? existingRepair.discount ?? 0;
 
-    if (effectiveDiscount > effectiveServiceCharge) {
-      throw createError(400, "Discount cannot be greater than service charge");
+    const maxDiscount = effectiveServiceCharge - paid;
+    if (effectiveDiscount > maxDiscount) {
+      throw createError(
+        400,
+        `Discount cannot exceed the remaining balance (${maxDiscount})`,
+      );
     }
 
-    const repair = await Repair.findOneAndUpdate(
-      { _id: id, isDeleted: false },
-      validatedData,
-      { new: true, runValidators: true },
-    )
-      .populate("customer", "name phone customerType")
-      .populate("technician", "name email phone");
+    const oldOwed = existingRepair.serviceCharge - (existingRepair.discount ?? 0);
+    const newOwed = effectiveServiceCharge - effectiveDiscount;
+    const balanceDelta = newOwed - oldOwed;
 
-    if (!repair) throw createError(404, "Repair not found");
+    const update = { ...validatedData };
+    if (balanceDelta !== 0) {
+      update.paymentStatus = calculatePaymentStatus(newOwed, paid);
+    }
+
+    const repair = await withTransaction(async (session) => {
+      const updated = await Repair.findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        update,
+        { new: true, runValidators: true, session },
+      );
+      if (!updated) throw createError(404, "Repair not found");
+
+      if (balanceDelta !== 0) {
+        await Customer.findByIdAndUpdate(
+          existingRepair.customer,
+          { $inc: { outstandingBalance: balanceDelta } },
+          { session },
+        );
+      }
+      return updated;
+    });
+
+    await repair.populate("customer", "name phone customerType");
+    await repair.populate("technician", "name email phone");
 
     res.json({
       success: true,

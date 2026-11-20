@@ -1,6 +1,6 @@
+import { reportQuerySchema } from '@repo/validators';
 import Repair from '../models/repair.model.js';
 import Payment from '../models/payment.model.js';
-import { reportQuerySchema } from '@repo/validators';
 
 const TECHNICIAN_SPLIT_RATE = 0.5; // 50/50 — revisit when per-technician rates are needed
 const roundWhole = (n) => Math.round(n);
