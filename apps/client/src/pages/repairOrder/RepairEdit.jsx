@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -11,9 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import repairService from '@/api/repairService';
 import toast from 'react-hot-toast';
-import DatePicker from '@/components/common/DatePicker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import DateTimePicker from '@/components/common/DateTimePicker';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -45,16 +44,24 @@ const RepairEdit = () => {
   const [technicianInfo, setTechnicianInfo] = useState(null);
   const [isLocked, setIsLocked] = useState(false);
   const [repairIdLabel, setRepairIdLabel] = useState(null);
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [partsCost, setPartsCost] = useState(0);
+  const [lossConfirm, setLossConfirm] = useState({ open: false, data: null });
+  const [saving, setSaving] = useState(false);
 
   useDocumentTitle(repairIdLabel || 'Edit Repair');
 
   const {
-    register,
-    handleSubmit,
-    setValue,
-    reset,
+    register, handleSubmit, setValue, reset, watch,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(repairUpdateSchema) });
+
+  const serviceChargeValue = watch('serviceCharge');
+  const discountValue = watch('discount');
+  const hasPayments = amountPaid > 0;
+  const maxDiscount = Math.max(0, (Number(serviceChargeValue) || 0) - amountPaid);
+  const netAfterDiscount = (Number(serviceChargeValue) || 0) - (Number(discountValue) || 0);
+  const expectedLoss = partsCost - netAfterDiscount; // > 0 means loss
 
   // ── Fetch & pre-fill ───────────────────────────────────────────────────────
 
@@ -66,6 +73,10 @@ const RepairEdit = () => {
         setRepairIdLabel(r.repairId || null);
         const locked = ['completed', 'cancelled', 'not-repairable'].includes(r.status);
         setIsLocked(locked);
+        setAmountPaid(r.amountPaid ?? 0);
+        setPartsCost(
+          (r.sparePartUsage || []).reduce((s, p) => s + (p.quantity ?? 1) * (p.unitCost ?? 0), 0)
+        );
 
         setCustomerInfo(r.customer || null);
         setTechnicianInfo(r.technician || null);
@@ -100,24 +111,21 @@ const RepairEdit = () => {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
-  const onSubmit = async (data) => {
+  const saveRepair = async (data) => {
     const finalServiceCharge = Number(data.serviceCharge);
     const finalDiscount = data.discount && !isNaN(data.discount) ? Number(data.discount) : 0;
 
-    if (finalDiscount > finalServiceCharge) {
-      toast.error('Discount cannot be greater than service charge');
-      return;
-    }
     try {
+      setSaving(true);
       const payload = {
         deviceModel: data.deviceModel,
         problem: data.problem,
-        serviceCharge: Number(data.serviceCharge),
+        serviceCharge: finalServiceCharge,
+        discount: finalDiscount, // always send, so it can be lowered to 0
         ...(data.imei ? { imei: data.imei } : {}),
         ...(data.accessories ? { accessories: data.accessories } : {}),
         ...(data.notes ? { notes: data.notes } : {}),
         ...(data.dueDate ? { dueDate: data.dueDate } : {}),
-        ...(finalDiscount > 0 ? { discount: finalDiscount } : {}),
       };
 
       await repairService.updateRepair(id, payload);
@@ -131,7 +139,28 @@ const RepairEdit = () => {
       } else {
         toast.error(errorData?.message || 'Failed to update repair');
       }
+    } finally {
+      setSaving(false);
+      setLossConfirm({ open: false, data: null });
     }
+  };
+
+  const onSubmit = async (data) => {
+    const finalServiceCharge = Number(data.serviceCharge);
+    const finalDiscount = data.discount && !isNaN(data.discount) ? Number(data.discount) : 0;
+
+    if (finalDiscount > finalServiceCharge - amountPaid) {
+      toast.error(`Discount cannot exceed the remaining balance (₹${finalServiceCharge - amountPaid})`);
+      return;
+    }
+
+    const net = finalServiceCharge - finalDiscount;
+    if (partsCost - net > 0) {
+      setLossConfirm({ open: true, data }); // wait for the dialog
+      return;
+    }
+
+    await saveRepair(data);
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -162,7 +191,6 @@ const RepairEdit = () => {
           This repair is closed and cannot be edited.
         </div>
       )}
-
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -273,9 +301,13 @@ const RepairEdit = () => {
                     type="number"
                     step="0.01"
                     min="0"
+                    readOnly={hasPayments}
                     placeholder="0.00"
-                    className={`mt-1 h-8 text-sm ${errors.serviceCharge ? 'border-red-500' : ''}`}
+                    className={`mt-1 h-8 text-sm ${errors.serviceCharge ? 'border-red-500' : ''} ${hasPayments ? 'bg-muted/40' : ''}`}
                   />
+                  {hasPayments && (
+                    <p className="text-xs text-muted-foreground mt-1">Locked: ₹{amountPaid} already paid</p>
+                  )}
                   <FieldError message={errors.serviceCharge?.message} />
                 </div>
 
@@ -288,9 +320,16 @@ const RepairEdit = () => {
                     type="number"
                     step="0.01"
                     min="0"
+                    max={maxDiscount}
                     placeholder="0.00"
                     className="mt-1 h-8 text-sm"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Max: ₹{maxDiscount}</p>
+                  {expectedLoss > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Parts cost ₹{partsCost}, you'd receive ₹{Math.max(0, netAfterDiscount)}: a loss of ₹{expectedLoss}.
+                    </p>
+                  )}
                   <FieldError message={errors.discount?.message} />
                 </div>
 
@@ -321,11 +360,23 @@ const RepairEdit = () => {
           <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/app/repairs/${id}`)}>
             Cancel
           </Button>
-          <Button type="submit" size="sm" disabled={isSubmitting || isLocked}>
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+          <Button type="submit" size="sm" disabled={isSubmitting || saving || isLocked}>
+            {isSubmitting || saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </form>
+
+      {/* ── Confirm: loss-making discount ── */}
+      <ConfirmDialog
+        open={lossConfirm.open}
+        onClose={() => setLossConfirm({ open: false, data: null })}
+        onConfirm={() => saveRepair(lossConfirm.data)}
+        title="This repair will make a loss"
+        description={`Parts cost ₹${partsCost}, but you'd receive only ₹${Math.max(0, netAfterDiscount)} after the discount. Total loss: ₹${expectedLoss}. Save anyway?`}
+        confirmLabel="Save anyway"
+        loading={saving}
+        danger
+      />
     </div>
   );
 };
