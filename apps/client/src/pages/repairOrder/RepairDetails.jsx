@@ -83,7 +83,7 @@ const getStatusBadge = (status) => {
 const getPaymentBadge = (status) => {
   switch (status) {
     case 'paid': return 'bg-green-500/10 text-green-500';
-    case 'partial-paid': return 'bg-yellow-500/10 text-yellow-500';
+    case 'partial': return 'bg-yellow-500/10 text-yellow-500';
     case 'unpaid': return 'bg-red-500/10 text-red-500';
     case 'waived': return 'bg-muted text-muted-foreground';
     default: return 'bg-muted text-muted-foreground';
