@@ -54,9 +54,18 @@ const PICKED_UP_OPTIONS = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Mirrors the backend deleteRepair rules. Keep both in sync if either changes.
+const canDeleteRepair = (r) =>
+  r.status !== "completed" &&
+  !r.isPickedUp &&
+  !(r.amountPaid > 0) &&
+  r.paymentStatus !== "paid" &&
+  (r.sparePartUsage?.length ?? 0) === 0;
+
 const fetchTechnicians = async (search) => {
   const res = await technicianService.getTechnicians({ search });
-  return (res.data || []).map((t) => ({ value: t._id, label: t.name, }));
+  return (res.data || []).map((t) => ({ value: t._id, label: t.name }));
 };
 
 const fetchCustomersForFilter = async (search) => {
@@ -213,6 +222,9 @@ const RepairList = () => {
     { label: "Created", col: "createdAt" },
   ];
 
+  const tableColSpan =
+    (hasRole("admin") ? 1 : 0) + columns.length + (hasRole("manager") ? 1 : 0);
+
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
   const fetchRepairs = useCallback(async () => {
@@ -289,9 +301,11 @@ const RepairList = () => {
 
   // ── Selection ─────────────────────────────────────────────────────────────
 
+  // Select-all only picks rows that can actually be deleted
   const handleSelectAll = () => {
-    if (selectAll) setSelectedRepairs([]);
-    else setSelectedRepairs(repairs.map((r) => r._id));
+    setSelectedRepairs(
+      selectAll ? [] : repairs.filter(canDeleteRepair).map((r) => r._id),
+    );
     setSelectAll((p) => !p);
   };
 
@@ -323,29 +337,33 @@ const RepairList = () => {
     }
   };
 
+  // Sequential on purpose: parallel deletes for the same customer can hit
+  // transaction write conflicts, and one failure shouldn't hide the others.
   const handleBulkDelete = async () => {
-    try {
-      await Promise.all(
-        selectedRepairs.map((id) => repairService.deleteRepair(id)),
-      );
-      toast.success(`${selectedRepairs.length} repairs deleted`);
-      setSelectedRepairs([]);
-      setSelectAll(false);
-      setBulkDeleteDialog(false);
-      fetchRepairs();
-    } catch (err) {
-      const errorData = err.response?.data;
+    let ok = 0;
+    let failed = 0;
+    let lastMessage = "";
 
-      if (
-        errorData?.errors &&
-        Array.isArray(errorData.errors) &&
-        errorData.errors.length > 0
-      ) {
-        toast.error(errorData.errors[0].message);
-      } else {
-        toast.error(errorData?.message || "Failed to delete repairs");
+    for (const id of selectedRepairs) {
+      try {
+        await repairService.deleteRepair(id);
+        ok++;
+      } catch (err) {
+        failed++;
+        lastMessage = err.response?.data?.message || "";
       }
     }
+
+    if (ok) toast.success(`${ok} repair${ok !== 1 ? "s" : ""} deleted`);
+    if (failed)
+      toast.error(
+        `${failed} could not be deleted${lastMessage ? `: ${lastMessage}` : ""}`,
+      );
+
+    setSelectedRepairs([]);
+    setSelectAll(false);
+    setBulkDeleteDialog(false);
+    fetchRepairs();
   };
 
   const clearFilters = () => {
@@ -366,6 +384,32 @@ const RepairList = () => {
     technicianFilter,
     customerFilter,
   ].filter(Boolean).length;
+
+  // ── Row actions (shared by desktop and mobile) ────────────────────────────
+
+  const buildActions = (repair) => [
+    {
+      label: "Edit",
+      icon: Edit,
+      onClick: () => navigate(`/app/repairs/${repair._id}/edit`),
+    },
+    ...(hasRole("admin") && canDeleteRepair(repair)
+      ? [
+          {
+            label: "Delete",
+            icon: Trash2,
+            danger: true,
+            divider: true,
+            onClick: () =>
+              setDeleteDialog({
+                open: true,
+                id: repair._id,
+                label: repair.repairId,
+              }),
+          },
+        ]
+      : []),
+  ];
 
   // ── Filter panel ──────────────────────────────────────────────────────────
   const filterPanel = (
@@ -516,7 +560,7 @@ const RepairList = () => {
         <table className="w-full">
           <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur-sm">
             <tr className="border-b border-border">
-              {hasRole("manager") && (
+              {hasRole("admin") && (
                 <th className="py-2.5 px-4 w-10">
                   <Checkbox
                     checked={selectAll}
@@ -547,7 +591,7 @@ const RepairList = () => {
             {loading ? (
               <tr>
                 <td
-                  colSpan={1 + columns.length + (hasRole("manager") ? 1 : 0)}
+                  colSpan={tableColSpan}
                   className="text-center py-16 text-sm text-muted-foreground"
                 >
                   Loading repairs...
@@ -556,7 +600,7 @@ const RepairList = () => {
             ) : repairs.length === 0 ? (
               <tr>
                 <td
-                  colSpan={1 + columns.length + (hasRole("manager") ? 1 : 0)}
+                  colSpan={tableColSpan}
                   className="text-center py-16 text-sm text-muted-foreground"
                 >
                   <Wrench className="mx-auto w-8 h-8 mb-2 opacity-30" />
@@ -578,15 +622,19 @@ const RepairList = () => {
                     className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
                     onClick={() => navigate(`/app/repairs/${repair._id}`)}
                   >
-                    {hasRole("manager") && (
+                    {hasRole("admin") && (
                       <td
                         className="py-1 px-4 text-center"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Checkbox
-                          checked={selectedRepairs.includes(repair._id)}
-                          onCheckedChange={() => handleSelectRepair(repair._id)}
-                        />
+                        {canDeleteRepair(repair) && (
+                          <Checkbox
+                            checked={selectedRepairs.includes(repair._id)}
+                            onCheckedChange={() =>
+                              handleSelectRepair(repair._id)
+                            }
+                          />
+                        )}
                       </td>
                     )}
                     <td className="py-1 px-4 text-sm font-medium text-foreground">
@@ -661,39 +709,14 @@ const RepairList = () => {
                     <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
                       {formatDate(repair.createdAt)}
                     </td>
-                    <td
-                      className="py-1 px-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {hasRole("manager") && (
-                        <RowActions
-                          actions={[
-                            {
-                              label: "Edit",
-                              icon: Edit,
-                              onClick: () =>
-                                navigate(`/app/repairs/${repair._id}/edit`),
-                            },
-                            ...(hasRole("admin")
-                              ? [
-                                  {
-                                    label: "Delete",
-                                    icon: Trash2,
-                                    danger: true,
-                                    divider: true,
-                                    onClick: () =>
-                                      setDeleteDialog({
-                                        open: true,
-                                        id: repair._id,
-                                        label: repair.repairId,
-                                      }),
-                                  },
-                                ]
-                              : []),
-                          ]}
-                        />
-                      )}
-                    </td>
+                    {hasRole("manager") && (
+                      <td
+                        className="py-1 px-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <RowActions actions={buildActions(repair)} />
+                      </td>
+                    )}
                   </tr>
                 );
               })
@@ -727,7 +750,7 @@ const RepairList = () => {
                 className="px-4 py-3 hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3"
               >
                 {/* Checkbox */}
-                {hasRole("manager") && (
+                {hasRole("admin") && canDeleteRepair(repair) && (
                   <div
                     onClick={(e) => e.stopPropagation()}
                     className="shrink-0"
@@ -793,32 +816,7 @@ const RepairList = () => {
                     onClick={(e) => e.stopPropagation()}
                     className="shrink-0"
                   >
-                    <RowActions
-                      actions={[
-                        {
-                          label: "Edit",
-                          icon: Edit,
-                          onClick: () =>
-                            navigate(`/app/repairs/${repair._id}/edit`),
-                        },
-                        ...(hasRole("admin")
-                          ? [
-                              {
-                                label: "Delete",
-                                icon: Trash2,
-                                danger: true,
-                                divider: true,
-                                onClick: () =>
-                                  setDeleteDialog({
-                                    open: true,
-                                    id: repair._id,
-                                    label: repair.repairId,
-                                  }),
-                              },
-                            ]
-                          : []),
-                      ]}
-                    />
+                    <RowActions actions={buildActions(repair)} />
                   </div>
                 )}
               </div>
@@ -842,7 +840,7 @@ const RepairList = () => {
         onClose={() => setDeleteDialog({ open: false, id: null, label: "" })}
         onConfirm={handleDelete}
         title="Delete Repair"
-        description={`Repair "${deleteDialog.label}" will be permanently deleted. This cannot be undone.`}
+        description={`Repair "${deleteDialog.label}" will be deleted and removed from your lists.`}
         confirmLabel="Delete"
         danger
       />
@@ -851,7 +849,7 @@ const RepairList = () => {
         onClose={() => setBulkDeleteDialog(false)}
         onConfirm={handleBulkDelete}
         title={`Delete ${selectedRepairs.length} Repairs`}
-        description="All selected repairs will be permanently deleted. This cannot be undone."
+        description="All selected repairs will be deleted and removed from your lists."
         confirmLabel="Delete All"
         danger
       />
