@@ -636,7 +636,7 @@ const RepairDetails = () => {
                       <p className="text-sm font-medium text-foreground">
                         {formatCurrency((part.quantity ?? 1) * (part.unitCost ?? 0))}
                       </p>
-                      {canEditParts && (
+                      {canEditParts && !(part.amountPaid > 0) && (
                         <button
                           onClick={() => setDeletePartId(part._id)}
                           className="text-muted-foreground hover:text-red-500 transition-colors"

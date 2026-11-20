@@ -28,7 +28,53 @@ const verifyRepair = async (repairId) => {
 
 const verifySupplier = async (supplierId) => {
     const supplier = await Supplier.findOne({ _id: supplierId, isDeleted: false, isActive: true });
-    if (!supplier) throw createError(404, 'Supplier not found' );
+    if (!supplier) throw createError(404, 'Supplier not found');
+};
+
+const partOwed = (p) => (p.unitCost ?? 0) * (p.quantity ?? 1);
+
+const assertRepairInProgress = async (repairId, session) => {
+    const repair = await Repair.findOne({ _id: repairId, isDeleted: false }).session(session ?? null);
+    if (!repair) throw createError(404, 'Repair not found');
+    if (repair.status !== 'in-progress') {
+        throw createError(400, 'Spare parts can only be changed while the repair is in progress');
+    }
+};
+
+// Shared by single and bulk update. Must run inside a transaction.
+const updatePartInTx = async (id, data, session) => {
+    const existing = await SparePartUsage.findOne({ _id: id, isDeleted: false }).session(session);
+    if (!existing) throw createError(404, 'Spare part usage not found');
+
+    await assertRepairInProgress(existing.repair, session);
+
+    const oldOwed = partOwed(existing);
+    const newOwed = (data.unitCost ?? existing.unitCost ?? 0) * (data.quantity ?? existing.quantity ?? 1);
+
+    const oldSupplier = existing.supplier?.toString() ?? null;
+    const newSupplier = data.supplier !== undefined ? (data.supplier?.toString() ?? null) : oldSupplier;
+
+    const costChanged = newOwed !== oldOwed || oldSupplier !== newSupplier;
+
+    if (costChanged && (existing.amountPaid ?? 0) > 0) {
+        throw createError(400, 'Cannot change cost, quantity or supplier after payment has been made');
+    }
+
+    const updated = await SparePartUsage.findOneAndUpdate(
+        { _id: id, isDeleted: false },
+        data,
+        { new: true, runValidators: true, session },
+    );
+
+    if (costChanged) {
+        if (oldSupplier) {
+            await Supplier.findByIdAndUpdate(oldSupplier, { $inc: { outstandingBalance: -oldOwed } }, { session });
+        }
+        if (newSupplier) {
+            await Supplier.findByIdAndUpdate(newSupplier, { $inc: { outstandingBalance: newOwed } }, { session });
+        }
+    }
+    return updated;
 };
 
 /**
@@ -48,7 +94,7 @@ export const createSparePartUsage = async (req, res, next) => {
         }
 
         if (!repair.technician) {
-            throw { status: 400, message: 'Cannot add spare parts — no technician assigned to this repair' };
+            throw createError(400, 'Cannot add spare parts — no technician assigned to this repair');
         }
         validatedData.installedBy = repair.technician;
         if (validatedData.supplier) await verifySupplier(validatedData.supplier);
@@ -60,13 +106,15 @@ export const createSparePartUsage = async (req, res, next) => {
                 { $push: { sparePartUsage: created._id } },
                 { session }
             );
-            await Supplier.findByIdAndUpdate(
-                validatedData.supplier,
-                { $inc: { outstandingBalance: (validatedData.unitCost || 0) * (validatedData.quantity || 0) } },
-                { session }
-            );
+            if (validatedData.supplier) {
+                await Supplier.findByIdAndUpdate(
+                    validatedData.supplier,
+                    { $inc: { outstandingBalance: (validatedData.unitCost || 0) * (validatedData.quantity || 0) } },
+                    { session }
+                );
+            }
             return created;
-        })
+        });
 
         const populated = await populate(SparePartUsage.findById(sparePartUsage._id));
 
@@ -203,22 +251,12 @@ export const updateSparePartUsage = async (req, res, next) => {
         if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
         const validatedData = sparePartUsageUpdateSchema.parse(req.body);
-
         if (validatedData.supplier) await verifySupplier(validatedData.supplier);
 
-        const sparePartUsage = await populate(
-            SparePartUsage.findOneAndUpdate(
-                { _id: id, isDeleted: false },
-                validatedData,
-                { new: true, runValidators: true }
-            )
-        );
+        const updated = await withTransaction((session) => updatePartInTx(id, validatedData, session));
+        const populated = await populate(SparePartUsage.findById(updated._id));
 
-        if (!sparePartUsage) {
-            return res.status(404).json({ success: false, message: 'Spare part usage not found' });
-        }
-
-        res.json({ success: true, data: sparePartUsage, message: 'Spare part updated successfully' });
+        res.json({ success: true, data: populated, message: 'Spare part updated successfully' });
     } catch (error) {
         next(error);
     }
@@ -233,23 +271,17 @@ export const bulkUpdateSparePartUsage = async (req, res, next) => {
     try {
         const { updates } = sparePartUsageBulkUpdateSchema.parse(req.body);
 
-        const results = await withTransaction(async (session) => {
-            const updated = await Promise.all(
-                updates.map(({ id, data }) =>
-                    SparePartUsage.findOneAndUpdate(
-                        { _id: id, isDeleted: false },
-                        data,
-                        { new: true, runValidators: true, session }
-                    )
-                )
-            );
-            const notFound = updates.filter((_, i) => !updated[i]).map(u => u.id);
-            if (notFound.length) {
-                throw createError(404, 'Some records not found');
-            }
+        for (const { data } of updates) {
+            if (data.supplier) await verifySupplier(data.supplier);
+        }
 
-            return updated;
-        })
+        const results = await withTransaction(async (session) => {
+            const out = [];
+            for (const { id, data } of updates) {
+                out.push(await updatePartInTx(id, data, session)); // sequential on purpose: one session
+            }
+            return out;
+        });
 
         res.json({ success: true, data: results, message: `${results.length} spare parts updated successfully` });
     } catch (error) {
@@ -258,7 +290,7 @@ export const bulkUpdateSparePartUsage = async (req, res, next) => {
 };
 
 /**
- * @desc    Soft delete a spare part usage
+ * @desc    Soft delete a spare part usage (only if unpaid and repair is in progress)
  * @route   DELETE /api/spare-part-usages/:id
  * @access  Private (Admin/Staff)
  */
@@ -268,21 +300,25 @@ export const deleteSparePartUsage = async (req, res, next) => {
         if (!isValidObjectId(id)) throw createError(400, 'Invalid ID');
 
         await withTransaction(async (session) => {
-            const sparePartUsage = await SparePartUsage.findOneAndUpdate(
-                { _id: id, isDeleted: false },
-                { isDeleted: true },
-                { new: true, session }
-            );
+            const part = await SparePartUsage.findOne({ _id: id, isDeleted: false }).session(session);
+            if (!part) throw createError(404, 'Spare part usage not found');
 
-            if (!sparePartUsage) {
-                throw createError(404,  'Spare part usage not found');
+            if ((part.amountPaid ?? 0) > 0) {
+                throw createError(400, 'Cannot remove a spare part after payment has been made');
             }
 
-            const updatedRepair = await Repair.findByIdAndUpdate(
-                sparePartUsage.repair._id || sparePartUsage.repair,
-                { $pull: { sparePartUsage: sparePartUsage._id } },
-                { session }
-            );
+            await assertRepairInProgress(part.repair, session);
+
+            await SparePartUsage.findByIdAndUpdate(part._id, { isDeleted: true }, { session });
+            await Repair.findByIdAndUpdate(part.repair, { $pull: { sparePartUsage: part._id } }, { session });
+
+            if (part.supplier) {
+                await Supplier.findByIdAndUpdate(
+                    part.supplier,
+                    { $inc: { outstandingBalance: -partOwed(part) } },
+                    { session }
+                );
+            }
         });
 
         res.json({ success: true, message: 'Spare part deleted successfully' });
