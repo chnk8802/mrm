@@ -25,6 +25,7 @@ import RowActions from "@/components/common/RowActions";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import toast from "react-hot-toast";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { canManageUser } from "@/utils/userPermissions";
 
 const getRoleIcon = (role) => {
   switch (role) {
@@ -226,6 +227,36 @@ const UserDetails = () => {
       </div>
     );
 
+  // Mirrors the backend rules: you can manage yourself and roles below you
+  const manageable = canManageUser(currentUser, user);
+  const actions = [
+    ...(manageable && user.role !== "superadmin" && !isOwnProfile
+      ? [
+          {
+            label: user.isActive ? "Deactivate" : "Activate",
+            icon: user.isActive ? PowerOff : Power,
+            onClick: () =>
+              setConfirmDialog({
+                open: true,
+                type: user.isActive ? "deactivate" : "activate",
+              }),
+          },
+        ]
+      : []),
+    ...(manageable
+      ? [
+          {
+            label: "Delete",
+            icon: Trash2,
+            danger: true,
+            divider: true,
+            disabled: isOwnProfile,
+            onClick: () => setConfirmDialog({ open: true, type: "delete" }),
+          },
+        ]
+      : []),
+  ];
+
   return (
     <div className="space-y-4 p-4 pb-24 md:pb-4">
       {/* Header */}
@@ -239,7 +270,7 @@ const UserDetails = () => {
           <ArrowLeft className="w-4 h-4" /> Users
         </Button>
         <div className="flex items-center gap-2">
-          {currentUser?.role !== "superadmin" && (
+          {currentUser?.role !== "superadmin" && manageable && (
             <Button
               size="sm"
               onClick={() => navigate(`/app/users/${id}/edit`)}
@@ -248,31 +279,7 @@ const UserDetails = () => {
               <Edit className="w-3.5 h-3.5" /> Edit
             </Button>
           )}
-          <RowActions
-            actions={[
-              ...(user.role !== "superadmin"
-                ? [
-                    {
-                      label: user.isActive ? "Deactivate" : "Activate",
-                      icon: user.isActive ? PowerOff : Power,
-                      onClick: () =>
-                        setConfirmDialog({
-                          open: true,
-                          type: user.isActive ? "deactivate" : "activate",
-                        }),
-                    },
-                  ]
-                : []),
-              {
-                label: "Delete",
-                icon: Trash2,
-                danger: true,
-                divider: true,
-                disabled: isOwnProfile,
-                onClick: () => setConfirmDialog({ open: true, type: "delete" }),
-              },
-            ]}
-          />
+          {actions.length > 0 && <RowActions actions={actions} />}
         </div>
       </div>
 
@@ -353,7 +360,7 @@ const UserDetails = () => {
         onClose={() => setConfirmDialog({ open: false, type: null })}
         onConfirm={handleDelete}
         title="Delete User"
-        description="This action cannot be undone. The user will be permanently removed."
+        description="The user will be deleted and removed from your lists."
         confirmLabel="Delete"
         loading={actionLoading}
       />

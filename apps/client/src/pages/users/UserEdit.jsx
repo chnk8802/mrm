@@ -12,6 +12,7 @@ import userService from "@/api/userService";
 import toast from "react-hot-toast";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useAuth } from "@/context/AuthContext";
+import { canManageUser } from "@/utils/userPermissions";
 
 const RESETTABLE = {
     superadmin: ['admin', 'manager', 'staff'],
@@ -48,6 +49,14 @@ const UserEdit = () => {
             try {
                 const response = await userService.getUserById(id);
                 const user = response.data;
+
+                // Block direct URL access to users you are not allowed to edit
+                if (!canManageUser(me, user)) {
+                    toast.error(`You cannot edit a ${user.role}`);
+                    navigate(`/app/users/${id}`);
+                    return;
+                }
+
                 setUserName(user.name || null);
                 setTargetUser({ _id: user._id, role: user.role });
                 reset({

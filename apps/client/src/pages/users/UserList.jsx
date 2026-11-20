@@ -14,6 +14,7 @@ import TableFooter from "@/components/common/TableFooter";
 import RowActions from "@/components/common/RowActions";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { canManageUser } from "@/utils/userPermissions";
 
 const roleOptions = [
   { value: "admin", label: "Admin" },
@@ -188,6 +189,30 @@ const UserList = () => {
       day: "numeric",
     });
 
+  // Row actions: other admins (and anyone you can't manage) get no actions
+  const buildActions = (user) => {
+    if (!canManageUser(currentUser, user)) return [];
+    return [
+      ...(currentUser?.role !== "superadmin"
+        ? [
+            {
+              label: "Edit",
+              icon: Edit,
+              onClick: () => navigate(`/app/users/${user._id}/edit`),
+            },
+          ]
+        : []),
+      {
+        label: "Delete",
+        icon: Trash2,
+        danger: true,
+        divider: true,
+        disabled: user._id === currentUser?._id,
+        onClick: () => setConfirmDialog({ open: true, userId: user._id }),
+      },
+    ];
+  };
+
   // Filter panel rendered as children of PageHeader
   const filterPanel = (
     <FilterPopover
@@ -352,66 +377,50 @@ const UserList = () => {
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
-                <tr
-                  key={user._id}
-                  className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/app/users/${user._id}`)}
-                >
-                  <td className="py-1 px-4 text-sm font-medium text-foreground">
-                    {user.name}
-                  </td>
-                  <td className="py-1 px-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${getRoleBadge(user.role)}`}
+              users.map((user) => {
+                const actions = buildActions(user);
+                return (
+                  <tr
+                    key={user._id}
+                    className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/app/users/${user._id}`)}
+                  >
+                    <td className="py-1 px-4 text-sm font-medium text-foreground">
+                      {user.name}
+                    </td>
+                    <td className="py-1 px-4">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${getRoleBadge(user.role)}`}
+                      >
+                        {getRoleIcon(user.role)}
+                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      </span>
+                    </td>
+                    <td className="py-1 px-4 text-sm text-muted-foreground">
+                      {user.email}
+                    </td>
+                    <td className="py-1 px-4 text-sm text-muted-foreground">
+                      {user.phone}
+                    </td>
+                    <td className="py-1 px-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${user.isActive ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}
+                      >
+                        {user.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
+                      {formatDate(user.createdAt)}
+                    </td>
+                    <td
+                      className="py-1 px-4"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {getRoleIcon(user.role)}
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </span>
-                  </td>
-                  <td className="py-1 px-4 text-sm text-muted-foreground">
-                    {user.email}
-                  </td>
-                  <td className="py-1 px-4 text-sm text-muted-foreground">
-                    {user.phone}
-                  </td>
-                  <td className="py-1 px-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${user.isActive ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"}`}
-                    >
-                      {user.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="py-1 px-4 text-sm text-muted-foreground whitespace-nowrap">
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td className="py-1 px-4">
-                    <RowActions
-                      actions={[
-                        ...(currentUser?.role !== "superadmin"
-                          ? [
-                              {
-                                label: "Edit",
-                                icon: Edit,
-                                onClick: () =>
-                                  navigate(`/app/users/${user._id}/edit`),
-                              },
-                            ]
-                          : []),
-                        {
-                          label: "Delete",
-                          icon: Trash2,
-                          danger: true,
-                          divider: true,
-                          disabled: user._id === currentUser?._id,
-                          onClick: () =>
-                            setConfirmDialog({ open: true, userId: user._id }),
-                        },
-                      ]}
-                    />
-                  </td>
-                </tr>
-              ))
+                      {actions.length > 0 && <RowActions actions={actions} />}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -470,7 +479,7 @@ const UserList = () => {
         onClose={() => setConfirmDialog({ open: false, userId: null })}
         onConfirm={handleDelete}
         title="Delete User"
-        description="This action cannot be undone. The user will be permanently removed."
+        description="The user will be deleted and removed from your lists."
         confirmLabel="Delete"
       />
     </div>

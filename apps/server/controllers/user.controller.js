@@ -21,6 +21,11 @@ const canCreate = {
     staff: []
 };
 
+// Admin can manage manager/staff, superadmin can manage everyone below. Anyone can manage themselves.
+const canManageUser = (actor, target) =>
+    target._id.toString() === actor._id.toString() ||
+    (canCreate[actor.role] || []).includes(target.role);
+
 /**
  * @desc    Create a new user
  * @route   POST /api/users
@@ -139,6 +144,10 @@ export const updateUser = async (req, res, next) => {
         const existingUser = await User.findOne({ _id: id, isDeleted: false });
         if (!existingUser) return res.status(404).json({ success: false, message: 'User not found' });
 
+        if (!canManageUser(req.user, existingUser)) {
+            throw createError(403, `You cannot edit a ${existingUser.role}`);
+        }
+
         if (existingUser.role === 'superadmin' && validatedData.role && validatedData.role !== 'superadmin') {
             throw createError(403, 'Role for superadmin cannot be changed');
         }
@@ -148,7 +157,8 @@ export const updateUser = async (req, res, next) => {
             if (superAdminExists) throw createError(400, 'A superadmin already exists. Only one superadmin is allowed.');
         }
 
-        if (validatedData.role) {
+        // Only check when the role actually changes, so editing yourself with an unchanged role works
+        if (validatedData.role && validatedData.role !== existingUser.role) {
             const allowedRoles = canCreate[req.user.role] || [];
             if (!allowedRoles.includes(validatedData.role)) {
                 throw createError(403, `You cannot assign role: ${validatedData.role}`);
@@ -282,6 +292,9 @@ export const deactivateUser = async (req, res, next) => {
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
         if (user.role === 'superadmin') throw createError(403, 'Superadmin cannot be deactivated');
+        if (!canManageUser(req.user, user)) {
+            throw createError(403, `You cannot deactivate a ${user.role}`);
+        }
         if (!user.isActive) throw createError(400, 'User is already inactive');
 
         user.isActive = false;
@@ -307,6 +320,9 @@ export const activateUser = async (req, res, next) => {
         const user = await User.findOne({ _id: id, isDeleted: false });
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
+        if (!canManageUser(req.user, user)) {
+            throw createError(403, `You cannot activate a ${user.role}`);
+        }
         if (user.isActive) throw createError(400, 'User is already active');
 
         user.isActive = true;
