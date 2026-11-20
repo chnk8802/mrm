@@ -674,7 +674,7 @@ const RepairList = () => {
                               onClick: () =>
                                 navigate(`/app/repairs/${repair._id}/edit`),
                             },
-                            ...(hasRole("superadmin")
+                            ...(hasRole("admin")
                               ? [
                                   {
                                     label: "Delete",
@@ -801,7 +801,7 @@ const RepairList = () => {
                           onClick: () =>
                             navigate(`/app/repairs/${repair._id}/edit`),
                         },
-                        ...(hasRole("superadmin")
+                        ...(hasRole("admin")
                           ? [
                               {
                                 label: "Delete",

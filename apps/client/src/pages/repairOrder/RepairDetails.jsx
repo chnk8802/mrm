@@ -404,6 +404,15 @@ const RepairDetails = () => {
   const canEditParts = repair.status === 'in-progress';
   const totalPartsCost = spareParts.reduce((sum, p) => sum + (p.quantity ?? 1) * (p.unitCost ?? 0), 0);
 
+  // Mirrors the backend rules in deleteRepair — keep both in sync if either changes.
+  const canDeleteRepair =
+    hasRole('admin') &&
+    repair.status !== 'completed' &&
+    !repair.isPickedUp &&
+    !(repair.amountPaid > 0) &&
+    repair.paymentStatus !== 'paid' &&
+    spareParts.length === 0;
+
   return (
     <div className="space-y-4 p-4 pb-24 md:pb-4">
 
@@ -468,7 +477,7 @@ const RepairDetails = () => {
                 icon: PackageCheck,
                 onClick: () => setDialog({ open: true, type: 'pickup' }),
               }] : []),
-              ...(hasRole('superadmin') ? [{
+              ...(canDeleteRepair ? [{
                 label: 'Delete',
                 icon: Trash2,
                 danger: true,
@@ -707,7 +716,7 @@ const RepairDetails = () => {
         onClose={closeDialog}
         onConfirm={handleDelete}
         title="Delete Repair"
-        description={`Repair "${repair.repairId}" will be permanently deleted. This cannot be undone.`}
+        description={`Repair "${repair.repairId}" will be deleted and removed from your lists. Any unpaid balance on the customer will be reversed.`}
         confirmLabel="Delete"
         loading={actionLoading}
         danger

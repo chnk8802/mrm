@@ -2,23 +2,15 @@ import { isValidObjectId } from "mongoose";
 import Repair from "../models/repair.model.js";
 import Customer from "../models/customer.model.js";
 import User from "../models/user.model.js";
-import {
-  repairSchema,
-  repairUpdateSchema,
-  repairQuerySchema,
-  assignTechnicianSchema,
-  statusUpdateSchema,
-  pickupSchema,
-} from "@repo/validators";
+import { repairSchema, repairUpdateSchema, repairQuerySchema, assignTechnicianSchema, statusUpdateSchema, pickupSchema, } from "@repo/validators";
 import { transitionRepairStatus } from "../blueprints/repair.blueprint.js";
 import { createError } from "../utils/common/errorHandler.js";
 import withTransaction from "../utils/common/withTransaction.js";
-import {
-  scopeRepairQueryForRole,
-  shapeRepairForRole,
-} from "../utils/repair.access.js";
+import { scopeRepairQueryForRole, shapeRepairForRole } from "../utils/repair.access.js";
 import { checkRecordCap } from "../utils/common/checkRecordCap.js";
-import { calculatePaymentStatus } from "../utils/repair.calculations.js";
+import { calculatePaymentStatus, getRepairRemaining } from "../utils/repair.calculations.js";
+import SparePartUsage from "../models/sparePartUsage.model.js";
+import Supplier from "../models/supplier.model.js";
 
 /**
  * @desc Create a new repair order
@@ -460,22 +452,27 @@ export const deleteRepair = async (req, res, next) => {
     const repair = await Repair.findOne({ _id: id, isDeleted: false });
     if (!repair) throw createError(404, "Repair not found");
 
-    await withTransaction(async (session) => {
-      await Repair.findByIdAndUpdate(
-        repair._id,
-        { isDeleted: true },
-        { session },
-      );
+    if (repair.status === "completed" || repair.isPickedUp) {
+      throw createError(400, "Cannot delete a completed or picked-up repair");
+    }
 
-      // Reverse unpaid balance only
-      const unpaidAmount =
-        repair.serviceCharge -
-        (repair.discount || 0) -
-        (repair.amountPaid || 0);
-      if (unpaidAmount > 0) {
+    if ((repair.amountPaid ?? 0) > 0 || repair.paymentStatus === "paid") {
+      throw createError(400, "Cannot delete a repair that has been paid or fully discounted");
+    }
+
+    if ((repair.sparePartUsage ?? []).length > 0) {
+      throw createError(400, "Remove the spare parts from this repair before deleting it");
+    }
+
+    await withTransaction(async (session) => {
+      await Repair.findByIdAndUpdate(repair._id, { isDeleted: true }, { session });
+
+      // 0 for waived repairs, so a waived balance is never reversed twice
+      const unpaid = getRepairRemaining(repair);
+      if (unpaid > 0) {
         await Customer.findByIdAndUpdate(
           repair.customer,
-          { $inc: { outstandingBalance: -unpaidAmount } },
+          { $inc: { outstandingBalance: -unpaid } },
           { session },
         );
       }
