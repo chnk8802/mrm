@@ -108,7 +108,7 @@ const OrganizationDetails = () => {
         <div>
           <p className="text-xs text-muted-foreground">Records used</p>
           <p className="text-lg font-semibold text-foreground">
-            {org.subscription.capsOverride ? `${org.subscription.recordCount} / Unlimited` : `${org.subscription.recordCount} / ${org.subscription.planId?.recordCap ?? "—"}`}
+            {org.subscription.capsOverride ? `${orgData.recordsUsed} / Unlimited` : `${orgData.recordsUsed} / ${org.subscription.planId?.recordCap ?? "—"}`}
           </p>
         </div>
         <div>

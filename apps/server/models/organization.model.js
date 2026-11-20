@@ -8,7 +8,6 @@ const organizationSchema = new mongoose.Schema(
         subscription: {
             planId: { type: mongoose.Schema.Types.ObjectId, ref: 'Plan', required: true },
             capsOverride: { type: Boolean, default: false },
-            recordCount: { type: Number, default: 0, min: 0 },
             expiresAt: { type: Date },
         },
         isActive: { type: Boolean, default: true },

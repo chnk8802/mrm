@@ -7,8 +7,6 @@ const QUERY_HOOKS = [
     'deleteMany', 'deleteOne'
 ];
 
-const DELETE_HOOKS = ['deleteOne', 'deleteMany', 'findOneAndDelete', 'findOneAndRemove'];
-
 export const orgScopePlugin = (schema, options = {}) => {
     const { addField = true, countsTowardCap = false } = options;
 
@@ -17,6 +15,11 @@ export const orgScopePlugin = (schema, options = {}) => {
             orgId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true }
         });
         schema.index({ orgId: 1 });
+    }
+
+    // Marker read by checkRecordCap: models flagged here are counted toward the plan cap
+    if (countsTowardCap) {
+        schema.options.countsTowardCap = true;
     }
 
     // Auto-filter every read/update/delete query
@@ -58,47 +61,4 @@ export const orgScopePlugin = (schema, options = {}) => {
         }
         next();
     });
-
-    if (countsTowardCap) {
-        // Capture "was this new" before save flips isNew to false
-        schema.pre('save', function (next) {
-            this.$locals.wasNew = this.isNew;
-            next();
-        });
-
-        schema.post('save', async function (doc) {
-            if (!doc.$locals.wasNew || !doc.orgId) return;
-            await mongoose.model('Organization').updateOne(
-                { _id: doc.orgId },
-                { $inc: { 'subscription.recordCount': 1 } }
-            );
-        });
-
-        // Snapshot which orgs are affected before the delete actually runs
-        schema.pre(DELETE_HOOKS, async function (next) {
-            try {
-                const docs = await this.model.find(this.getFilter()).select('orgId').lean();
-                this.$locals = this.$locals || {};
-                this.$locals.deletedOrgCounts = docs.reduce((acc, d) => {
-                    const key = String(d.orgId);
-                    acc[key] = (acc[key] || 0) + 1;
-                    return acc;
-                }, {});
-                next();
-            } catch (err) {
-                next(err);
-            }
-        });
-
-        schema.post(DELETE_HOOKS, async function () {
-            const counts = this.$locals?.deletedOrgCounts;
-            if (!counts) return;
-            const Organization = mongoose.model('Organization');
-            await Promise.all(
-                Object.entries(counts).map(([orgId, count]) =>
-                    Organization.updateOne({ _id: orgId }, { $inc: { 'subscription.recordCount': -count } })
-                )
-            );
-        });
-    }
 };

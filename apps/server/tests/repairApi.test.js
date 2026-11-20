@@ -74,7 +74,7 @@ describe('POST /api/repairs', () => {
 
   // State the assumption explicitly: admin + customer = 2 records = exactly at the cap
   const fresh = await Organization.findById(org._id);
-  expect(fresh.subscription.recordCount).toBe(2);
+  expect(fresh.recordsUsed).toBe(2);
 
   const res = await postRepair(admin, repairBody(customer));
 

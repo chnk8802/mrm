@@ -340,7 +340,7 @@ const Settings = () => {
               <div className="space-y-1 p-3 rounded-lg border border-border">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Records used</p>
                 <p className="text-lg font-semibold text-foreground">
-                  {orgData.subscription.recordCount}
+                  {orgData.recordsUsed}
                   <span className="text-sm font-normal text-muted-foreground"> / {unlimited ? 'Unlimited' : plan?.recordCap ?? '—'}</span>
                 </p>
               </div>

@@ -6,6 +6,7 @@ import { createError } from '../utils/common/errorHandler.js';
 import withTransaction from '../utils/common/withTransaction.js';
 import { createOrganizationSchema, organizationQuerySchema, organizationUpdateSchema } from '@repo/validators';
 import { isValidObjectId } from 'mongoose';
+import { countLiveRecords } from '../utils/common/checkRecordCap.js';
 
 export const createOrganization = async (req, res, next) => {
     try {
@@ -30,8 +31,8 @@ export const createOrganization = async (req, res, next) => {
                     expiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
                 }
             }],
-            { session }
-        );
+                { session }
+            );
 
             const [adminUser] = await User.create([{
                 name: admin.name,
@@ -82,7 +83,10 @@ export const getMyOrganization = async (req, res, next) => {
 
         const userCount = await User.countDocuments({ orgId: req.user.orgId, isDeleted: false });
 
-        res.json({ success: true, data: { ...org.toObject(), userCount } });
+        res.json({
+            success: true,
+            data: { ...org.toObject(), userCount, recordsUsed: await countLiveRecords(org._id) },
+        });
     } catch (error) {
         next(error);
     }
@@ -132,7 +136,7 @@ export const getOrganizations = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const [organizations, total] = await Promise.all([
-           Organization.find(query).sort(sortOptions).skip(skip).limit(limit).populate('subscription.planId', 'name slug'),
+            Organization.find(query).sort(sortOptions).skip(skip).limit(limit).populate('subscription.planId', 'name slug'),
             Organization.countDocuments(query)
         ]);
 
