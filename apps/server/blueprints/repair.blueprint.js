@@ -36,7 +36,7 @@ const transitionHandlers = {
     'in-progress->not-repairable': {
         before: async (repair) => {},
         during: async (repair) => {
-            waiveCustomerBalance(repair);
+            await waiveCustomerBalance(repair);
             repair.paymentStatus = 'waived';
         },
         after:  async (repair) => { /* notify customer */ }
@@ -44,7 +44,7 @@ const transitionHandlers = {
     'in-progress->cancelled': {
         before: async (repair) => {},
         during: async (repair) => {
-            waiveCustomerBalance(repair);
+            await waiveCustomerBalance(repair);
             repair.paymentStatus = 'waived';
         },
         after:  async (repair) => { /* notify customer */ }
