@@ -41,6 +41,7 @@ import Settings from "./pages/settings/Settings";
 import AccessDenied from "./pages/common/AccessDenied";
 import Home from "./pages/website/Home";
 import Reports from "./pages/reports/Reports";
+import Loader from "./components/loader/Loader";
 
 // `minRole` is hierarchical — matches backend authorize() and the sidebar.
 // Omit minRole (or pass null) to allow any logged-in user.
@@ -51,7 +52,7 @@ const ProtectedRoute = ({ minRole, blockRoles }) => {
   if (loading)
     return (
       <div className="flex items-center justify-center h-screen">
-        Loading...
+        <Loader />
       </div>
     );
   if (!user) return <Navigate to="/login" replace />;
@@ -70,7 +71,7 @@ export default function App() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-screen">
-        Loading...
+       <Loader />
       </div>
     );
 
