@@ -5,7 +5,7 @@ import Layout from "./components/Layout/Layout";
 
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/Dashboard";
-import ChangePassword from "./pages/auth/ChangePassword"
+import ChangePassword from "./pages/auth/ChangePassword";
 
 import OrganizationCreate from "./pages/superadmin/organization/OrganizationCreate";
 import OrganizationList from "./pages/superadmin/organization/OrganizationList";
@@ -56,7 +56,8 @@ const ProtectedRoute = ({ minRole, blockRoles }) => {
       </div>
     );
   if (!user) return <Navigate to="/login" replace />;
-  if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+  if (user.mustChangePassword)
+    return <Navigate to="/change-password" replace />;
   if (minRole && !hasRole(minRole))
     return <Navigate to="/unauthorized" replace />;
   if (blockRoles?.includes(user.role))
@@ -71,7 +72,7 @@ export default function App() {
   if (loading)
     return (
       <div className="flex items-center justify-center h-screen">
-       <Loader />
+        <Loader />
       </div>
     );
 
@@ -82,10 +83,24 @@ export default function App() {
         element={!user ? <Login /> : <Navigate to="/app" replace />}
       />
 
-      <Route path="/" element={<Home />} />
+      <Route
+        path="/"
+        element={<Navigate to={user ? "/app" : "/login"} replace />}
+      />
 
       <Route path="/unauthorized" element={<AccessDenied />} />
-      <Route path="/change-password" element={ !user ? <Navigate to="/login" replace /> : user.mustChangePassword ? <ChangePassword /> : <Navigate to="/app" replace /> } />
+      <Route
+        path="/change-password"
+        element={
+          !user ? (
+            <Navigate to="/login" replace />
+          ) : user.mustChangePassword ? (
+            <ChangePassword />
+          ) : (
+            <Navigate to="/app" replace />
+          )
+        }
+      />
 
       <Route path="/app" element={<ProtectedRoute />}>
         <Route element={<Layout />}>
@@ -143,7 +158,7 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={user ? "/app" : "/login"} replace />} />
     </Routes>
   );
 }

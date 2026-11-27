@@ -54,7 +54,7 @@ function Login() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      navigate("/");
+      navigate("/app");
     } catch (err) {
       const errorData = err.response?.data;
 
