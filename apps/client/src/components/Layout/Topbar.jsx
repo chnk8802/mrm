@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/utils/getInitials';
 import Logo from '../common/Logo';
 import { getAvatarUrl } from '@/utils/getAvatar';
+import BetaNotice from '../common/BetaNotice';
 
 const Topbar = () => {
     const { user, organization, logout } = useAuth();
@@ -32,6 +33,8 @@ const Topbar = () => {
                 <span className="font-bold text-sm tracking-tight text-foreground"></span>
 
                 <div className="flex-1" />
+
+                <BetaNotice/>
 
                 {/* Theme Toggle */}
                 <button

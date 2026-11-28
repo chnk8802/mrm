@@ -11,7 +11,6 @@ import { getInitials } from '@/utils/getInitials';
 import { authService } from '@/api/authService';
 import organizationService from '@/api/organizationService';
 import toast from 'react-hot-toast';
-import TestingNotice from '../website/TestingNotice';
 import ThemeSelector from '@/components/common/ThemeSelector';
 import ChangePasswordForm from '@/components/common/ChangePasswordForm';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -302,8 +301,6 @@ const Settings = () => {
       ) : (
         <p className="text-sm text-muted-foreground">No profile data.</p>
       )}
-
-      <TestingNotice />
     </div>
   ), [userData, editMode, editForm, editSaving, setAddr, cancelEdit, handleEditSave]);
 
