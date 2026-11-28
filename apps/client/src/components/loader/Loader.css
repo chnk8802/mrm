@@ -15,8 +15,8 @@
   height: 20px;
   position: absolute;
   border-radius: 50%;
-  /* Defaults to the original white; override via --ohmic-loader-color */
-  background-color: var(--ohmic-loader-color, #fff);
+  /* Follows the active theme preset and light/dark mode */
+  background-color: hsl(var(--brand));
   left: 15%;
   transform-origin: 50%;
   animation: ohmic-loader-bounce 0.5s alternate infinite ease;
@@ -56,7 +56,8 @@
   width: 20px;
   height: 4px;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.9);
+  /* Stays visible on both light and dark backgrounds */
+  background-color: hsl(var(--foreground) / 0.6);
   position: absolute;
   top: 62px;
   transform-origin: 50%;
