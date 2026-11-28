@@ -1,11 +1,11 @@
-// components/ThemeSelector.jsx
+// components/common/ThemeSelector.jsx
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const DESIGN_THEMES = [
-  { value: 'default', label: 'Default', sub: 'Indigo minimal', dot: 'bg-indigo-500' },
-  { value: 'workshop', label: 'Workshop', sub: 'Emerald green', dot: 'bg-emerald-500' },
-  { value: 'ocean', label: 'Ocean', sub: 'Deep blue', dot: 'bg-blue-500' },
-  { value: 'cyberpunk', label: 'Cyberpunk', sub: 'Neon pink', dot: 'bg-pink-500' },
+  { value: 'default', label: 'Ohmic', sub: 'Black & red', swatch: 'linear-gradient(135deg, #111111 50%, #a80000 50%)' },
+  { value: 'indigo', label: 'Indigo', sub: 'Minimal violet', swatch: '#4f46e5' },
+  { value: 'workshop', label: 'Workshop', sub: 'Emerald green', swatch: '#15803d' },
+  { value: 'ocean', label: 'Ocean', sub: 'Deep blue', swatch: '#2563eb' },
 ];
 
 const ThemeSelector = ({ value, onChange }) => (
@@ -17,8 +17,11 @@ const ThemeSelector = ({ value, onChange }) => (
       {DESIGN_THEMES.map((preset) => (
         <SelectItem key={preset.value} value={preset.value} className="text-sm">
           <span className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${preset.dot}`} />
-            <span className="">
+            <span
+              className="w-3 h-3 rounded-full shrink-0 border border-border"
+              style={{ background: preset.swatch }}
+            />
+            <span>
               <span>{preset.label} </span>
               <span className="text-muted-foreground">({preset.sub})</span>
             </span>

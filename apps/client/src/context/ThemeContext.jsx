@@ -11,8 +11,11 @@ export const ThemeProvider = ({ children }) => {
     });
 
     // Get Initial Theme design
+    const APP_THEMES = ['default', 'indigo', 'workshop', 'ocean'];
+
     const [appTheme, setAppTheme] = useState(() => {
-        return localStorage.getItem('mrm-design-preset') || 'default';
+        const stored = localStorage.getItem('mrm-design-preset');
+        return APP_THEMES.includes(stored) ? stored : 'default';
     });
 
     // Set Theme mode and design whenever any of them updates
