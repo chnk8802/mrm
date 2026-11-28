@@ -15,6 +15,7 @@ import TestingNotice from '../website/TestingNotice';
 import ThemeSelector from '@/components/common/ThemeSelector';
 import ChangePasswordForm from '@/components/common/ChangePasswordForm';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { getAvatarUrl } from '@/utils/getAvatar';
 
 // ─────────────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -167,10 +168,8 @@ const Settings = () => {
           {/* Avatar + identity card */}
           <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/30">
             <Avatar className="w-14 h-14 shrink-0">
-              <AvatarImage src={userData.avatar} alt={userData.name} />
-              <AvatarFallback className="text-base font-semibold bg-primary/10 text-primary">
-                {getInitials(userData.name)}
-              </AvatarFallback>
+              <AvatarImage src={getAvatarUrl(userData)} alt={userData.name} />
+              <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-foreground truncate">{userData.name}</p>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import axios from 'axios';
 import { getInitials } from '@/utils/getInitials';
+import { getAvatarUrl } from '@/utils/getAvatar';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
@@ -62,11 +63,8 @@ const Profile = () => {
           <CardContent>
             <div className="flex flex-col items-center text-center space-y-4">
               <Avatar className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl text-gray-700">
-                <AvatarImage
-                  src={userData.avatar}
-                  alt={userData.name}
-                />
-                <AvatarFallback>{getInitials(userData.name)}</AvatarFallback>
+                <AvatarImage src={getAvatarUrl(user)} alt={user.name} />
+                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
               </Avatar>
               <div>
                 <h3 className="text-xl font-semibold">{userData.name}</h3>

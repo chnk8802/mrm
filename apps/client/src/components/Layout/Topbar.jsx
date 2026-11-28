@@ -6,6 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/utils/getInitials';
 import Logo from '../common/Logo';
+import { getAvatarUrl } from '@/utils/getAvatar';
 
 const Topbar = () => {
     const { user, organization, logout } = useAuth();
@@ -52,8 +53,8 @@ const Topbar = () => {
                         className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
                     >
                         <Avatar className="w-6 h-6">
-                            <AvatarImage src={user?.avatar} alt={user?.name} />
-                            <AvatarFallback className="text-xs">{getInitials(user?.name)}</AvatarFallback>
+                            <AvatarImage src={getAvatarUrl(user)} alt={user.name} />
+                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                         </Avatar>
                         <span className="hidden md:inline text-sm font-medium">{user?.name}</span>
                         <ChevronDown className="w-3 h-3 text-muted-foreground" />

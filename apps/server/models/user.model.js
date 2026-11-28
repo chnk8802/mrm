@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
             postalCode: { type: String, trim: true, maxlength: [20, 'Postal code cannot exceed 20 characters'] },
             country: { type: String, trim: true, maxlength: [100, 'Country cannot exceed 100 characters'], }
         },
-        avatar: { type: String, default: "https://i.pravatar.cc" },
+        avatar: { type: String, default: '' },
         isActive: { type: Boolean, default: true },
         isDeleted: { type: Boolean, default: false, select: false },
         orgId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: function () { return this.role !== 'superadmin'; } },
