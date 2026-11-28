@@ -20,9 +20,14 @@ export const ThemeProvider = ({ children }) => {
 
     // Set Theme mode and design whenever any of them updates
     useEffect(() => {
-        localStorage.setItem('theme', theme);
-        localStorage.setItem('mrm-design-preset', appTheme);
-    }, [theme, appTheme]);
+    localStorage.setItem('theme', theme);
+    localStorage.setItem('mrm-design-preset', appTheme);
+
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    root.setAttribute('data-app-theme', appTheme);
+}, [theme, appTheme]);
 
 
     const toggle = () => setTheme(t => t === 'dark' ? 'light' : 'dark');

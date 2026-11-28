@@ -1,12 +1,33 @@
-import { useState, useEffect, useRef } from 'react';
-import { Check, ChevronsUpDown, Plus, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger, } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, } from '@/components/ui/command'; import { cn } from '@/lib/utils';
+import { useState, useEffect, useRef } from "react";
+import { Check, ChevronsUpDown, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
-export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Search...', error, initialLabel, onCreateNew, createLabel = 'Create new', }) => {
+export const AsyncCombobox = ({
+  value,
+  onChange,
+  fetchOptions,
+  placeholder = "Search...",
+  error,
+  initialLabel,
+  onCreateNew,
+  createLabel = "Create new",
+}) => {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -45,28 +66,31 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Se
   const handleSelect = (opt) => {
     setSelected(opt);
     onChange(opt.value);
-    setQuery('');
+    setQuery("");
     setOpen(false);
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
     setSelected(null);
-    onChange('');
-    setQuery('');
+    onChange("");
+    setQuery("");
   };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
+        <button
+          type="button"
           role="combobox"
           aria-expanded={open}
           className={cn(
-            'w-full h-8 justify-between px-2.5 font-normal text-sm',
-            !selected && 'text-muted-foreground',
-            error && 'border-red-500 focus-visible:ring-red-500'
+            "flex h-8 w-full items-center justify-between rounded-md border border-input bg-transparent px-2.5 text-sm shadow-sm",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
+            "data-[state=open]:ring-2 data-[state=open]:ring-ring",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            !selected && "text-muted-foreground",
+            error && "border-destructive",
           )}
         >
           <span className="truncate">
@@ -78,7 +102,7 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Se
                 role="button"
                 tabIndex={0}
                 onClick={handleClear}
-                onKeyDown={e => e.key === 'Enter' && handleClear(e)}
+                onKeyDown={(e) => e.key === "Enter" && handleClear(e)}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="w-3.5 h-3.5" />
@@ -86,14 +110,14 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Se
             )}
             <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground" />
           </span>
-        </Button>
+        </button>
       </PopoverTrigger>
 
       <PopoverContent
-        className="p-0 w-[var(--radix-popover-trigger-width)]"
-        align="start"
-        sideOffset={4}
-      >
+  className="p-0 w-[var(--radix-popover-trigger-width)] border border-border shadow-md"
+  align="start"
+  sideOffset={4}
+>
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={placeholder}
@@ -103,11 +127,13 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Se
           />
           <CommandList>
             {loading ? (
-              <div className="px-3 py-2 text-xs text-muted-foreground">Searching...</div>
+              <div className="px-3 py-2 text-xs text-muted-foreground">
+                Searching...
+              </div>
             ) : (
               <>
                 <CommandEmpty className="px-3 py-2 text-xs text-muted-foreground">
-                  {query ? 'No results found' : 'Start typing to search'}
+                  {query ? "No results found" : "Start typing to search"}
                 </CommandEmpty>
                 <CommandGroup>
                   {options.map((opt) => (
@@ -117,10 +143,14 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Se
                       onSelect={() => handleSelect(opt)}
                       className="text-sm"
                     >
-                      <Check className={cn(
-                        'mr-2 w-3.5 h-3.5 shrink-0',
-                        selected?.value === opt.value ? 'opacity-100' : 'opacity-0'
-                      )} />
+                      <Check
+                        className={cn(
+                          "mr-2 w-3.5 h-3.5 shrink-0",
+                          selected?.value === opt.value
+                            ? "opacity-100"
+                            : "opacity-0",
+                        )}
+                      />
                       {opt.label}
                     </CommandItem>
                   ))}
@@ -128,7 +158,10 @@ export const AsyncCombobox = ({ value, onChange, fetchOptions, placeholder = 'Se
                 {onCreateNew && (
                   <CommandGroup>
                     <CommandItem
-                      onSelect={() => { setOpen(false); onCreateNew(query); }}
+                      onSelect={() => {
+                        setOpen(false);
+                        onCreateNew(query);
+                      }}
                       className="text-sm text-primary gap-2"
                     >
                       <Plus className="w-3.5 h-3.5 shrink-0" />

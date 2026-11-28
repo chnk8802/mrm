@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import DateTimePicker from '@/components/common/DateTimePicker';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { Textarea } from '@/components/ui/textarea';
 
 // ─── FieldError ───────────────────────────────────────────────────────────────
 
@@ -262,12 +263,13 @@ const RepairEdit = () => {
                 <Label className="text-xs">
                   Problem Description <span className="text-red-500">*</span>
                 </Label>
-                <textarea
+                <Textarea
                   {...register('problem')}
                   placeholder="Describe the issue with the device..."
                   rows={3}
-                  className={`mt-1 flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none ${errors.problem ? 'border-red-500' : ''}`}
-                />
+                  error={!!errors.problem}
+                  className="mt-1"
+                  />
                 <FieldError message={errors.problem?.message} />
               </div>
 
@@ -343,12 +345,13 @@ const RepairEdit = () => {
               <CardTitle className="text-sm font-semibold">Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <textarea
+              <Textarea
                 {...register('notes')}
                 placeholder="Internal notes..."
                 rows={4}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-              />
+                error={!!errors.notes}
+                  className="mt-1"
+                  />
               <FieldError message={errors.notes?.message} />
             </CardContent>
           </Card>

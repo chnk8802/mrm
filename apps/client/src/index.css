@@ -20,7 +20,7 @@
   /* ==========================================
      1. OHMIC (default) — black / white / logo red
      ========================================== */
-  :root, [data-app-theme="default"] {
+  :root, [data-app-theme="default"], .ohmic-light {
     --background: 0 0% 98%;
     --foreground: 0 0% 7%;
     --card: 0 0% 100%;
@@ -36,9 +36,9 @@
     --accent: 0 0% 94%;
     --accent-foreground: 0 0% 9%;
     --border: 0 0% 89%;
-    --input: 0 0% 89%;
+    --input: 0 0% 82%;
     --textarea: 0 0% 89%;
-    --ring: 0 100% 33%;
+    --ring: 0 0% 9%;
     --brand: 0 100% 33%;
     --sidebar-bg: 0 0% 100%;
     --sidebar-foreground: 0 0% 7%;
@@ -46,13 +46,14 @@
     --radius: 0.5rem;
   }
   .dark,
+  .ohmic-dark,
   .dark[data-app-theme="default"],
   .dark [data-app-theme="default"] {
     --background: 0 0% 5%;
     --foreground: 0 0% 95%;
     --card: 0 0% 8%;
     --card-foreground: 0 0% 95%;
-    --popover: 0 0% 8%;
+    --popover: 0 0% 11%;
     --popover-foreground: 0 0% 95%;
     --primary: 0 0% 96%;
     --primary-foreground: 0 0% 7%;
@@ -65,7 +66,7 @@
     --border: 0 0% 16%;
     --input: 0 0% 16%;
     --textarea: 0 0% 16%;
-    --ring: 0 85% 48%;
+    --ring: 0 0% 96%;
     --brand: 0 85% 48%;
     --sidebar-bg: 0 0% 7%;
     --sidebar-foreground: 0 0% 95%;
@@ -104,7 +105,7 @@
   .dark [data-app-theme="indigo"] {
     --background: 240 12% 7%;
     --foreground: 240 10% 95%;
-    --card: 240 10% 10%;
+    --card: 240 10% 13%;
     --card-foreground: 240 10% 95%;
     --popover: 240 10% 10%;
     --popover-foreground: 240 10% 95%;
@@ -160,7 +161,7 @@
     --foreground: 140 10% 95%;
     --card: 150 15% 9%;
     --card-foreground: 140 10% 95%;
-    --popover: 150 15% 9%;
+    --popover: 150 15% 11%;
     --popover-foreground: 140 10% 95%;
     --primary: 142 65% 45%;
     --primary-foreground: 150 40% 8%;
@@ -214,7 +215,7 @@
     --foreground: 210 40% 98%;
     --card: 222 40% 9%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 40% 9%;
+    --popover: 222 40% 12%;
     --popover-foreground: 210 40% 98%;
     --primary: 199 89% 48%;
     --primary-foreground: 222 47% 6%;

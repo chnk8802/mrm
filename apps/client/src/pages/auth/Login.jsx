@@ -9,9 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
-import TestingNotice from "../website/TestingNotice";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import Logo from "@/components/common/Logo";
 import whiteLogo from "@/assets/ohmic-white-logo.png";
 import BetaNotice from "@/components/common/BetaNotice";
 
@@ -94,14 +92,7 @@ function Login() {
   };
 
   return (
-    <div
-      className="min-h-screen lg:grid lg:grid-cols-[5fr_6fr]"
-      style={{
-        "--primary": "0 0% 7%",
-        "--primary-foreground": "0 0% 100%",
-        "--ring": "0 100% 33%",
-      }}
-    >
+    <div className="ohmic-dark bg-background text-foreground min-h-screen lg:grid lg:grid-cols-[5fr_6fr]">
       {/* Brand panel — desktop only */}
       <aside className="relative hidden overflow-hidden bg-[#0a0a0a] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <img src={whiteLogo} alt="Ohmic" className="h-9 w-auto self-start" />
@@ -120,7 +111,7 @@ function Login() {
         <div className="flex flex-1 items-center justify-center px-6 py-16">
           <div className="w-full max-w-sm">
             <div className="mb-10 lg:hidden">
-              <Logo className="h-8 w-auto" />
+              <img src={whiteLogo} alt="Ohmic" className="h-8 w-auto" />
             </div>
 
             <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>

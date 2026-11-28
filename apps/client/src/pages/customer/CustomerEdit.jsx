@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import customerService from '@/api/customerService';
 import toast from 'react-hot-toast';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { Textarea } from '@/components/ui/textarea';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -221,11 +222,12 @@ const CustomerEdit = () => {
               <CardTitle className="text-sm font-semibold">Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <textarea {...register('notes')}
+              <Textarea {...register('notes')}
                 placeholder="Add any additional notes about this customer..."
                 rows={3}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-              />
+                error={!!errors.notes}
+                className="mt-1"
+                />
               <FieldError message={errors.notes?.message} />
             </CardContent>
           </Card>

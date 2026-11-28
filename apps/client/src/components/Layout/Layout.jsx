@@ -4,7 +4,6 @@ import { NavLink } from "react-router-dom";
 import { LayoutDashboard, Users, Wrench, Settings, Menu } from "lucide-react";
 import Sidebar from "@/components/Layout/Sidebar";
 import Topbar from "@/components/Layout/Topbar";
-import { useTheme } from "@/context/ThemeContext";
 import { usePermission } from "@/hooks/usePermission";
 
 const mobileNavItems = [
@@ -15,7 +14,6 @@ const mobileNavItems = [
 ];
 
 const Layout = () => {
-  const { theme, appTheme } = useTheme();
   const { hasRole } = usePermission();
   const visibleNavItems = mobileNavItems.filter((item) => !item.minRole || hasRole(item.minRole));
 
@@ -30,10 +28,7 @@ const Layout = () => {
   }, [sidebarOpen]);
 
   return (
-    <div
-      className={`${theme} h-screen flex flex-col bg-background text-foreground transition-colors duration-200`}
-      data-app-theme={appTheme}
-    >
+    <div className="h-screen flex flex-col bg-background text-foreground transition-colors duration-200">
       <Topbar />
 
       <div className="flex flex-1 overflow-hidden">

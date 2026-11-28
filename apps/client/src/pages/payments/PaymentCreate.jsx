@@ -15,6 +15,7 @@ import paymentService from '@/api/paymentService';
 import toast from 'react-hot-toast';
 import DateTimePicker from '@/components/common/DateTimePicker';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { Textarea } from '@/components/ui/textarea';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -358,12 +359,13 @@ const PaymentCreate = () => {
             {/* Notes */}
             <div>
               <Label className="text-xs">Notes</Label>
-              <textarea
+              <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Optional notes..."
                 rows={3}
-                className="mt-1 flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                error={!!errors.notes}
+                className="mt-1"  
               />
             </div>
 
