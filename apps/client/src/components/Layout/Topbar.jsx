@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/utils/getInitials';
+import Logo from '../common/Logo';
 
 const Topbar = () => {
     const { user, organization, logout } = useAuth();
@@ -26,7 +27,8 @@ const Topbar = () => {
             <div className="h-12 bg-[hsl(var(--topbar-bg))] border-b border-border flex items-center px-4 gap-3">
 
                 {/* Brand */}
-                <span className="font-bold text-sm tracking-tight text-foreground">Ohmic</span>
+                <Logo/>
+                <span className="font-bold text-sm tracking-tight text-foreground"></span>
 
                 <div className="flex-1" />
 
